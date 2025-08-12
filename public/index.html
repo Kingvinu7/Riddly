@@ -3,780 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riddly - Multiplayer Word Guessing Game</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 10px;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            max-width: 800px;
-            margin: 0 auto;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        /* Room System Styles */
-        .room-system {
-            text-align: center;
-        }
-
-        .room-title {
-            font-size: 2rem;
-            color: #667eea;
-            margin-bottom: 30px;
-        }
-
-        .room-buttons {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-
-        .room-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: bold;
-            transition: transform 0.3s ease;
-        }
-
-        .room-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .room-form {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            border-color: #667eea;
-            outline: none;
-        }
-
-        .submit-btn {
-            background: linear-gradient(135deg, #4ecdc4, #45b7b8);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-        }
-
-        /* Game Styles */
-        .game-container {
-            display: none;
-        }
-
-        .game-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-radius: 10px;
-        }
-
-        .round-info {
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        .current-selector {
-            background: rgba(255,255,255,0.2);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        .word-selection {
-            background: #fff3cd;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-            border: 2px solid #ffeeba;
-        }
-
-        .word-input {
-            padding: 12px 20px;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            margin: 10px;
-            width: 200px;
-        }
-
-        .word-submit {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-
-        .game-stats {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-            flex: 1;
-            font-size: 0.9rem;
-        }
-
-        .stat-card.progress {
-            background: linear-gradient(135deg, #4ecdc4, #45b7b8);
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            opacity: 0.9;
-            margin-bottom: 2px;
-        }
-
-        .stat-value {
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        .word-section {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            padding: 20px 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-        }
-
-        .word-display {
-            font-size: 2.2rem;
-            font-weight: bold;
-            letter-spacing: 0.2em;
-            color: #2c3e50;
-            margin-bottom: 8px;
-        }
-
-        .word-hint {
-            font-size: 0.9rem;
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .chat-section {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            overflow: hidden;
-            border: 1px solid #e9ecef;
-        }
-
-        .chat-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 8px 15px;
-            font-weight: 600;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .chat-messages {
-            height: 280px;
-            padding: 10px;
-            overflow-y: auto;
-            background: #f8f9fa;
-        }
-
-        .chat-messages::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 2px;
-        }
-
-        .message {
-            margin-bottom: 8px;
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message.correct {
-            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
-            border-left: 3px solid #e17055;
-        }
-
-        .message.game-event {
-            background: linear-gradient(135deg, #ddd6fe, #c4b5fd);
-            font-style: italic;
-            color: #5b21b6;
-            border-left: 3px solid #8b5cf6;
-            text-align: center;
-            font-size: 0.65rem;
-            padding: 4px 8px;
-            margin-bottom: 4px;
-            opacity: 0.85;
-        }
-
-        .chat-input-container {
-            padding: 10px;
-            background: white;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            outline: none;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .chat-input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-            background: white;
-        }
-
-        .send-button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .send-button:hover {
-            transform: translateY(-1px);
-        }
-
-        .timer-progress {
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 2px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
-
-        .timer-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00b894, #00a085);
-            border-radius: 2px;
-            transition: width 1s linear;
-        }
-
-        .players-section {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .players-section h3 {
-            text-align: center;
-            margin-bottom: 10px;
-            color: #667eea;
-            font-size: 1rem;
-        }
-
-        .player-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 10px;
-            margin-bottom: 5px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-
-        .score {
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        /* Game Over Screen Styles */
-        .game-over-screen {
-            display: none;
-            text-align: center;
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .game-over-title {
-            font-size: 3rem;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        .winner-section {
-            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            border: 3px solid #e17055;
-            box-shadow: 0 8px 25px rgba(253, 203, 110, 0.4);
-        }
-
-        .winner-crown {
-            font-size: 4rem;
-            margin-bottom: 10px;
-        }
-
-        .winner-name {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #d63031;
-            margin-bottom: 10px;
-        }
-
-        .winner-score {
-            font-size: 1.5rem;
-            color: #636e72;
-            font-weight: 600;
-        }
-
-        .final-scores {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-
-        .scores-title {
-            font-size: 1.5rem;
-            color: #667eea;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        .score-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: transform 0.3s ease;
-        }
-
-        .score-item:hover {
-            transform: translateX(5px);
-        }
-
-        .score-item.first {
-            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
-            border-left: 5px solid #e17055;
-        }
-
-        .score-item.second {
-            background: linear-gradient(135deg, #e17055, #d63031);
-            color: white;
-            border-left: 5px solid #b2bec3;
-        }
-
-        .score-item.third {
-            background: linear-gradient(135deg, #fd79a8, #e84393);
-            color: white;
-            border-left: 5px solid #a29bfe;
-        }
-
-        .score-item.other {
-            background: #f8f9fa;
-            border-left: 5px solid #ddd;
-        }
-
-        .player-position {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .position-medal {
-            font-size: 1.5rem;
-            min-width: 40px;
-        }
-
-        .player-score {
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .game-stats-summary {
-            background: linear-gradient(135deg, #a29bfe, #6c5ce7);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .stat-box {
-            background: rgba(255,255,255,0.2);
-            padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-description {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-        }
-
-        .play-again-btn {
-            background: linear-gradient(135deg, #00b894, #00a085);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.3);
-        }
-
-        .play-again-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 184, 148, 0.4);
-        }
-
-        .main-menu-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .main-menu-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            body {
-                padding: 5px;
-            }
-            
-            .container {
-                padding: 12px;
-                border-radius: 10px;
-            }
-            
-            .room-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .room-btn {
-                width: 200px;
-            }
-            
-            .word-display {
-                font-size: 1.8rem;
-            }
-            
-            .chat-messages {
-                height: 220px;
-            }
-            
-            .game-header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-
-            .game-over-title {
-                font-size: 2rem;
-            }
-
-            .winner-name {
-                font-size: 1.5rem;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .play-again-btn, .main-menu-btn {
-                width: 200px;
-            }
-        }
-    </style>
+    <title>Riddly Geography Game</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Room System -->
-    <div class="container" id="roomSystem">
-        <div class="room-system">
-            <h1 class="room-title">🎯 Riddly</h1>
-            
-            <div class="room-buttons">
-                <button class="room-btn" onclick="showCreateRoom()">Create Room</button>
-                <button class="room-btn" onclick="showJoinRoom()">Join Room</button>
+    <!-- Home Screen -->
+    <div id="home-screen" class="screen">
+        <div class="container">
+            <div class="header">
+                <h1>🌍 Riddly Geography</h1>
+                <p class="tagline">Multiplayer geography guessing game with AI-generated maps!</p>
             </div>
             
-            <!-- Create Room Form -->
-            <div class="room-form" id="createRoomForm" style="display: none;">
-                <h3 style="margin-bottom: 20px;">Create New Room</h3>
-                <div class="form-group">
-                    <label>Your Username:</label>
-                    <input type="text" id="createUsername" placeholder="Enter your username">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="player-name">Your Name:</label>
+                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
                 </div>
-                <div class="form-group">
-                    <label>Room Name:</label>
-                    <input type="text" id="createRoomName" placeholder="Enter room name">
+                
+                <div class="buttons">
+                    <button id="create-room-btn" class="btn primary">🎯 Create Room</button>
+                    
+                    <div class="or-divider">
+                        <span>OR</span>
+                    </div>
+                    
+                    <div class="join-section">
+                        <input type="text" id="room-code" placeholder="Enter Room Code" maxlength="6">
+                        <button id="join-room-btn" class="btn secondary">🚪 Join Room</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Number of Rounds:</label>
-                    <select id="createRounds">
-                        <option value="3">3 Rounds</option>
-                        <option value="5">5 Rounds</option>
-                        <option value="7">7 Rounds</option>
-                        <option value="10">10 Rounds</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Questions per Round:</label>
-                    <select id="createQuestions">
-                        <option value="3">3 Questions</option>
-                        <option value="5">5 Questions</option>
-                        <option value="7">7 Questions</option>
-                    </select>
-                </div>
-                <button class="submit-btn" onclick="createRoom()">Create Room</button>
             </div>
             
-            <!-- Join Room Form -->
-            <div class="room-form" id="joinRoomForm" style="display: none;">
-                <h3 style="margin-bottom: 20px;">Join Existing Room</h3>
-                <div class="form-group">
-                    <label>Your Username:</label>
-                    <input type="text" id="joinUsername" placeholder="Enter your username">
-                </div>
-                <div class="form-group">
-                    <label>Room Name:</label>
-                    <input type="text" id="joinRoomName" placeholder="Enter room name to join">
-                </div>
-                <button class="submit-btn" onclick="joinRoom()">Join Room</button>
+            <div class="how-to-play">
+                <h3>🎮 How to Play:</h3>
+                <ul>
+                    <li>🗺️ Players take turns choosing places from around the world</li>
+                    <li>💡 Choose interesting facts as clues for other players</li>
+                    <li>🔤 First and last letters are revealed, more letters appear over time</li>
+                    <li>⚡ Guess early for bonus points!</li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <!-- Game Interface -->
-    <div class="container game-container" id="gameContainer">
-        <div class="game-header">
-            <div class="round-info">
-                <div id="roundInfo">Round 1 / 3</div>
-                <div id="questionInfo">Question 1 / 5</div>
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen" style="display: none;">
+        <div class="game-layout">
+            <!-- Left Panel: Players -->
+            <div class="left-panel">
+                <div class="panel-header">
+                    <h3>👥 Players</h3>
+                    <div id="room-code-display"></div>
+                </div>
+                <div id="players-container"></div>
+                <button id="start-game-btn" class="btn primary" style="display: none;">🚀 Start Game</button>
             </div>
-            <div class="current-selector" id="currentSelector">
-                Waiting for players...
-            </div>
-        </div>
 
-        <!-- Word Selection (only shown to current selector) -->
-        <div class="word-selection" id="wordSelection" style="display: none;">
-            <h3>👑 Choose a word for others to guess!</h3>
-            <input type="text" class="word-input" id="wordInput" placeholder="Enter your word..." maxlength="15">
-            <button class="word-submit" onclick="submitWord()">Submit Word</button>
-        </div>
-        
-        <div class="game-stats">
-            <div class="stat-card timer">
-                <div class="stat-label">Time</div>
-                <div class="stat-value" id="timer">60s</div>
-                <div class="timer-progress">
-                    <div class="timer-fill" id="timerFill"></div>
+            <!-- Main Game Area -->
+            <div class="main-panel">
+                <!-- Place Selection -->
+                <div id="place-selection-container" class="game-container" style="display: none;">
+                    <div class="selection-content"></div>
+                </div>
+                
+                <!-- Fact Selection -->
+                <div id="fact-selection-container" class="game-container" style="display: none;">
+                    <div class="selection-content"></div>
+                </div>
+                
+                <!-- Game Info/Playing Area -->
+                <div id="game-info-container" class="game-container" style="display: none;">
+                    <div class="game-content"></div>
+                </div>
+                
+                <!-- Waiting/Status Area -->
+                <div id="status-container" class="game-container" style="display: block;">
+                    <div class="status-content">
+                        <h2>🎮 Welcome to Riddly Geography!</h2>
+                        <p>Waiting for players to join...</p>
+                        <div class="loading-animation">⏳</div>
+                    </div>
                 </div>
             </div>
-            <div class="stat-card progress">
-                <div class="stat-label">Found</div>
-                <div class="stat-value" id="progress">0/5</div>
-            </div>
-        </div>
-        
-        <div class="word-section">
-            <div class="word-display" id="word">Waiting for word...</div>
-            <div class="word-hint" id="hint">Game will start soon!</div>
-        </div>
-        
-        <div class="players-section">
-            <h3>👥 Players</h3>
-            <div id="playersList"></div>
-        </div>
-        
-        <div class="chat-section">
-            <div class="chat-header">
-                💬 Chat
-            </div>
-            <div class="chat-messages" id="chat-messages"></div>
-            <div class="chat-input-container">
-                <input type="text" class="chat-input" id="chat-input" placeholder="Your guess...">
-                <button class="send-button" onclick="sendMessage()">Send</button>
+
+            <!-- Right Panel: Chat -->
+            <div class="right-panel">
+                <div class="panel-header">
+                    <h3>💬 Chat</h3>
+                </div>
+                <div id="chat-container"></div>
+                <div class="chat-input">
+                    <input type="text" id="message-input" placeholder="Type a message..." maxlength="100">
+                    <button id="send-message-btn">📤</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Game Over Screen -->
-    <div class="container game-over-screen" id="gameOverScreen">
-        <h1 class="game-over-title">🏁 Game Over!</h1>
-        
-        <div class="winner-section" id="winnerSection">
-            <div class="winner-crown">👑</div>
-            <div class="winner-name" id="winnerName">Champion Name</div>
-            <div class="winner-score" id="winnerScore">1000 Points</div>
-        </div>
-
-        <div class="game-stats-summary">
-            <h3 style="margin-bottom: 15px;">📊 Game Summary</h3>
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <div class="stat-number" id="totalRounds">5</div>
-                    <div class="stat-description">Rounds Played</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number" id="totalQuestions">25</div>
-                    <div class="stat-description">Total Questions</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number" id="totalPlayers">4</div>
-                    <div class="stat-description">Players</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="final-scores">
-            <h3 class="scores-title">🏆 Final Rankings</h3>
-            <div id="finalScoresList"></div>
-        </div>
-        
-        <div class="action-buttons">
-            <button class="play-again-btn" onclick="playAgain()">🎮 Play Again</button>
-            <button class="main-menu-btn" onclick="backToMenu()">🏠 Main Menu</button>
-        </div>
-    </div>
-    
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
