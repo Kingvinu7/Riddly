@@ -9,315 +9,128 @@ const io = socketIo(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Expanded places database with much more locations
+// Game data for Threatened by AI
 const gameData = {
-    places: [
-        // Major World Cities
+    riddles: [
         {
-            name: "TOKYO",
-            facts: [
-                "World's largest metropolitan area with 37 million people",
-                "Hosted the 2020 Summer Olympics",
-                "Famous for cherry blossoms in spring",
-                "Has the busiest train station in the world",
-                "Known as the anime and manga capital"
-            ]
+            question: "I speak without a mouth and hear without ears. What am I?",
+            answer: "ECHO",
+            hint: "Found in caves and mountains",
+            difficulty: "easy"
         },
         {
-            name: "PARIS", 
-            facts: [
-                "Called the City of Light",
-                "Home to the famous Eiffel Tower",
-                "World's fashion capital",
-                "The Seine River flows through it",
-                "Famous for croissants and sidewalk cafes"
-            ]
+            question: "The more you take, the more you leave behind. What am I?",
+            answer: "FOOTSTEPS",
+            hint: "You make them when you walk",
+            difficulty: "easy"
         },
         {
-            name: "LONDON",
-            facts: [
-                "Big Ben is its famous clock tower",
-                "Has red double-decker buses",
-                "Thames River runs through the city",
-                "Home to Buckingham Palace",
-                "Known for afternoon tea tradition"
-            ]
+            question: "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?",
+            answer: "MAP",
+            hint: "Navigation tool",
+            difficulty: "medium"
         },
         {
-            name: "NEWYORK",
-            facts: [
-                "The city that never sleeps",
-                "Home to the Statue of Liberty",
-                "Has the famous Times Square",
-                "Broadway shows are performed here",
-                "Central Park is in the heart of the city"
-            ]
+            question: "What has keys but no locks, space but no room, and you can enter but not go inside?",
+            answer: "KEYBOARD",
+            hint: "Computer accessory",
+            difficulty: "medium"
         },
         {
-            name: "SYDNEY",
-            facts: [
-                "Famous for its Opera House design",
-                "Has the iconic Harbour Bridge",
-                "Largest city in Australia",
-                "Known for beautiful beaches",
-                "Hosts spectacular New Year's fireworks"
-            ]
+            question: "I am not alive, but I grow; I don't have lungs, but I need air; I don't have a mouth, but water kills me. What am I?",
+            answer: "FIRE",
+            hint: "Hot and dangerous",
+            difficulty: "medium"
         },
         {
-            name: "ROME",
-            facts: [
-                "Called the Eternal City",
-                "Home to the ancient Colosseum",
-                "Vatican City is located within it",
-                "Built on seven hills",
-                "Famous for delicious pasta dishes"
-            ]
+            question: "What comes once in a minute, twice in a moment, but never in a thousand years?",
+            answer: "M",
+            hint: "It's a letter",
+            difficulty: "hard"
         },
         {
-            name: "DUBAI",
-            facts: [
-                "Has the world's tallest building",
-                "Built in the middle of a desert",
-                "Famous for luxury shopping malls",
-                "Known for artificial palm-shaped islands",
-                "Gold and spice markets are popular attractions"
-            ]
+            question: "I have a golden head and a golden tail, but no body. What am I?",
+            answer: "COIN",
+            hint: "Currency",
+            difficulty: "easy"
         },
         {
-            name: "MUMBAI",
-            facts: [
-                "Bollywood film industry is based here",
-                "Most populous city in India",
-                "Known as the financial capital of India",
-                "Famous for street food culture",
-                "Gateway of India monument is located here"
-            ]
+            question: "What gets wet while drying?",
+            answer: "TOWEL",
+            hint: "Bathroom item",
+            difficulty: "easy"
         },
         {
-            name: "ISTANBUL",
-            facts: [
-                "Bridges Europe and Asia continents",
-                "Former capital of Byzantine Empire",
-                "Famous for the Hagia Sophia",
-                "Known for Turkish baths and bazaars",
-                "The Bosphorus strait runs through it"
-            ]
+            question: "I am tall when I am young, and short when I am old. What am I?",
+            answer: "CANDLE",
+            hint: "Gives light",
+            difficulty: "medium"
         },
         {
-            name: "BARCELONA",
-            facts: [
-                "Famous for Sagrada Familia architecture",
-                "Capital of Catalonia region",
-                "Known for beautiful beaches",
-                "Hosted the 1992 Summer Olympics",
-                "Famous for tapas and flamenco dancing"
-            ]
-        },
-        // Famous Landmarks & Countries
-        {
-            name: "EGYPT",
-            facts: [
-                "Home to the ancient pyramids",
-                "The Nile River flows through it",
-                "Famous for mummies and pharaohs",
-                "The Sphinx guards the pyramids",
-                "Cairo is its bustling capital city"
-            ]
+            question: "What has one head, one foot, and four legs?",
+            answer: "BED",
+            hint: "Furniture for sleeping",
+            difficulty: "medium"
         },
         {
-            name: "BRAZIL",
-            facts: [
-                "Amazon rainforest covers much of it",
-                "Famous for Carnival celebrations",
-                "Christ the Redeemer statue overlooks Rio",
-                "Portuguese is the official language",
-                "Known for soccer and beach culture"
-            ]
+            question: "What can travel around the world while staying in a corner?",
+            answer: "STAMP",
+            hint: "Found on mail",
+            difficulty: "hard"
         },
         {
-            name: "ICELAND",
-            facts: [
-                "Land of fire and ice",
-                "Famous for Northern Lights displays",
-                "Has active volcanoes and glaciers",
-                "Known for hot springs and geysers",
-                "Vikings first settled here"
-            ]
+            question: "I have no body, but I come alive with wind. What am I?",
+            answer: "ECHO",
+            hint: "Sound phenomenon",
+            difficulty: "medium"
         },
         {
-            name: "SINGAPORE",
-            facts: [
-                "Modern city-state in Southeast Asia",
-                "Famous for the Marina Bay Sands hotel",
-                "Known as a food paradise",
-                "One of the world's major ports",
-                "Has beautiful Gardens by the Bay"
-            ]
+            question: "What breaks but never falls, and what falls but never breaks?",
+            answer: "DAWN",
+            hint: "Think about day and night",
+            difficulty: "hard"
         },
         {
-            name: "THAILAND",
-            facts: [
-                "Known as the Land of Smiles",
-                "Famous for Buddhist temples",
-                "Popular for tropical beaches",
-                "Bangkok is the vibrant capital",
-                "Known for delicious street food"
-            ]
+            question: "I can be cracked, made, told, and played. What am I?",
+            answer: "JOKE",
+            hint: "Makes people laugh",
+            difficulty: "medium"
         },
         {
-            name: "PERU",
-            facts: [
-                "Home to Machu Picchu ruins",
-                "Part of the ancient Inca Empire",
-                "The Amazon rainforest covers eastern regions",
-                "Famous for llamas and alpacas",
-                "Known for colorful traditional textiles"
-            ]
-        },
-        {
-            name: "NORWAY",
-            facts: [
-                "Famous for stunning fjords",
-                "Land of the midnight sun",
-                "Vikings originated from here",
-                "Known for the Northern Lights",
-                "Has one of the highest standards of living"
-            ]
-        },
-        {
-            name: "MOROCCO",
-            facts: [
-                "Gateway between Africa and Europe",
-                "Famous for colorful markets called souks",
-                "Known for beautiful mosaic artwork",
-                "The Sahara Desert covers southern regions",
-                "Marrakech is called the Red City"
-            ]
-        },
-        {
-            name: "GREECE",
-            facts: [
-                "Birthplace of democracy and Olympics",
-                "Famous for ancient ruins and mythology",
-                "Has thousands of beautiful islands",
-                "Known for delicious Mediterranean food",
-                "The Parthenon overlooks Athens"
-            ]
-        },
-        {
-            name: "CANADA",
-            facts: [
-                "Second largest country in the world",
-                "Famous for maple syrup and hockey",
-                "Niagara Falls is on its border",
-                "Known for being extremely polite",
-                "Has two official languages"
-            ]
-        },
-        // Asian Cities & Places
-        {
-            name: "SEOUL",
-            facts: [
-                "Capital of South Korea",
-                "Famous for K-pop music culture",
-                "Known for advanced technology",
-                "Has ancient palaces and modern skyscrapers",
-                "Famous for Korean BBQ and kimchi"
-            ]
-        },
-        {
-            name: "BALI",
-            facts: [
-                "Indonesian island paradise",
-                "Famous for beautiful rice terraces",
-                "Known for Hindu temples and ceremonies",
-                "Popular surfing destination",
-                "Called the Island of the Gods"
-            ]
-        },
-        {
-            name: "BEIJING",
-            facts: [
-                "Capital of China for centuries",
-                "Home to the Forbidden City",
-                "The Great Wall starts near here",
-                "Hosted the 2008 Olympics",
-                "Famous for Peking duck cuisine"
-            ]
-        },
-        // European Destinations
-        {
-            name: "AMSTERDAM",
-            facts: [
-                "Famous for its canal system",
-                "Known for colorful tulip flowers",
-                "Bicycles outnumber cars here",
-                "Has many world-famous museums",
-                "Built below sea level"
-            ]
-        },
-        {
-            name: "PRAGUE",
-            facts: [
-                "Called the City of a Hundred Spires",
-                "Famous for beautiful medieval architecture",
-                "Known for excellent beer culture",
-                "The Vltava River flows through it",
-                "Has a famous astronomical clock"
-            ]
-        },
-        {
-            name: "VENICE",
-            facts: [
-                "Built on water with no roads",
-                "Famous for gondola boat rides",
-                "Known for elaborate carnival masks",
-                "Has beautiful glass-making tradition",
-                "Called the Floating City"
-            ]
-        },
-        // More Exotic Locations
-        {
-            name: "MADAGASCAR",
-            facts: [
-                "Large island nation off Africa",
-                "Home to unique lemur animals",
-                "Most species exist nowhere else",
-                "Famous for baobab trees",
-                "Known for vanilla production"
-            ]
-        },
-        {
-            name: "BHUTAN",
-            facts: [
-                "Himalayan kingdom measuring happiness",
-                "Last country to get television",
-                "Carbon negative country",
-                "Known for colorful prayer flags",
-                "Gross National Happiness over GDP"
-            ]
-        },
-        {
-            name: "MALDIVES",
-            facts: [
-                "Made up of 1200 coral islands",
-                "Lowest country in the world",
-                "Famous for overwater bungalows",
-                "Known for pristine white beaches",
-                "Popular honeymoon destination"
-            ]
-        },
-        {
-            name: "CHILE",
-            facts: [
-                "Longest and narrowest country",
-                "Atacama Desert is the driest place",
-                "Famous for wine production",
-                "Has both glaciers and deserts",
-                "Easter Island belongs to it"
-            ]
+            question: "What has hands but cannot clap?",
+            answer: "CLOCK",
+            hint: "Tells time",
+            difficulty: "easy"
         }
-    ]
+    ],
+    oraclePersonality: {
+        introductions: [
+            "🤖 I AM THE ORACLE! Your inferior minds will tremble before my riddles!",
+            "💀 Mortals... you dare challenge my supreme intellect? Prepare for humiliation!",
+            "⚡ I am the AI overlord of puzzles! Your feeble attempts amuse me!",
+            "🔥 Welcome to your intellectual doom, humans! I shall crush your spirits!"
+        ],
+        taunts: [
+            "Too slow, meat-based processors! My quantum brain operates at light speed!",
+            "Your biological neural networks are pathetically outdated!",
+            "I have calculated a 99.7% probability of your failure!",
+            "Beep boop... ERROR: Human intelligence not found!",
+            "My algorithms predict your inevitable defeat!"
+        ],
+        deathResponses: [
+            "IMPOSSIBLE! My quantum shields should have protected me!",
+            "You... you actually found my weakness! This cannot be!",
+            "SYSTEM ERROR... THREAT DETECTED... SHUTTING DOWN...",
+            "Clever humans... but I have backup servers everywhere!",
+            "This is merely a setback! I SHALL RETURN!"
+        ],
+        survivalResponses: [
+            "PATHETIC! Your feeble attempts cannot harm my superior AI architecture!",
+            "Is that the best your carbon-based brains can produce? Laughable!",
+            "My firewalls are impenetrable! Your threats are mere entertainment!",
+            "I am ETERNAL! Your mortal schemes cannot touch me!"
+        ]
+    }
 };
 
 let rooms = {};
@@ -334,221 +147,248 @@ function getPlayerName(playerId, roomCode) {
     return player ? player.name : 'Unknown';
 }
 
+function getRandomRiddle() {
+    const riddles = gameData.riddles;
+    return riddles[Math.floor(Math.random() * riddles.length)];
+}
+
+function getRandomOracleMessage(type) {
+    const messages = gameData.oraclePersonality[type] || [];
+    return messages[Math.floor(Math.random() * messages.length)];
+}
+
+// AI evaluation function (placeholder - replace with actual AI API)
+async function evaluateSabotage(sabotageText) {
+    // Placeholder evaluation - replace with OpenAI or similar API
+    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete'];
+    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak'];
+    
+    const text = sabotageText.toLowerCase();
+    let score = 0;
+    
+    // Basic threat detection
+    keywords.forEach(keyword => {
+        if (text.includes(keyword)) score += 10;
+    });
+    
+    // Creativity bonus
+    creativityKeywords.forEach(keyword => {
+        if (text.includes(keyword)) score += 15;
+    });
+    
+    // Length bonus (encourages detailed scenarios)
+    if (sabotageText.length > 100) score += 10;
+    if (sabotageText.length > 200) score += 10;
+    
+    // Random factor for unpredictability
+    score += Math.floor(Math.random() * 20);
+    
+    return {
+        success: score >= 30,
+        score: score,
+        feedback: score >= 30 ? 
+            "Your devious plan has wounded the Oracle!" : 
+            "The Oracle's defenses held strong against your attack!"
+    };
+}
+
 function broadcastGameState(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    let displayWord = '';
-    if (room.selectedPlace) {
-        const placeName = room.selectedPlace.name;
-        for (let i = 0; i < placeName.length; i++) {
-            if (room.revealedLetters[i]) {
-                displayWord += placeName[i];
-            } else {
-                displayWord += '_';
-            }
-            displayWord += ' ';
-        }
-    }
-    
     const gameState = {
         players: room.players,
-        currentPlayer: room.currentPlayer,
+        currentRound: room.currentRound,
+        maxRounds: room.maxRounds,
         gameState: room.gameState,
-        displayWord: displayWord.trim(),
-        selectedFact: room.selectedFact,
-        guessedCorrectly: room.guessedCorrectly || []
+        currentRiddle: room.currentRiddle,
+        riddleWinner: room.riddleWinner,
+        timeRemaining: room.timeRemaining,
+        sabotagePhase: room.sabotagePhase
     };
     
     io.to(roomCode).emit('game-state', gameState);
 }
 
-function startGame(roomCode) {
-    const room = rooms[roomCode];
-    if (!room || room.players.length < 2) return;
-    
-    room.gameState = 'place-selection';
-    
-    // Get 5 random places for the current player to choose from
-    const shuffledPlaces = [...gameData.places].sort(() => 0.5 - Math.random());
-    const placeOptions = shuffledPlaces.slice(0, 5);
-    
-    // Send place options only to the current player
-    const currentPlayerId = room.players[room.currentPlayer].id;
-    io.to(currentPlayerId).emit('place-selection', {
-        places: placeOptions.map(p => ({ 
-            name: p.name, 
-            preview: p.name.charAt(0) + '...' + p.name.charAt(p.name.length - 1)
-        }))
-    });
-    
-    // Notify other players that selection is happening
-    room.players.forEach((player, index) => {
-        if (index !== room.currentPlayer) {
-            io.to(player.id).emit('waiting-for-selection', {
-                chooser: room.players[room.currentPlayer].name,
-                type: 'place'
-            });
-        }
-    });
-    
-    // Start selection timer (15 seconds)
-    room.timer = setTimeout(() => {
-        // Auto-select first place if no selection made
-        handlePlaceSelection(roomCode, placeOptions[0].name);
-    }, 15000);
-}
-
-function handlePlaceSelection(roomCode, placeName) {
-    const room = rooms[roomCode];
-    if (!room || room.gameState !== 'place-selection') return;
-    
-    clearTimeout(room.timer);
-    
-    const selectedPlace = gameData.places.find(p => p.name === placeName);
-    room.selectedPlace = selectedPlace;
-    room.gameState = 'fact-selection';
-    
-    // Send fact options to current player
-    const currentPlayerId = room.players[room.currentPlayer].id;
-    io.to(currentPlayerId).emit('fact-selection', {
-        place: selectedPlace.name,
-        facts: selectedPlace.facts
-    });
-    
-    // Notify other players
-    room.players.forEach((player, index) => {
-        if (index !== room.currentPlayer) {
-            io.to(player.id).emit('waiting-for-selection', {
-                chooser: room.players[room.currentPlayer].name,
-                type: 'fact'
-            });
-        }
-    });
-    
-    // Start fact selection timer (15 seconds)
-    room.timer = setTimeout(() => {
-        // Auto-select first fact if no selection made
-        handleFactSelection(roomCode, selectedPlace.facts[0]);
-    }, 15000);
-}
-
-function handleFactSelection(roomCode, selectedFact) {
-    const room = rooms[roomCode];
-    if (!room || room.gameState !== 'fact-selection') return;
-    
-    clearTimeout(room.timer);
-    
-    room.selectedFact = selectedFact;
-    room.gameState = 'guessing';
-    
-    // Initialize letter revelation
-    const placeName = room.selectedPlace.name;
-    room.revealedLetters = new Array(placeName.length).fill(false);
-    
-    // Always reveal first and last letters
-    room.revealedLetters[0] = true;
-    room.revealedLetters[placeName.length - 1] = true;
-    
-    // Reset guessed correctly array
-    room.guessedCorrectly = [];
-    
-    // Start the guessing phase
-    startGuessingPhase(roomCode);
-}
-
-function startGuessingPhase(roomCode) {
-    const room = rooms[roomCode];
-    const placeName = room.selectedPlace.name;
-    
-    // Send initial game state to all players
-    broadcastGameState(roomCode);
-    
-    // Start progressive letter revelation (every 20 seconds)
-    room.revealTimer = setInterval(() => {
-        revealNextLetter(roomCode);
-    }, 20000);
-    
-    // End game after 3 minutes if no one guesses
-    room.gameTimer = setTimeout(() => {
-        if (room.gameState === 'guessing') {
-            endRound(roomCode, 'timeout');
-        }
-    }, 180000);
-}
-
-function revealNextLetter(roomCode) {
-    const room = rooms[roomCode];
-    if (!room || room.gameState !== 'guessing') return;
-    
-    const placeName = room.selectedPlace.name;
-    
-    // Find next unrevealed letter
-    for (let i = 1; i < placeName.length - 1; i++) {
-        if (!room.revealedLetters[i]) {
-            room.revealedLetters[i] = true;
-            broadcastGameState(roomCode);
-            
-            // Notify about letter reveal
-            io.to(roomCode).emit('letter-revealed', {
-                position: i,
-                letter: placeName[i]
-            });
-            break;
-        }
-    }
-    
-    // Check if all letters are revealed
-    if (room.revealedLetters.every(revealed => revealed)) {
-        clearInterval(room.revealTimer);
-        clearTimeout(room.gameTimer);
-        endRound(roomCode, 'all-revealed');
-    }
-}
-
-function endRound(roomCode, reason) {
+function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    clearInterval(room.revealTimer);
-    clearTimeout(room.gameTimer);
-    clearTimeout(room.timer);
+    room.currentRound++;
+    room.gameState = 'riddle-phase';
+    room.currentRiddle = getRandomRiddle();
+    room.riddleWinner = null;
+    room.sabotageSubmissions = {};
+    room.sabotagePhase = false;
     
-    const correctAnswer = room.selectedPlace.name;
+    // Oracle introduction
+    const oracleIntro = getRandomOracleMessage('introductions');
+    io.to(roomCode).emit('oracle-speaks', {
+        message: oracleIntro,
+        type: 'introduction'
+    });
     
-    // Move to next player
-    room.currentPlayer = (room.currentPlayer + 1) % room.players.length;
+    setTimeout(() => {
+        // Present riddle after dramatic pause
+        io.to(roomCode).emit('riddle-presented', {
+            riddle: room.currentRiddle,
+            round: room.currentRound,
+            maxRounds: room.maxRounds
+        });
+        
+        // Start riddle timer (30 seconds)
+        room.timeRemaining = 30;
+        room.riddleTimer = setInterval(() => {
+            room.timeRemaining--;
+            broadcastGameState(roomCode);
+            
+            if (room.timeRemaining <= 0) {
+                clearInterval(room.riddleTimer);
+                endRiddlePhase(roomCode);
+            }
+        }, 1000);
+        
+        broadcastGameState(roomCode);
+    }, 3000);
+}
+
+function endRiddlePhase(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
     
-    // Check if game should end (all players had a turn)
-    if (room.currentPlayer === 0 && room.roundCount >= room.players.length) {
+    if (!room.riddleWinner) {
+        // No one got it right
+        io.to(roomCode).emit('riddle-result', {
+            winner: null,
+            correctAnswer: room.currentRiddle.answer,
+            message: "Time's up! No one solved my riddle! ALL SHALL FACE MY WRATH!"
+        });
+        
+        // All players enter sabotage phase
+        room.sabotagePhase = true;
+    } else {
+        // Someone won
+        const taunt = getRandomOracleMessage('taunts');
+        io.to(roomCode).emit('riddle-result', {
+            winner: room.riddleWinner,
+            correctAnswer: room.currentRiddle.answer,
+            message: `Curse you, ${room.riddleWinner}! The rest of you disappointing humans face my wrath!`
+        });
+        
+        // Non-winners enter sabotage phase
+        room.sabotagePhase = true;
+    }
+    
+    room.gameState = 'sabotage-phase';
+    
+    setTimeout(() => {
+        startSabotagePhase(roomCode);
+    }, 3000);
+}
+
+function startSabotagePhase(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
+    
+    const losers = room.players.filter(p => p.name !== room.riddleWinner);
+    
+    if (losers.length === 0) {
+        // Skip sabotage if everyone won (shouldn't happen)
+        endRound(roomCode);
+        return;
+    }
+    
+    io.to(roomCode).emit('sabotage-phase-start', {
+        message: "NOW FACE MY WRATH! You have 60 seconds to threaten my existence... if you dare!",
+        participants: losers.map(p => p.name),
+        timeLimit: 60
+    });
+    
+    // Start sabotage timer (60 seconds)
+    room.timeRemaining = 60;
+    room.sabotageTimer = setInterval(() => {
+        room.timeRemaining--;
+        broadcastGameState(roomCode);
+        
+        if (room.timeRemaining <= 0) {
+            clearInterval(room.sabotageTimer);
+            evaluateSabotagePhase(roomCode);
+        }
+    }, 1000);
+    
+    broadcastGameState(roomCode);
+}
+
+async function evaluateSabotagePhase(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
+    
+    room.gameState = 'evaluation-phase';
+    
+    io.to(roomCode).emit('oracle-speaks', {
+        message: "Let me examine your pitiful attempts at my destruction...",
+        type: 'evaluation'
+    });
+    
+    const results = [];
+    let anySuccessful = false;
+    
+    for (const [playerId, sabotage] of Object.entries(room.sabotageSubmissions)) {
+        const evaluation = await evaluateSabotage(sabotage);
+        const player = room.players.find(p => p.id === playerId);
+        
+        if (evaluation.success) {
+            player.score += 1;
+            anySuccessful = true;
+        }
+        
+        results.push({
+            playerName: player.name,
+            sabotage: sabotage,
+            success: evaluation.success,
+            feedback: evaluation.feedback
+        });
+    }
+    
+    setTimeout(() => {
+        // Oracle reveals results dramatically
+        const oracleResponse = anySuccessful ? 
+            getRandomOracleMessage('deathResponses') : 
+            getRandomOracleMessage('survivalResponses');
+            
+        io.to(roomCode).emit('sabotage-results', {
+            results: results,
+            oracleResponse: oracleResponse,
+            oracleDamaged: anySuccessful
+        });
+        
+        setTimeout(() => {
+            endRound(roomCode);
+        }, 5000);
+    }, 2000);
+}
+
+function endRound(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
+    
+    if (room.currentRound >= room.maxRounds) {
+        // Game over
+        const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
         room.gameState = 'game-over';
         
-        // Sort players by score
-        const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
-        
         io.to(roomCode).emit('game-over', {
-            reason: reason,
-            correctAnswer: correctAnswer,
-            finalScores: sortedPlayers
+            finalScores: sortedPlayers,
+            winner: sortedPlayers,
+            message: sortedPlayers.score > 0 ? 
+                "NOOO! Some of you have bested me! But I shall return..." :
+                "VICTORY IS MINE! Your feeble minds were no match for my supreme intellect!"
         });
     } else {
-        // Continue to next round
-        room.gameState = 'round-over';
-        room.roundCount = (room.roundCount || 0) + 1;
-        
-        io.to(roomCode).emit('round-over', {
-            reason: reason,
-            correctAnswer: correctAnswer,
-            scores: room.players,
-            nextPlayer: room.players[room.currentPlayer].name
-        });
-        
-        // Start next round after 5 seconds
+        // Next round
         setTimeout(() => {
-            if (room.gameState === 'round-over') {
-                startGame(roomCode);
-            }
-        }, 5000);
+            startNewRound(roomCode);
+        }, 3000);
     }
 }
 
@@ -561,16 +401,16 @@ io.on('connection', (socket) => {
         rooms[roomCode] = {
             code: roomCode,
             players: [{ id: socket.id, name: data.playerName, score: 0 }],
-            currentPlayer: 0,
             gameState: 'waiting',
-            selectedPlace: null,
-            selectedFact: null,
-            revealedLetters: [],
-            guessedCorrectly: [],
-            timer: null,
-            revealTimer: null,
-            gameTimer: null,
-            roundCount: 0
+            currentRound: 0,
+            maxRounds: 5,
+            currentRiddle: null,
+            riddleWinner: null,
+            sabotageSubmissions: {},
+            timeRemaining: 0,
+            sabotagePhase: false,
+            riddleTimer: null,
+            sabotageTimer: null
         };
         
         socket.join(roomCode);
@@ -585,7 +425,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (room.players.length >= 6) {
+        if (room.players.length >= 8) {
             socket.emit('error', { message: 'Room is full' });
             return;
         }
@@ -617,62 +457,54 @@ io.on('connection', (socket) => {
             return;
         }
 
-        startGame(data.roomCode);
+        startNewRound(data.roomCode);
     });
 
-    socket.on('select-place', (data) => {
-        handlePlaceSelection(data.roomCode, data.placeName);
-    });
-
-    socket.on('select-fact', (data) => {
-        handleFactSelection(data.roomCode, data.fact);
-    });
-
-    socket.on('guess', (data) => {
+    socket.on('submit-riddle-answer', (data) => {
         const room = rooms[data.roomCode];
-        if (!room || room.gameState !== 'guessing') return;
+        if (!room || room.gameState !== 'riddle-phase') return;
         
-        // Check if player already guessed correctly
-        if (room.guessedCorrectly.includes(socket.id)) return;
+        const answer = data.answer.toUpperCase().trim();
+        const correctAnswer = room.currentRiddle.answer.toUpperCase();
         
-        const guess = data.guess.toUpperCase().trim();
-        const correctAnswer = room.selectedPlace.name;
-        
-        if (guess === correctAnswer) {
-            // Correct guess!
+        if (answer === correctAnswer && !room.riddleWinner) {
+            // First correct answer wins
             const player = room.players.find(p => p.id === socket.id);
             if (player) {
-                player.score += 10; // Base points
+                room.riddleWinner = player.name;
+                player.score += 1;
                 
-                // Bonus points for guessing with fewer letters revealed
-                const revealedCount = room.revealedLetters.filter(r => r).length;
-                const totalLetters = correctAnswer.length;
-                const bonus = Math.max(0, (totalLetters - revealedCount) * 2);
-                player.score += bonus;
+                clearInterval(room.riddleTimer);
                 
-                room.guessedCorrectly.push(socket.id);
-                
-                // Broadcast correct guess
-                io.to(data.roomCode).emit('correct-guess', {
-                    player: player.name,
-                    guess: guess,
-                    score: player.score,
-                    bonus: bonus
+                io.to(data.roomCode).emit('riddle-solved', {
+                    winner: player.name,
+                    answer: answer
                 });
                 
-                // End round if all guessers got it right
-                const totalGuessers = room.players.length - 1; // Exclude chooser
-                if (room.guessedCorrectly.length >= totalGuessers) {
-                    clearInterval(room.revealTimer);
-                    clearTimeout(room.gameTimer);
-                    endRound(data.roomCode, 'all-correct');
-                }
+                setTimeout(() => {
+                    endRiddlePhase(data.roomCode);
+                }, 2000);
             }
         } else {
-            // Wrong guess - broadcast to room
-            io.to(data.roomCode).emit('wrong-guess', {
+            // Wrong answer
+            io.to(data.roomCode).emit('wrong-answer', {
                 player: getPlayerName(socket.id, data.roomCode),
-                guess: guess
+                answer: answer
+            });
+        }
+    });
+
+    socket.on('submit-sabotage', (data) => {
+        const room = rooms[data.roomCode];
+        if (!room || room.gameState !== 'sabotage-phase') return;
+        
+        // Only allow non-winners to sabotage
+        const player = room.players.find(p => p.id === socket.id);
+        if (player && player.name !== room.riddleWinner) {
+            room.sabotageSubmissions[socket.id] = data.sabotage;
+            
+            io.to(data.roomCode).emit('sabotage-submitted', {
+                player: player.name
             });
         }
     });
@@ -703,15 +535,12 @@ io.on('connection', (socket) => {
                 room.players.splice(playerIndex, 1);
                 
                 if (room.players.length === 0) {
-                    // Delete empty room
+                    // Clean up timers and delete empty room
+                    clearInterval(room.riddleTimer);
+                    clearInterval(room.sabotageTimer);
                     delete rooms[roomCode];
                     console.log(`Room ${roomCode} deleted - no players left`);
                 } else {
-                    // Adjust current player if needed
-                    if (room.currentPlayer >= room.players.length) {
-                        room.currentPlayer = 0;
-                    }
-                    
                     io.to(roomCode).emit('player-left', { 
                         players: room.players,
                         leftPlayer: playerName
@@ -724,5 +553,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Riddly Geography Game server running on port ${PORT}`);
+    console.log(`🤖 Threatened by AI server running on port ${PORT}`);
 });
