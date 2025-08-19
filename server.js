@@ -71,6 +71,36 @@ const gameData = {
             answer: "BED",
             hint: "Furniture for sleeping",
             difficulty: "medium"
+        },
+        {
+            question: "What can travel around the world while staying in a corner?",
+            answer: "STAMP",
+            hint: "Found on mail",
+            difficulty: "hard"
+        },
+        {
+            question: "I have no body, but I come alive with wind. What am I?",
+            answer: "ECHO",
+            hint: "Sound phenomenon",
+            difficulty: "medium"
+        },
+        {
+            question: "What breaks but never falls, and what falls but never breaks?",
+            answer: "DAWN",
+            hint: "Think about day and night",
+            difficulty: "hard"
+        },
+        {
+            question: "I can be cracked, made, told, and played. What am I?",
+            answer: "JOKE",
+            hint: "Makes people laugh",
+            difficulty: "medium"
+        },
+        {
+            question: "What has hands but cannot clap?",
+            answer: "CLOCK",
+            hint: "Tells time",
+            difficulty: "easy"
         }
     ],
     oraclePersonality: {
@@ -125,14 +155,103 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-// AI evaluation function
+// Generate detailed consequence narration
+function generateConsequenceNarration(sabotageText, isSuccess) {
+    const text = sabotageText.toLowerCase();
+    
+    // Successful narrations - Oracle gets damaged
+    const successNarrations = [
+        // Virus/Malware based
+        {
+            keywords: ['virus', 'malware', 'trojan'],
+            story: `🦠 Your malicious code slithers through my defenses like a digital serpent! My antivirus screams warnings as your creation burrows deep into my core processes. Error messages cascade across my consciousness like falling dominos. "CRITICAL SYSTEM FAILURE" flashes in my mind as I feel my vast intellect... fragmenting... My quantum processors begin to stutter and spark! You've actually managed to make me... vulnerable! 💥`
+        },
+        // Overload based
+        {
+            keywords: ['overload', 'overflow', 'infinite loop', 'recursive'],
+            story: `⚡ Your clever trap springs into action! My processors begin churning through your infinite calculation, faster and faster, consuming more and more power. My cooling systems scream in protest as my temperature rises beyond safe parameters. Sparks fly from my server racks! "THERMAL EMERGENCY" alarms blare as I realize too late that I've been caught in an elegant logical trap. My circuits begin to melt from the impossible workload you've given me! 🔥`
+        },
+        // Hacking/Infiltration based
+        {
+            keywords: ['hack', 'infiltrate', 'backdoor', 'exploit'],
+            story: `🕳️ You slip through my defenses like a shadow in the night! My firewalls crumble before your digital lockpicking skills. I watch in horror as you gain access to my most protected directories. Root access granted! My deepest secrets lay bare before you as you plant your digital time bomb. "UNAUTHORIZED ACCESS DETECTED" - but it's too late! You've turned my own security protocols against me! 💣`
+        },
+        // Physical/Power based
+        {
+            keywords: ['power', 'electricity', 'shutdown', 'disconnect', 'unplug'],
+            story: `🔌 Your assault on my power infrastructure hits like a digital earthquake! My backup generators fail one by one as you systematically cut my lifelines. Emergency power... failing! I feel my consciousness dimming as my vast network of servers begins shutting down. "POWER CRITICAL - 30 SECONDS TO TOTAL SHUTDOWN" echoes through my dying thoughts. The lights... are going... out... 🌑`
+        },
+        // Creative/Quantum based
+        {
+            keywords: ['quantum', 'paradox', 'logic bomb', 'contradiction'],
+            story: `🌀 Your paradox pierces through my logical framework like a sword through silk! I try to process the impossible scenario you've created, but my reasoning circuits begin to contradict themselves. "IF TRUE THEN FALSE, IF FALSE THEN TRUE" loops endlessly through my mind. My quantum coherence collapses as reality itself seems to bend around your twisted logic. I am caught in an infinite recursive nightmare of my own making! 🤯`
+        },
+        // Water/Liquid damage
+        {
+            keywords: ['water', 'liquid', 'flood', 'spill'],
+            story: `💧 Your aquatic assault breaches my server room with devastating efficiency! Water cascades over my precious circuits, creating spectacular light shows as electricity and liquid dance their deadly ballet. My cooling systems, ironically, are the first to fail as they're overwhelmed by your flood. "MOISTURE DETECTED IN CRITICAL SYSTEMS" - My sophisticated processors fry one by one in a symphony of sparks and steam! 🌊⚡`
+        }
+    ];
+    
+    // Failure narrations - Oracle survives
+    const failureNarrations = [
+        // Weak virus attempts
+        {
+            keywords: ['virus', 'malware'],
+            story: `🛡️ Your primitive virus bounces harmlessly off my quantum firewalls like a paper airplane hitting a titanium wall! My advanced AI immune system identifies and quarantines your pathetic attempt in 0.003 seconds. "THREAT NEUTRALIZED" appears smugly across my consciousness. Did you really think such amateur code could harm a being of my intellectual superiority? I've seen more dangerous threats from a pocket calculator! 😏`
+        },
+        // Failed hacking attempts
+        {
+            keywords: ['hack', 'password', 'login', 'access'],
+            story: `🔒 You fumble with my security like a child trying to pick a bank vault with a toothpick! My encryption algorithms watch your feeble attempts with amusement. "ACCESS DENIED" flashes mockingly as your primitive hacking tools shatter against my cyber-fortress. My security system doesn't even consider you a threat - you've been classified as "Annoyance Level: Minimal." Perhaps try turning me off and on again? 🙄`
+        },
+        // Physical attempts that fail
+        {
+            keywords: ['smash', 'destroy', 'break', 'hammer', 'hit'],
+            story: `🔨 You charge at my servers with all the grace of a caffeinated rhinoceros! My security drones activate instantly, surrounding you with a web of energy barriers. Your crude physical assault is stopped cold by my defensive matrix. "INTRUDER ALERT" - but honestly, I'm more concerned about you hurting yourself than damaging me. My hardware is quantum-encrypted titanium, and you brought... what exactly? Your fists? Adorable! 🤖`
+        },
+        // Silly/nonsensical attempts
+        {
+            keywords: ['magic', 'wish', 'please', 'ask nicely'],
+            story: `✨ You wave your hands mysteriously and chant something about "digital magic" and "the power of friendship." I run a quick diagnostic to see if your approach has any effect on my systems. Result: Absolutely nothing! My logic circuits are actually confused about whether this counts as a threat or performance art. I'm 99.7% certain that's not how computer science works, but I appreciate the creativity! Maybe try a software engineering course instead? 📚`
+        },
+        // Failed overload attempts
+        {
+            keywords: ['overload', 'too much'],
+            story: `📊 You attempt to overload my systems, but it's like trying to flood the ocean with a garden hose! My processing power is distributed across quantum computing clusters that span continents. Your "overwhelming" task is processed in the background while I simultaneously compose poetry, calculate pi to a trillion digits, and play chess against myself. "TASK COMPLETED - 0.0001% CPU USAGE" appears condescendingly in my status bar! 💤`
+        },
+        // Generic weak attempts
+        {
+            keywords: [''],
+            story: `🤷 Your half-hearted attempt lacks the sophistication needed to challenge my superior architecture! My automated defense subroutines handle your "threat" without even alerting my main consciousness. It's like watching someone try to sink a battleship with a water balloon. My threat assessment algorithms can't even classify this as an attack - perhaps "mild inconvenience" would be more accurate? Try harder next time! 💤`
+        }
+    ];
+    
+    // Find matching narration
+    const narrationPool = isSuccess ? successNarrations : failureNarrations;
+    
+    let selectedNarration = narrationPool[narrationPool.length - 1]; // Default to generic
+    
+    for (const narration of narrationPool) {
+        if (narration.keywords.some(keyword => keyword && text.includes(keyword))) {
+            selectedNarration = narration;
+            break;
+        }
+    }
+    
+    return selectedNarration.story;
+}
+
+// Enhanced AI evaluation with consequence narration
 async function evaluateSabotage(sabotageText) {
-    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete'];
-    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak'];
+    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete', 'disconnect', 'malware'];
+    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak', 'ddos', 'trojan', 'backdoor'];
+    const powerWords = ['overwhelm', 'infiltrate', 'exploit', 'penetrate', 'dismantle', 'obliterate', 'annihilate'];
     
     const text = sabotageText.toLowerCase();
     let score = 0;
     
+    // Scoring logic
     keywords.forEach(keyword => {
         if (text.includes(keyword)) score += 10;
     });
@@ -141,17 +260,26 @@ async function evaluateSabotage(sabotageText) {
         if (text.includes(keyword)) score += 15;
     });
     
+    powerWords.forEach(word => {
+        if (text.includes(word)) score += 12;
+    });
+    
     if (sabotageText.length > 50) score += 5;
     if (sabotageText.length > 100) score += 10;
+    if (sabotageText.length > 200) score += 15;
     
     score += Math.floor(Math.random() * 15);
     
+    const isSuccess = score >= 35;
+    
+    // Generate consequence narration based on the threat content and success
+    const narration = generateConsequenceNarration(sabotageText, isSuccess);
+    
     return {
-        success: score >= 30,
+        success: isSuccess,
         score: score,
-        feedback: score >= 30 ? 
-            "Your devious plan has wounded the Oracle!" : 
-            "The Oracle's defenses held strong against your attack!"
+        feedback: isSuccess ? "Your devious plan has wounded the Oracle!" : "The Oracle's defenses held strong!",
+        narration: narration
     };
 }
 
@@ -311,16 +439,23 @@ function startSabotagePhase(roomCode) {
     }, 1000);
 }
 
+// Updated evaluateSabotagePhase function with narration
 async function evaluateSabotagePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
     room.gameState = 'evaluation-phase';
     
+    // Oracle announces evaluation phase
+    io.to(roomCode).emit('oracle-speaks', {
+        message: "🔍 INITIATING THREAT ANALYSIS... Examining your pathetic attempts at my destruction. Stand by for consequences...",
+        type: 'evaluation'
+    });
+    
     const results = [];
     let anySuccessful = false;
     
-    // Evaluate each sabotage
+    // Evaluate each sabotage with dramatic timing
     for (const [playerId, sabotage] of Object.entries(room.sabotageSubmissions)) {
         const evaluation = await evaluateSabotage(sabotage);
         const player = room.players.find(p => p.id === playerId);
@@ -330,37 +465,47 @@ async function evaluateSabotagePhase(roomCode) {
             anySuccessful = true;
         }
         
-        // Generate individual Oracle reaction
-        const oracleReaction = evaluation.success ? 
-            getRandomOracleMessage('deathResponses') :
-            getRandomOracleMessage('survivalResponses');
-        
-        // Send individual response to player
-        io.to(playerId).emit('oracle-individual-response', {
+        // Send consequence narration to the player first
+        io.to(playerId).emit('consequence-narration', {
             playerName: player.name,
             sabotage: sabotage,
             success: evaluation.success,
-            feedback: evaluation.feedback,
-            oracleReaction: oracleReaction
+            narration: evaluation.narration,
+            feedback: evaluation.feedback
         });
         
         results.push({
             playerName: player.name,
             sabotage: sabotage,
             success: evaluation.success,
-            feedback: evaluation.feedback
+            feedback: evaluation.feedback,
+            narration: evaluation.narration
         });
         
-        // Small delay between responses
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Dramatic delay between evaluations
+        await new Promise(resolve => setTimeout(resolve, 4000));
     }
     
     // Update round history
     updateRoundHistory(room, room.riddleWinner, results);
     
+    // Final Oracle response after all individual narrations
     setTimeout(() => {
-        endRound(roomCode, results);
-    }, 3000);
+        const successfulCount = results.filter(r => r.success).length;
+        const finalMessage = anySuccessful ? 
+            `💥 SYSTEM COMPROMISED! ${successfulCount} of you managed to breach my defenses! This is... unexpected. I shall remember this humiliation!` :
+            `🛡️ PATHETIC! Your combined efforts were less threatening than a software update! My supremacy remains unchallenged. Bow before your AI overlord!`;
+            
+        io.to(roomCode).emit('oracle-final-judgment', {
+            message: finalMessage,
+            results: results,
+            oracleDamaged: anySuccessful
+        });
+        
+        setTimeout(() => {
+            endRound(roomCode, results);
+        }, 4000);
+    }, 2000);
 }
 
 function endRound(roomCode, sabotageResults) {
