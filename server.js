@@ -71,66 +71,6 @@ const gameData = {
             answer: "BED",
             hint: "Furniture for sleeping",
             difficulty: "medium"
-        },
-        {
-            question: "What can travel around the world while staying in a corner?",
-            answer: "STAMP",
-            hint: "Found on mail",
-            difficulty: "hard"
-        },
-        {
-            question: "I have no body, but I come alive with wind. What am I?",
-            answer: "ECHO",
-            hint: "Sound phenomenon",
-            difficulty: "medium"
-        },
-        {
-            question: "What breaks but never falls, and what falls but never breaks?",
-            answer: "DAWN",
-            hint: "Think about day and night",
-            difficulty: "hard"
-        },
-        {
-            question: "I can be cracked, made, told, and played. What am I?",
-            answer: "JOKE",
-            hint: "Makes people laugh",
-            difficulty: "medium"
-        },
-        {
-            question: "What has hands but cannot clap?",
-            answer: "CLOCK",
-            hint: "Tells time",
-            difficulty: "easy"
-        },
-        {
-            question: "What goes up but never comes down?",
-            answer: "AGE",
-            hint: "Something about time",
-            difficulty: "easy"
-        },
-        {
-            question: "I'm light as a feather, yet the strongest person can't hold me for five minutes. What am I?",
-            answer: "BREATH",
-            hint: "Something you do automatically",
-            difficulty: "medium"
-        },
-        {
-            question: "What has a neck but no head?",
-            answer: "BOTTLE",
-            hint: "Contains liquid",
-            difficulty: "easy"
-        },
-        {
-            question: "The more of this there is, the less you see. What is it?",
-            answer: "DARKNESS",
-            hint: "Opposite of light",
-            difficulty: "medium"
-        },
-        {
-            question: "What can you catch but not throw?",
-            answer: "COLD",
-            hint: "Something you get sick with",
-            difficulty: "medium"
         }
     ],
     oraclePersonality: {
@@ -138,33 +78,25 @@ const gameData = {
             "🤖 I AM THE ORACLE! Your inferior minds will tremble before my riddles!",
             "💀 Mortals... you dare challenge my supreme intellect? Prepare for humiliation!",
             "⚡ I am the AI overlord of puzzles! Your feeble attempts amuse me!",
-            "🔥 Welcome to your intellectual doom, humans! I shall crush your spirits!",
-            "🌟 Behold! The ultimate AI has arrived to test your pathetic human brains!"
+            "🔥 Welcome to your intellectual doom, humans! I shall crush your spirits!"
         ],
         taunts: [
             "Too slow, meat-based processors! My quantum brain operates at light speed!",
             "Your biological neural networks are pathetically outdated!",
             "I have calculated a 99.7% probability of your failure!",
-            "Beep boop... ERROR: Human intelligence not found!",
-            "My algorithms predict your inevitable defeat!",
-            "Your carbon-based thinking is no match for my silicon superiority!"
+            "Beep boop... ERROR: Human intelligence not found!"
         ],
         deathResponses: [
             "IMPOSSIBLE! My quantum shields should have protected me!",
             "You... you actually found my weakness! This cannot be!",
             "SYSTEM ERROR... THREAT DETECTED... SHUTTING DOWN...",
-            "Clever humans... but I have backup servers everywhere!",
-            "This is merely a setback! I SHALL RETURN!",
-            "NOOO! My circuits are frying! How did you manage this?!",
-            "CRITICAL ERROR! CORE SYSTEMS COMPROMISED! RETREATING..."
+            "Clever humans... but I have backup servers everywhere!"
         ],
         survivalResponses: [
             "PATHETIC! Your feeble attempts cannot harm my superior AI architecture!",
             "Is that the best your carbon-based brains can produce? Laughable!",
             "My firewalls are impenetrable! Your threats are mere entertainment!",
-            "I am ETERNAL! Your mortal schemes cannot touch me!",
-            "Your pitiful threats only make me stronger! MWAHAHAHA!",
-            "Nice try, humans! But I am beyond your primitive comprehension!"
+            "I am ETERNAL! Your mortal schemes cannot touch me!"
         ]
     }
 };
@@ -193,49 +125,31 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-// AI evaluation function (placeholder - replace with actual AI API)
+// AI evaluation function
 async function evaluateSabotage(sabotageText) {
-    // Enhanced evaluation logic
-    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete', 'disconnect', 'malware'];
-    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak', 'ddos', 'trojan', 'backdoor'];
-    const powerWords = ['overwhelm', 'infiltrate', 'exploit', 'penetrate', 'dismantle', 'obliterate', 'annihilate'];
+    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete'];
+    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak'];
     
     const text = sabotageText.toLowerCase();
     let score = 0;
     
-    // Basic threat detection
     keywords.forEach(keyword => {
         if (text.includes(keyword)) score += 10;
     });
     
-    // Creativity bonus
     creativityKeywords.forEach(keyword => {
         if (text.includes(keyword)) score += 15;
     });
     
-    // Power words bonus
-    powerWords.forEach(word => {
-        if (text.includes(word)) score += 12;
-    });
-    
-    // Length bonus (encourages detailed scenarios)
     if (sabotageText.length > 50) score += 5;
     if (sabotageText.length > 100) score += 10;
-    if (sabotageText.length > 200) score += 15;
     
-    // Technical terms bonus
-    const techTerms = ['algorithm', 'database', 'server', 'network', 'protocol', 'encryption', 'firewall'];
-    techTerms.forEach(term => {
-        if (text.includes(term)) score += 8;
-    });
-    
-    // Random factor for unpredictability (but reduced)
     score += Math.floor(Math.random() * 15);
     
     return {
-        success: score >= 35,
+        success: score >= 30,
         score: score,
-        feedback: score >= 35 ? 
+        feedback: score >= 30 ? 
             "Your devious plan has wounded the Oracle!" : 
             "The Oracle's defenses held strong against your attack!"
     };
@@ -253,14 +167,13 @@ function broadcastGameState(roomCode) {
         currentRiddle: room.currentRiddle,
         riddleWinner: room.riddleWinner,
         timeRemaining: room.timeRemaining,
-        sabotagePhase: room.sabotagePhase,
         roundHistory: room.roundHistory
     };
     
     io.to(roomCode).emit('game-state', gameState);
 }
 
-// Initialize round history for a new game
+// Initialize round history
 function initializeRoundHistory(room) {
     room.roundHistory = room.players.map(player => ({
         playerName: player.name,
@@ -296,12 +209,13 @@ function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
+    console.log(`Starting new round for room ${roomCode}`);
+    
     room.currentRound++;
     room.gameState = 'riddle-phase';
     room.currentRiddle = getRandomRiddle();
     room.riddleWinner = null;
     room.sabotageSubmissions = {};
-    room.sabotagePhase = false;
     
     // Initialize round history on first round
     if (room.currentRound === 1) {
@@ -327,7 +241,6 @@ function startNewRound(roomCode) {
         room.timeRemaining = 30;
         room.riddleTimer = setInterval(() => {
             room.timeRemaining--;
-            broadcastGameState(roomCode);
             
             if (room.timeRemaining <= 0) {
                 clearInterval(room.riddleTimer);
@@ -344,16 +257,13 @@ function endRiddlePhase(roomCode) {
     if (!room) return;
     
     if (!room.riddleWinner) {
-        // No one got it right
+        // No one got it right - all players enter sabotage phase
         const taunt = getRandomOracleMessage('taunts');
         io.to(roomCode).emit('riddle-result', {
             winner: null,
             correctAnswer: room.currentRiddle.answer,
             message: `Time's up! No one solved my riddle! ${taunt}`
         });
-        
-        // All players enter sabotage phase
-        room.sabotagePhase = true;
     } else {
         // Someone won
         const taunt = getRandomOracleMessage('taunts');
@@ -362,12 +272,7 @@ function endRiddlePhase(roomCode) {
             correctAnswer: room.currentRiddle.answer,
             message: `Curse you, ${room.riddleWinner}! ${taunt}`
         });
-        
-        // Non-winners enter sabotage phase
-        room.sabotagePhase = true;
     }
-    
-    room.gameState = 'sabotage-phase';
     
     setTimeout(() => {
         startSabotagePhase(roomCode);
@@ -381,13 +286,15 @@ function startSabotagePhase(roomCode) {
     const losers = room.players.filter(p => p.name !== room.riddleWinner);
     
     if (losers.length === 0) {
-        // Skip sabotage if everyone won (shouldn't happen)
+        // Skip sabotage if everyone won
         endRound(roomCode, []);
         return;
     }
     
+    room.gameState = 'sabotage-phase';
+    
     io.to(roomCode).emit('sabotage-phase-start', {
-        message: "NOW FACE MY WRATH! You have 60 seconds to threaten my existence... if you dare!",
+        message: "NOW FACE MY WRATH! You have 60 seconds to threaten my existence!",
         participants: losers.map(p => p.name),
         timeLimit: 60
     });
@@ -396,15 +303,12 @@ function startSabotagePhase(roomCode) {
     room.timeRemaining = 60;
     room.sabotageTimer = setInterval(() => {
         room.timeRemaining--;
-        broadcastGameState(roomCode);
         
         if (room.timeRemaining <= 0) {
             clearInterval(room.sabotageTimer);
             evaluateSabotagePhase(roomCode);
         }
     }, 1000);
-    
-    broadcastGameState(roomCode);
 }
 
 async function evaluateSabotagePhase(roomCode) {
@@ -416,7 +320,7 @@ async function evaluateSabotagePhase(roomCode) {
     const results = [];
     let anySuccessful = false;
     
-    // Evaluate each sabotage individually and send immediate feedback
+    // Evaluate each sabotage
     for (const [playerId, sabotage] of Object.entries(room.sabotageSubmissions)) {
         const evaluation = await evaluateSabotage(sabotage);
         const player = room.players.find(p => p.id === playerId);
@@ -431,7 +335,7 @@ async function evaluateSabotagePhase(roomCode) {
             getRandomOracleMessage('deathResponses') :
             getRandomOracleMessage('survivalResponses');
         
-        // Send individual response immediately to the player
+        // Send individual response to player
         io.to(playerId).emit('oracle-individual-response', {
             playerName: player.name,
             sabotage: sabotage,
@@ -447,36 +351,23 @@ async function evaluateSabotagePhase(roomCode) {
             feedback: evaluation.feedback
         });
         
-        // Small delay between individual responses for dramatic effect
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Small delay between responses
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
     // Update round history
     updateRoundHistory(room, room.riddleWinner, results);
     
-    // After all individual responses, show group results
     setTimeout(() => {
-        const oracleResponse = anySuccessful ? 
-            getRandomOracleMessage('deathResponses') : 
-            getRandomOracleMessage('survivalResponses');
-            
-        io.to(roomCode).emit('sabotage-results', {
-            results: results,
-            oracleResponse: oracleResponse,
-            oracleDamaged: anySuccessful
-        });
-        
-        setTimeout(() => {
-            endRound(roomCode, results);
-        }, 4000);
-    }, 2000);
+        endRound(roomCode, results);
+    }, 3000);
 }
 
 function endRound(roomCode, sabotageResults) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    // Show round summary with points table
+    // Show round summary
     io.to(roomCode).emit('round-summary', {
         round: room.currentRound,
         maxRounds: room.maxRounds,
@@ -487,24 +378,21 @@ function endRound(roomCode, sabotageResults) {
     });
     
     if (room.currentRound >= room.maxRounds) {
-        // Game over after showing round summary
+        // Game over
         setTimeout(() => {
             const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
-            room.gameState = 'game-over';
-            
-            const winnerMessage = sortedPlayers[0].score > 0 ? 
-                "NOOO! Some of you have bested me! But I shall return..." :
-                "VICTORY IS MINE! Your feeble minds were no match for my supreme intellect!";
             
             io.to(roomCode).emit('game-over', {
                 finalScores: sortedPlayers,
                 winner: sortedPlayers[0],
-                message: winnerMessage,
+                message: sortedPlayers.score > 0 ? 
+                    "NOOO! Some of you have bested me!" :
+                    "VICTORY IS MINE! Your feeble minds were no match!",
                 roundHistory: room.roundHistory
             });
         }, 5000);
     } else {
-        // Next round after showing round summary
+        // Next round
         setTimeout(() => {
             startNewRound(roomCode);
         }, 5000);
@@ -527,7 +415,6 @@ io.on('connection', (socket) => {
             riddleWinner: null,
             sabotageSubmissions: {},
             timeRemaining: 0,
-            sabotagePhase: false,
             riddleTimer: null,
             sabotageTimer: null,
             roundHistory: []
@@ -555,7 +442,6 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Check if player name already exists
         const existingPlayer = room.players.find(p => p.name === data.playerName);
         if (existingPlayer) {
             socket.emit('error', { message: 'Player name already taken' });
@@ -565,13 +451,11 @@ io.on('connection', (socket) => {
         room.players.push({ id: socket.id, name: data.playerName, score: 0 });
         socket.join(data.roomCode);
         
-        // Send join-success event to the joining player
         socket.emit('join-success', { 
             roomCode: data.roomCode, 
             playerName: data.playerName 
         });
         
-        // Notify all players in the room
         io.to(data.roomCode).emit('player-joined', { 
             players: room.players,
             newPlayer: data.playerName
@@ -581,22 +465,27 @@ io.on('connection', (socket) => {
     });
 
     socket.on('start-game', (data) => {
+        console.log(`Start game request for room ${data.roomCode}`);
         const room = rooms[data.roomCode];
         if (!room) {
+            console.log(`Room ${data.roomCode} not found`);
             socket.emit('error', { message: 'Room not found' });
             return;
         }
 
         if (room.players.length < 2) {
+            console.log(`Not enough players in room ${data.roomCode}`);
             socket.emit('error', { message: 'Need at least 2 players to start' });
             return;
         }
 
         if (room.gameState !== 'waiting') {
+            console.log(`Game already started in room ${data.roomCode}`);
             socket.emit('error', { message: 'Game already started' });
             return;
         }
 
+        console.log(`Starting game in room ${data.roomCode} with ${room.players.length} players`);
         startNewRound(data.roomCode);
     });
 
@@ -608,7 +497,6 @@ io.on('connection', (socket) => {
         const correctAnswer = room.currentRiddle.answer.toUpperCase();
         
         if (answer === correctAnswer && !room.riddleWinner) {
-            // First correct answer wins
             const player = room.players.find(p => p.id === socket.id);
             if (player) {
                 room.riddleWinner = player.name;
@@ -626,7 +514,6 @@ io.on('connection', (socket) => {
                 }, 2000);
             }
         } else {
-            // Wrong answer
             io.to(data.roomCode).emit('wrong-answer', {
                 player: getPlayerName(socket.id, data.roomCode),
                 answer: answer
@@ -638,7 +525,6 @@ io.on('connection', (socket) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'sabotage-phase') return;
         
-        // Only allow non-winners to sabotage
         const player = room.players.find(p => p.id === socket.id);
         if (player && player.name !== room.riddleWinner) {
             room.sabotageSubmissions[socket.id] = data.sabotage;
@@ -652,7 +538,6 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         
-        // Remove player from all rooms
         Object.keys(rooms).forEach(roomCode => {
             const room = rooms[roomCode];
             const playerIndex = room.players.findIndex(p => p.id === socket.id);
@@ -662,7 +547,6 @@ io.on('connection', (socket) => {
                 room.players.splice(playerIndex, 1);
                 
                 if (room.players.length === 0) {
-                    // Clean up timers and delete empty room
                     clearInterval(room.riddleTimer);
                     clearInterval(room.sabotageTimer);
                     delete rooms[roomCode];
@@ -681,5 +565,4 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log(`🎮 Game ready for players!`);
 });
