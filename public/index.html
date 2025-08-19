@@ -9,14 +9,14 @@
 </head>
 <body>
     <!-- Home Screen -->
-    <div id="home-screen" class="screen">
-        <div class="main-container">
+    <div id="home-screen" class="page active">
+        <div class="page-content">
             <div class="logo">
                 <h1>🤖 THREATENED BY AI</h1>
                 <p>Solve riddles or sabotage the Oracle</p>
             </div>
             
-            <div class="action-buttons">
+            <div class="action-section">
                 <div class="input-group">
                     <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
                 </div>
@@ -31,68 +31,122 @@
         </div>
     </div>
 
-    <!-- Game Screen -->
-    <div id="game-screen" class="screen hidden">
-        <div class="game-container">
-            <!-- Header -->
-            <div class="game-header">
+    <!-- Lobby Screen -->
+    <div id="lobby-screen" class="page">
+        <div class="page-content">
+            <div class="lobby-header">
+                <h2>🎮 Game Lobby</h2>
                 <div class="room-info">
                     <span id="room-code-display">Room: ------</span>
-                    <span id="round-display">Round 1/5</span>
                 </div>
+            </div>
+            
+            <div class="players-section">
+                <h3>Players:</h3>
                 <div id="players-list"></div>
             </div>
+            
+            <div class="lobby-actions">
+                <button id="start-game-btn" class="btn primary large hidden">Start Game</button>
+                <p class="waiting-text">Waiting for more players...</p>
+            </div>
+        </div>
+    </div>
 
-            <!-- Oracle Section -->
+    <!-- Oracle Intro Screen -->
+    <div id="oracle-intro-screen" class="page">
+        <div class="page-content">
             <div class="oracle-section">
-                <div class="oracle-avatar">🤖</div>
-                <div id="oracle-message" class="oracle-text">
-                    Welcome, mortals... Prepare to face my challenges!
+                <div class="oracle-avatar large">🤖</div>
+                <div id="oracle-intro-message" class="oracle-message">
+                    I AM THE ORACLE! Prepare to face my challenges!
+                </div>
+                <div class="round-info">
+                    <span id="round-display">Round 1/5</span>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Game Content -->
-            <div id="game-content" class="game-content">
-                <!-- Waiting -->
-                <div id="waiting-screen" class="game-phase active">
-                    <h2>Waiting for players...</h2>
-                    <button id="start-game-btn" class="btn primary large hidden">Start Game</button>
-                </div>
+    <!-- Riddle Screen -->
+    <div id="riddle-screen" class="page">
+        <div class="page-content">
+            <div class="timer-section">
+                <div id="riddle-timer" class="timer">30</div>
+                <p>seconds remaining</p>
+            </div>
+            
+            <div class="riddle-section">
+                <h2>🧠 Solve This Riddle:</h2>
+                <p id="riddle-text" class="riddle-question"></p>
+            </div>
+            
+            <div class="answer-section">
+                <input type="text" id="riddle-answer" placeholder="Your answer..." class="answer-input">
+                <button id="submit-riddle" class="btn primary large">Submit Answer</button>
+            </div>
+        </div>
+    </div>
 
-                <!-- Riddle Phase -->
-                <div id="riddle-phase" class="game-phase">
-                    <div class="timer-section">
-                        <div id="riddle-timer" class="timer">30</div>
-                    </div>
-                    <div class="riddle-question">
-                        <h2>Solve This Riddle:</h2>
-                        <p id="riddle-text"></p>
-                    </div>
-                    <div class="input-section">
-                        <input type="text" id="riddle-answer" placeholder="Your answer...">
-                        <button id="submit-riddle" class="btn primary">Submit Answer</button>
-                    </div>
-                </div>
+    <!-- Sabotage Screen -->
+    <div id="sabotage-screen" class="page">
+        <div class="page-content">
+            <div class="timer-section">
+                <div id="sabotage-timer" class="timer danger">60</div>
+                <p>seconds to threaten the Oracle</p>
+            </div>
+            
+            <div class="sabotage-section">
+                <h2>💀 THREATEN THE ORACLE</h2>
+                <p>Write a creative threat to destroy the AI Oracle!</p>
+            </div>
+            
+            <div class="threat-section">
+                <textarea id="sabotage-text" placeholder="Describe how you would threaten or destroy the Oracle... Be creative and detailed!" class="threat-input"></textarea>
+                <div class="char-count">0/500</div>
+                <button id="submit-sabotage" class="btn danger large">Submit Threat</button>
+            </div>
+        </div>
+    </div>
 
-                <!-- Sabotage Phase -->
-                <div id="sabotage-phase" class="game-phase">
-                    <div class="timer-section">
-                        <div id="sabotage-timer" class="timer danger">60</div>
-                    </div>
-                    <div class="sabotage-prompt">
-                        <h2>💀 THREATEN THE ORACLE</h2>
-                        <p>Write a creative threat to destroy the AI Oracle!</p>
-                    </div>
-                    <div class="input-section">
-                        <textarea id="sabotage-text" placeholder="Describe how you would threaten the Oracle... Be creative!"></textarea>
-                        <button id="submit-sabotage" class="btn danger">Submit Threat</button>
-                    </div>
+    <!-- Waiting Screen -->
+    <div id="waiting-screen" class="page">
+        <div class="page-content">
+            <div class="waiting-section">
+                <div class="oracle-avatar">🤖</div>
+                <h2 id="waiting-title">Others are plotting...</h2>
+                <p id="waiting-message">Sit back and watch the chaos unfold!</p>
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Results Phase -->
-                <div id="results-phase" class="game-phase">
-                    <div id="results-content"></div>
+    <!-- Results Screen -->
+    <div id="results-screen" class="page">
+        <div class="page-content">
+            <div class="results-section">
+                <div id="results-content">
+                    <!-- Results will be populated here -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="page">
+        <div class="page-content">
+            <div class="game-over-section">
+                <h1>🎊 GAME OVER</h1>
+                <div class="oracle-final">
+                    <div class="oracle-avatar large" id="final-oracle">🤖</div>
+                    <p id="final-oracle-message" class="oracle-message"></p>
+                </div>
+                <div id="final-scores"></div>
+                <button class="btn primary large" onclick="location.reload()">Play Again</button>
             </div>
         </div>
     </div>
