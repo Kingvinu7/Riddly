@@ -253,10 +253,43 @@ function broadcastGameState(roomCode) {
         currentRiddle: room.currentRiddle,
         riddleWinner: room.riddleWinner,
         timeRemaining: room.timeRemaining,
-        sabotagePhase: room.sabotagePhase
+        sabotagePhase: room.sabotagePhase,
+        roundHistory: room.roundHistory
     };
     
     io.to(roomCode).emit('game-state', gameState);
+}
+
+// Initialize round history for a new game
+function initializeRoundHistory(room) {
+    room.roundHistory = room.players.map(player => ({
+        playerName: player.name,
+        playerId: player.id,
+        rounds: []
+    }));
+}
+
+// Update round history after each round
+function updateRoundHistory(room, riddleWinner, sabotageResults) {
+    room.roundHistory.forEach(playerHistory => {
+        const player = room.players.find(p => p.id === playerHistory.playerId);
+        if (!player) return;
+        
+        let roundResult = 'L'; // Default to loss
+        
+        // Check if player won the riddle
+        if (player.name === riddleWinner) {
+            roundResult = 'W';
+        } else {
+            // Check if player won through sabotage
+            const sabotageResult = sabotageResults.find(r => r.playerName === player.name);
+            if (sabotageResult && sabotageResult.success) {
+                roundResult = 'W';
+            }
+        }
+        
+        playerHistory.rounds.push(roundResult);
+    });
 }
 
 function startNewRound(roomCode) {
@@ -269,6 +302,11 @@ function startNewRound(roomCode) {
     room.riddleWinner = null;
     room.sabotageSubmissions = {};
     room.sabotagePhase = false;
+    
+    // Initialize round history on first round
+    if (room.currentRound === 1) {
+        initializeRoundHistory(room);
+    }
     
     // Oracle introduction
     const oracleIntro = getRandomOracleMessage('introductions');
@@ -344,7 +382,7 @@ function startSabotagePhase(roomCode) {
     
     if (losers.length === 0) {
         // Skip sabotage if everyone won (shouldn't happen)
-        endRound(roomCode);
+        endRound(roomCode, []);
         return;
     }
     
@@ -375,14 +413,10 @@ async function evaluateSabotagePhase(roomCode) {
     
     room.gameState = 'evaluation-phase';
     
-    io.to(roomCode).emit('oracle-speaks', {
-        message: "Let me examine your pitiful attempts at my destruction...",
-        type: 'evaluation'
-    });
-    
     const results = [];
     let anySuccessful = false;
     
+    // Evaluate each sabotage individually and send immediate feedback
     for (const [playerId, sabotage] of Object.entries(room.sabotageSubmissions)) {
         const evaluation = await evaluateSabotage(sabotage);
         const player = room.players.find(p => p.id === playerId);
@@ -392,16 +426,36 @@ async function evaluateSabotagePhase(roomCode) {
             anySuccessful = true;
         }
         
+        // Generate individual Oracle reaction
+        const oracleReaction = evaluation.success ? 
+            getRandomOracleMessage('deathResponses') :
+            getRandomOracleMessage('survivalResponses');
+        
+        // Send individual response immediately to the player
+        io.to(playerId).emit('oracle-individual-response', {
+            playerName: player.name,
+            sabotage: sabotage,
+            success: evaluation.success,
+            feedback: evaluation.feedback,
+            oracleReaction: oracleReaction
+        });
+        
         results.push({
             playerName: player.name,
             sabotage: sabotage,
             success: evaluation.success,
             feedback: evaluation.feedback
         });
+        
+        // Small delay between individual responses for dramatic effect
+        await new Promise(resolve => setTimeout(resolve, 1500));
     }
     
+    // Update round history
+    updateRoundHistory(room, room.riddleWinner, results);
+    
+    // After all individual responses, show group results
     setTimeout(() => {
-        // Oracle reveals results dramatically
         const oracleResponse = anySuccessful ? 
             getRandomOracleMessage('deathResponses') : 
             getRandomOracleMessage('survivalResponses');
@@ -413,34 +467,47 @@ async function evaluateSabotagePhase(roomCode) {
         });
         
         setTimeout(() => {
-            endRound(roomCode);
-        }, 5000);
+            endRound(roomCode, results);
+        }, 4000);
     }, 2000);
 }
 
-function endRound(roomCode) {
+function endRound(roomCode, sabotageResults) {
     const room = rooms[roomCode];
     if (!room) return;
     
+    // Show round summary with points table
+    io.to(roomCode).emit('round-summary', {
+        round: room.currentRound,
+        maxRounds: room.maxRounds,
+        players: room.players,
+        roundHistory: room.roundHistory,
+        riddleWinner: room.riddleWinner,
+        sabotageResults: sabotageResults
+    });
+    
     if (room.currentRound >= room.maxRounds) {
-        // Game over
-        const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
-        room.gameState = 'game-over';
-        
-        const winnerMessage = sortedPlayers[0].score > 0 ? 
-            "NOOO! Some of you have bested me! But I shall return..." :
-            "VICTORY IS MINE! Your feeble minds were no match for my supreme intellect!";
-        
-        io.to(roomCode).emit('game-over', {
-            finalScores: sortedPlayers,
-            winner: sortedPlayers[0],
-            message: winnerMessage
-        });
+        // Game over after showing round summary
+        setTimeout(() => {
+            const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+            room.gameState = 'game-over';
+            
+            const winnerMessage = sortedPlayers[0].score > 0 ? 
+                "NOOO! Some of you have bested me! But I shall return..." :
+                "VICTORY IS MINE! Your feeble minds were no match for my supreme intellect!";
+            
+            io.to(roomCode).emit('game-over', {
+                finalScores: sortedPlayers,
+                winner: sortedPlayers[0],
+                message: winnerMessage,
+                roundHistory: room.roundHistory
+            });
+        }, 5000);
     } else {
-        // Next round
+        // Next round after showing round summary
         setTimeout(() => {
             startNewRound(roomCode);
-        }, 3000);
+        }, 5000);
     }
 }
 
@@ -462,7 +529,8 @@ io.on('connection', (socket) => {
             timeRemaining: 0,
             sabotagePhase: false,
             riddleTimer: null,
-            sabotageTimer: null
+            sabotageTimer: null,
+            roundHistory: []
         };
         
         socket.join(roomCode);
@@ -497,7 +565,7 @@ io.on('connection', (socket) => {
         room.players.push({ id: socket.id, name: data.playerName, score: 0 });
         socket.join(data.roomCode);
         
-        // FIXED: Send join-success event to the joining player
+        // Send join-success event to the joining player
         socket.emit('join-success', { 
             roomCode: data.roomCode, 
             playerName: data.playerName 
