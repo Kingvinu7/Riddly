@@ -560,13 +560,6 @@ input[type="text"]::placeholder, textarea::placeholder {
     color: #ff0040;
 }
 
-.round-results {
-    margin: 25px 0;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 20px;
-    border-radius: 12px;
-}
-
 .next-round-info {
     margin-top: 30px;
 }
@@ -616,8 +609,8 @@ input[type="text"]::placeholder, textarea::placeholder {
     40% { transform: scale(1); }
 }
 
-/* Results and Game Over */
-.results-section, .game-over-section {
+/* Game Over */
+.game-over-section {
     width: 100%;
     max-width: 800px;
 }
