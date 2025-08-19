@@ -3,31 +3,37 @@ let currentRoom = null;
 let playerName = null;
 
 // DOM elements
-const homeScreen = document.getElementById('home-screen');
-const gameScreen = document.getElementById('game-screen');
-const createRoomBtn = document.getElementById('create-room-btn');
-const joinRoomBtn = document.getElementById('join-room-btn');
+const pages = {
+    home: document.getElementById('home-screen'),
+    lobby: document.getElementById('lobby-screen'),
+    oracleIntro: document.getElementById('oracle-intro-screen'),
+    riddle: document.getElementById('riddle-screen'),
+    sabotage: document.getElementById('sabotage-screen'),
+    waiting: document.getElementById('waiting-screen'),
+    results: document.getElementById('results-screen'),
+    gameOver: document.getElementById('game-over-screen')
+};
+
+// Input elements
 const playerNameInput = document.getElementById('player-name');
 const roomCodeInput = document.getElementById('room-code');
-const startGameBtn = document.getElementById('start-game-btn');
+const riddleAnswer = document.getElementById('riddle-answer');
+const sabotageText = document.getElementById('sabotage-text');
 
-// Game elements
+// Button elements
+const createRoomBtn = document.getElementById('create-room-btn');
+const joinRoomBtn = document.getElementById('join-room-btn');
+const startGameBtn = document.getElementById('start-game-btn');
+const submitRiddleBtn = document.getElementById('submit-riddle');
+const submitSabotageBtn = document.getElementById('submit-sabotage');
+
+// Display elements
 const roomCodeDisplay = document.getElementById('room-code-display');
 const roundDisplay = document.getElementById('round-display');
 const playersListEl = document.getElementById('players-list');
-const oracleMessage = document.getElementById('oracle-message');
-
-// Game phases
-const waitingScreen = document.getElementById('waiting-screen');
-const riddlePhase = document.getElementById('riddle-phase');
-const sabotagePhase = document.getElementById('sabotage-phase');
-const resultsPhase = document.getElementById('results-phase');
-
-// Game inputs
-const riddleAnswer = document.getElementById('riddle-answer');
-const submitRiddleBtn = document.getElementById('submit-riddle');
-const sabotageText = document.getElementById('sabotage-text');
-const submitSabotageBtn = document.getElementById('submit-sabotage');
+const oracleIntroMessage = document.getElementById('oracle-intro-message');
+const riddleText = document.getElementById('riddle-text');
+const charCount = document.querySelector('.char-count');
 
 // Event listeners
 createRoomBtn.addEventListener('click', createRoom);
@@ -48,11 +54,32 @@ riddleAnswer.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') submitRiddleAnswer();
 });
 
+sabotageText.addEventListener('input', () => {
+    const count = sabotageText.value.length;
+    if (charCount) {
+        charCount.textContent = `${count}/500`;
+        charCount.style.color = count > 450 ? '#ff0040' : '#888';
+    }
+});
+
+// Page navigation
+function showPage(pageName) {
+    Object.values(pages).forEach(page => page.classList.remove('active'));
+    if (pages[pageName]) {
+        pages[pageName].classList.add('active');
+    }
+}
+
 // Utility functions
 function createRoom() {
     const name = playerNameInput.value.trim();
     if (!name) {
         alert('Please enter your name');
+        return;
+    }
+    
+    if (name.length > 15) {
+        alert('Name must be 15 characters or less');
         return;
     }
     
@@ -66,6 +93,16 @@ function joinRoom() {
     
     if (!name || !roomCode) {
         alert('Please enter your name and room code');
+        return;
+    }
+    
+    if (name.length > 15) {
+        alert('Name must be 15 characters or less');
+        return;
+    }
+    
+    if (roomCode.length !== 6) {
+        alert('Room code must be 6 characters');
         return;
     }
     
@@ -86,39 +123,28 @@ function submitRiddleAnswer() {
     socket.emit('submit-riddle-answer', { roomCode: currentRoom, answer: answer });
     riddleAnswer.disabled = true;
     submitRiddleBtn.disabled = true;
+    submitRiddleBtn.textContent = 'Submitted!';
 }
 
 function submitSabotage() {
     const sabotage = sabotageText.value.trim();
     if (!sabotage || !currentRoom) return;
     
+    if (sabotage.length < 20) {
+        alert('Your threat must be at least 20 characters long. Be more creative!');
+        return;
+    }
+    
     socket.emit('submit-sabotage', { roomCode: currentRoom, sabotage: sabotage });
     sabotageText.disabled = true;
     submitSabotageBtn.disabled = true;
-}
-
-function showScreen(screen) {
-    homeScreen.style.display = screen === 'home' ? 'flex' : 'none';
-    gameScreen.style.display = screen === 'game' ? 'flex' : 'none';
-}
-
-function showGamePhase(phase) {
-    [waitingScreen, riddlePhase, sabotagePhase, resultsPhase].forEach(el => {
-        el.classList.remove('active');
-    });
-    
-    const phaseEl = document.getElementById(phase);
-    if (phaseEl) phaseEl.classList.add('active');
+    submitSabotageBtn.textContent = 'Threat Submitted!';
 }
 
 function updatePlayers(players) {
     playersListEl.innerHTML = players.map(player => 
         `<div class="player">${player.name}: ${player.score}pts</div>`
     ).join('');
-}
-
-function updateOracle(message) {
-    oracleMessage.textContent = message;
 }
 
 function startTimer(elementId, seconds) {
@@ -130,6 +156,8 @@ function startTimer(elementId, seconds) {
         
         if (timeLeft <= 10) {
             element.classList.add('urgent');
+        } else {
+            element.classList.remove('urgent');
         }
         
         timeLeft--;
@@ -139,66 +167,108 @@ function startTimer(elementId, seconds) {
             element.classList.remove('urgent');
         }
     }, 1000);
+    
+    return timer;
 }
 
 // Socket event listeners
 socket.on('room-created', (data) => {
     currentRoom = data.roomCode;
-    showScreen('game');
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
     startGameBtn.classList.remove('hidden');
-    showGamePhase('waiting-screen');
+    document.querySelector('.waiting-text').style.display = 'block';
+    showPage('lobby');
 });
 
 socket.on('join-success', (data) => {
     currentRoom = data.roomCode;
-    showScreen('game');
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
-    showGamePhase('waiting-screen');
+    document.querySelector('.waiting-text').style.display = 'block';
+    showPage('lobby');
 });
 
 socket.on('player-joined', (data) => {
     updatePlayers(data.players);
+    
+    if (data.players.length >= 2) {
+        startGameBtn.classList.remove('hidden');
+        document.querySelector('.waiting-text').style.display = 'none';
+    }
+});
+
+socket.on('player-left', (data) => {
+    updatePlayers(data.players);
+    
+    if (data.players.length < 2) {
+        startGameBtn.classList.add('hidden');
+        document.querySelector('.waiting-text').style.display = 'block';
+    }
 });
 
 socket.on('oracle-speaks', (data) => {
-    updateOracle(data.message);
+    oracleIntroMessage.textContent = data.message;
+    showPage('oracleIntro');
 });
 
 socket.on('riddle-presented', (data) => {
-    showGamePhase('riddle-phase');
     roundDisplay.textContent = `Round ${data.round}/${data.maxRounds}`;
-    document.getElementById('riddle-text').textContent = data.riddle.question;
+    riddleText.textContent = data.riddle.question;
     
     // Reset inputs
     riddleAnswer.disabled = false;
     riddleAnswer.value = '';
+    riddleAnswer.focus();
     submitRiddleBtn.disabled = false;
+    submitRiddleBtn.textContent = 'Submit Answer';
     
+    showPage('riddle');
     startTimer('riddle-timer', 30);
+});
+
+socket.on('riddle-solved', (data) => {
+    riddleAnswer.disabled = true;
+    submitRiddleBtn.disabled = true;
+    submitRiddleBtn.textContent = `${data.winner} Won!`;
 });
 
 socket.on('sabotage-phase-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
-        showGamePhase('sabotage-phase');
-        
         // Reset inputs
         sabotageText.disabled = false;
         sabotageText.value = '';
+        sabotageText.focus();
         submitSabotageBtn.disabled = false;
+        submitSabotageBtn.textContent = 'Submit Threat';
         
+        showPage('sabotage');
         startTimer('sabotage-timer', 60);
     } else {
-        showGamePhase('waiting-screen');
-        waitingScreen.innerHTML = '<h2>Others are plotting against the Oracle...</h2>';
+        document.getElementById('waiting-title').textContent = 'Others are plotting...';
+        document.getElementById('waiting-message').textContent = 'Other players are threatening the Oracle. You\'re safe this round!';
+        showPage('waiting');
     }
 });
 
-socket.on('game-over', (data) => {
-    showGamePhase('results-phase');
+socket.on('sabotage-results', (data) => {
+    let resultsHtml = `
+        <div class="results-header">
+            <h2>${data.oracleDamaged ? '💥 ORACLE DAMAGED!' : '🛡️ ORACLE SURVIVES!'}</h2>
+            <div class="oracle-response">
+                <div class="oracle-avatar ${data.oracleDamaged ? 'damaged' : 'victorious'}">
+                    ${data.oracleDamaged ? '💥' : '🤖'}
+                </div>
+                <p class="oracle-message">"${data.oracleResponse}"</p>
+            </div>
+        </div>
+    `;
     
+    document.getElementById('results-content').innerHTML = resultsHtml;
+    showPage('results');
+});
+
+socket.on('game-over', (data) => {
     const scoresHtml = data.finalScores.map((player, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
         return `
@@ -209,15 +279,11 @@ socket.on('game-over', (data) => {
         `;
     }).join('');
     
-    document.getElementById('results-content').innerHTML = `
-        <div class="results-header">
-            <h2>🎊 Game Over!</h2>
-        </div>
-        <div class="final-scores">
-            ${scoresHtml}
-        </div>
-        <button class="btn primary large" onclick="location.reload()">Play Again</button>
-    `;
+    document.getElementById('final-oracle').textContent = data.winner.score > 0 ? '💥' : '🤖';
+    document.getElementById('final-oracle-message').textContent = `"${data.message}"`;
+    document.getElementById('final-scores').innerHTML = scoresHtml;
+    
+    showPage('gameOver');
 });
 
 socket.on('error', (data) => {
@@ -225,5 +291,5 @@ socket.on('error', (data) => {
 });
 
 // Initialize
-showScreen('home');
+showPage('home');
 playerNameInput.focus();
