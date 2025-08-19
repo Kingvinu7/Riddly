@@ -145,7 +145,14 @@ function submitSabotage() {
     const panel = document.getElementById('ai-commentary-panel');
     panel.style.display = 'block';
     document.getElementById('oracle-response-text').innerHTML = `
-        <div class="oracle-reaction">🤖 The Oracle is examining your threat...</div>
+        <div class="oracle-reaction">🔍 The Oracle is analyzing your threat...</div>
+        <div class="loading-animation">
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
     `;
 }
 
@@ -214,6 +221,20 @@ function startTimer(elementId, seconds) {
     }, 1000);
     
     return timer;
+}
+
+// Typing effect function
+function typeWriter(element, text, speed = 30) {
+    element.textContent = '';
+    let i = 0;
+    const typeEffect = setInterval(() => {
+        if (i < text.length) {
+            element.textContent += text.charAt(i);
+            i++;
+        } else {
+            clearInterval(typeEffect);
+        }
+    }, speed);
 }
 
 // Socket event listeners
@@ -301,7 +322,8 @@ socket.on('sabotage-phase-start', (data) => {
     }
 });
 
-socket.on('oracle-individual-response', (data) => {
+// NEW: Consequence narration event handler
+socket.on('consequence-narration', (data) => {
     if (data.playerName === playerName) {
         const panel = document.getElementById('ai-commentary-panel');
         const responseText = document.getElementById('oracle-response-text');
@@ -314,21 +336,34 @@ socket.on('oracle-individual-response', (data) => {
             panel.classList.add('failure');
         }
         
-        // Display Oracle's response
+        // Display the dramatic consequence narration
         responseText.innerHTML = `
-            <div class="oracle-reaction">
-                🤖 "${data.oracleReaction}"
+            <div class="consequence-header">
+                <h4>🎭 CONSEQUENCE NARRATION</h4>
             </div>
-            <div class="threat-display">
-                <strong>Your Threat:</strong> "${data.sabotage}"
+            <div class="player-action">
+                <strong>Your Action:</strong> "${data.sabotage}"
             </div>
-            <div class="ai-feedback">
-                ${data.success ? '💥 YOUR THREAT SUCCEEDED!' : '🛡️ ORACLE SURVIVED YOUR ATTACK'}
+            <div class="consequence-story"></div>
+            <div class="consequence-result ${data.success ? 'success' : 'failure'}">
+                <strong>${data.success ? '💥 ORACLE DAMAGED!' : '🛡️ ORACLE SURVIVES!'}</strong>
                 <br>
                 <em>${data.feedback}</em>
             </div>
         `;
+        
+        // Add dramatic typing effect for the story
+        const storyElement = responseText.querySelector('.consequence-story');
+        typeWriter(storyElement, data.narration, 20);
     }
+});
+
+// NEW: Oracle final judgment event handler
+socket.on('oracle-final-judgment', (data) => {
+    console.log('Oracle Final Judgment:', data.message);
+    
+    // You can display this as a modal or notification if needed
+    // For now, it's logged to console
 });
 
 socket.on('round-summary', (data) => {
