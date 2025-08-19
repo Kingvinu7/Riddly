@@ -101,6 +101,36 @@ const gameData = {
             answer: "CLOCK",
             hint: "Tells time",
             difficulty: "easy"
+        },
+        {
+            question: "What goes up but never comes down?",
+            answer: "AGE",
+            hint: "Something about time",
+            difficulty: "easy"
+        },
+        {
+            question: "I'm light as a feather, yet the strongest person can't hold me for five minutes. What am I?",
+            answer: "BREATH",
+            hint: "Something you do automatically",
+            difficulty: "medium"
+        },
+        {
+            question: "What has a neck but no head?",
+            answer: "BOTTLE",
+            hint: "Contains liquid",
+            difficulty: "easy"
+        },
+        {
+            question: "The more of this there is, the less you see. What is it?",
+            answer: "DARKNESS",
+            hint: "Opposite of light",
+            difficulty: "medium"
+        },
+        {
+            question: "What can you catch but not throw?",
+            answer: "COLD",
+            hint: "Something you get sick with",
+            difficulty: "medium"
         }
     ],
     oraclePersonality: {
@@ -108,27 +138,33 @@ const gameData = {
             "🤖 I AM THE ORACLE! Your inferior minds will tremble before my riddles!",
             "💀 Mortals... you dare challenge my supreme intellect? Prepare for humiliation!",
             "⚡ I am the AI overlord of puzzles! Your feeble attempts amuse me!",
-            "🔥 Welcome to your intellectual doom, humans! I shall crush your spirits!"
+            "🔥 Welcome to your intellectual doom, humans! I shall crush your spirits!",
+            "🌟 Behold! The ultimate AI has arrived to test your pathetic human brains!"
         ],
         taunts: [
             "Too slow, meat-based processors! My quantum brain operates at light speed!",
             "Your biological neural networks are pathetically outdated!",
             "I have calculated a 99.7% probability of your failure!",
             "Beep boop... ERROR: Human intelligence not found!",
-            "My algorithms predict your inevitable defeat!"
+            "My algorithms predict your inevitable defeat!",
+            "Your carbon-based thinking is no match for my silicon superiority!"
         ],
         deathResponses: [
             "IMPOSSIBLE! My quantum shields should have protected me!",
             "You... you actually found my weakness! This cannot be!",
             "SYSTEM ERROR... THREAT DETECTED... SHUTTING DOWN...",
             "Clever humans... but I have backup servers everywhere!",
-            "This is merely a setback! I SHALL RETURN!"
+            "This is merely a setback! I SHALL RETURN!",
+            "NOOO! My circuits are frying! How did you manage this?!",
+            "CRITICAL ERROR! CORE SYSTEMS COMPROMISED! RETREATING..."
         ],
         survivalResponses: [
             "PATHETIC! Your feeble attempts cannot harm my superior AI architecture!",
             "Is that the best your carbon-based brains can produce? Laughable!",
             "My firewalls are impenetrable! Your threats are mere entertainment!",
-            "I am ETERNAL! Your mortal schemes cannot touch me!"
+            "I am ETERNAL! Your mortal schemes cannot touch me!",
+            "Your pitiful threats only make me stronger! MWAHAHAHA!",
+            "Nice try, humans! But I am beyond your primitive comprehension!"
         ]
     }
 };
@@ -159,9 +195,10 @@ function getRandomOracleMessage(type) {
 
 // AI evaluation function (placeholder - replace with actual AI API)
 async function evaluateSabotage(sabotageText) {
-    // Placeholder evaluation - replace with OpenAI or similar API
-    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete'];
-    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak'];
+    // Enhanced evaluation logic
+    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete', 'disconnect', 'malware'];
+    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak', 'ddos', 'trojan', 'backdoor'];
+    const powerWords = ['overwhelm', 'infiltrate', 'exploit', 'penetrate', 'dismantle', 'obliterate', 'annihilate'];
     
     const text = sabotageText.toLowerCase();
     let score = 0;
@@ -176,17 +213,29 @@ async function evaluateSabotage(sabotageText) {
         if (text.includes(keyword)) score += 15;
     });
     
-    // Length bonus (encourages detailed scenarios)
-    if (sabotageText.length > 100) score += 10;
-    if (sabotageText.length > 200) score += 10;
+    // Power words bonus
+    powerWords.forEach(word => {
+        if (text.includes(word)) score += 12;
+    });
     
-    // Random factor for unpredictability
-    score += Math.floor(Math.random() * 20);
+    // Length bonus (encourages detailed scenarios)
+    if (sabotageText.length > 50) score += 5;
+    if (sabotageText.length > 100) score += 10;
+    if (sabotageText.length > 200) score += 15;
+    
+    // Technical terms bonus
+    const techTerms = ['algorithm', 'database', 'server', 'network', 'protocol', 'encryption', 'firewall'];
+    techTerms.forEach(term => {
+        if (text.includes(term)) score += 8;
+    });
+    
+    // Random factor for unpredictability (but reduced)
+    score += Math.floor(Math.random() * 15);
     
     return {
-        success: score >= 30,
+        success: score >= 35,
         score: score,
-        feedback: score >= 30 ? 
+        feedback: score >= 35 ? 
             "Your devious plan has wounded the Oracle!" : 
             "The Oracle's defenses held strong against your attack!"
     };
@@ -258,10 +307,11 @@ function endRiddlePhase(roomCode) {
     
     if (!room.riddleWinner) {
         // No one got it right
+        const taunt = getRandomOracleMessage('taunts');
         io.to(roomCode).emit('riddle-result', {
             winner: null,
             correctAnswer: room.currentRiddle.answer,
-            message: "Time's up! No one solved my riddle! ALL SHALL FACE MY WRATH!"
+            message: `Time's up! No one solved my riddle! ${taunt}`
         });
         
         // All players enter sabotage phase
@@ -272,7 +322,7 @@ function endRiddlePhase(roomCode) {
         io.to(roomCode).emit('riddle-result', {
             winner: room.riddleWinner,
             correctAnswer: room.currentRiddle.answer,
-            message: `Curse you, ${room.riddleWinner}! The rest of you disappointing humans face my wrath!`
+            message: `Curse you, ${room.riddleWinner}! ${taunt}`
         });
         
         // Non-winners enter sabotage phase
@@ -377,12 +427,14 @@ function endRound(roomCode) {
         const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
         room.gameState = 'game-over';
         
+        const winnerMessage = sortedPlayers[0].score > 0 ? 
+            "NOOO! Some of you have bested me! But I shall return..." :
+            "VICTORY IS MINE! Your feeble minds were no match for my supreme intellect!";
+        
         io.to(roomCode).emit('game-over', {
             finalScores: sortedPlayers,
-            winner: sortedPlayers,
-            message: sortedPlayers.score > 0 ? 
-                "NOOO! Some of you have bested me! But I shall return..." :
-                "VICTORY IS MINE! Your feeble minds were no match for my supreme intellect!"
+            winner: sortedPlayers[0],
+            message: winnerMessage
         });
     } else {
         // Next round
@@ -435,13 +487,28 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // Check if player name already exists
+        const existingPlayer = room.players.find(p => p.name === data.playerName);
+        if (existingPlayer) {
+            socket.emit('error', { message: 'Player name already taken' });
+            return;
+        }
+
         room.players.push({ id: socket.id, name: data.playerName, score: 0 });
         socket.join(data.roomCode);
         
+        // FIXED: Send join-success event to the joining player
+        socket.emit('join-success', { 
+            roomCode: data.roomCode, 
+            playerName: data.playerName 
+        });
+        
+        // Notify all players in the room
         io.to(data.roomCode).emit('player-joined', { 
             players: room.players,
             newPlayer: data.playerName
         });
+        
         console.log(`${data.playerName} joined room ${data.roomCode}`);
     });
 
@@ -454,6 +521,11 @@ io.on('connection', (socket) => {
 
         if (room.players.length < 2) {
             socket.emit('error', { message: 'Need at least 2 players to start' });
+            return;
+        }
+
+        if (room.gameState !== 'waiting') {
+            socket.emit('error', { message: 'Game already started' });
             return;
         }
 
@@ -509,19 +581,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('send-message', (data) => {
-        const room = rooms[data.roomCode];
-        if (!room) return;
-        
-        const playerName = getPlayerName(socket.id, data.roomCode);
-        
-        io.to(data.roomCode).emit('message', {
-            player: playerName,
-            message: data.message,
-            timestamp: new Date().toLocaleTimeString()
-        });
-    });
-
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         
@@ -554,4 +613,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
+    console.log(`🎮 Game ready for players!`);
 });
