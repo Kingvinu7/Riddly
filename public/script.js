@@ -1,7 +1,7 @@
 const socket = io();
 let currentRoom = null;
 let playerName = null;
-let isChooser = false;
+let gamePhase = 'waiting';
 
 // DOM elements
 const homeScreen = document.getElementById('home-screen');
@@ -16,18 +16,35 @@ const chatContainer = document.getElementById('chat-container');
 const messageInput = document.getElementById('message-input');
 const sendMessageBtn = document.getElementById('send-message-btn');
 const roomCodeDisplay = document.getElementById('room-code-display');
+const roundDisplay = document.getElementById('round-display');
 
-// Game containers
-const placeSelectionContainer = document.getElementById('place-selection-container');
-const factSelectionContainer = document.getElementById('fact-selection-container');
-const gameInfoContainer = document.getElementById('game-info-container');
+// Game phase containers
+const oracleContainer = document.getElementById('oracle-container');
+const oracleMessage = document.getElementById('oracle-message');
+const riddleContainer = document.getElementById('riddle-container');
+const sabotageContainer = document.getElementById('sabotage-container');
+const resultsContainer = document.getElementById('results-container');
 const statusContainer = document.getElementById('status-container');
+
+// Game elements
+const riddleText = document.getElementById('riddle-text');
+const riddleAnswer = document.getElementById('riddle-answer');
+const submitRiddleBtn = document.getElementById('submit-riddle');
+const riddleTimer = document.getElementById('riddle-timer');
+const riddleHint = document.getElementById('riddle-hint');
+
+const sabotageText = document.getElementById('sabotage-text');
+const submitSabotageBtn = document.getElementById('submit-sabotage');
+const sabotageTimer = document.getElementById('sabotage-timer');
+const charCount = document.querySelector('.char-count');
 
 // Event listeners
 createRoomBtn.addEventListener('click', createRoom);
 joinRoomBtn.addEventListener('click', joinRoom);
 startGameBtn.addEventListener('click', startGame);
 sendMessageBtn.addEventListener('click', sendMessage);
+submitRiddleBtn.addEventListener('click', submitRiddleAnswer);
+submitSabotageBtn.addEventListener('click', submitSabotage);
 
 playerNameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createRoom();
@@ -41,6 +58,17 @@ messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
 
+riddleAnswer.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') submitRiddleAnswer();
+});
+
+sabotageText.addEventListener('input', () => {
+    const count = sabotageText.value.length;
+    charCount.textContent = `${count}/500`;
+    charCount.style.color = count > 450 ? '#f44336' : '#666';
+});
+
+// Utility functions
 function createRoom() {
     const name = playerNameInput.value.trim();
     if (!name) {
@@ -94,23 +122,32 @@ function sendMessage() {
     messageInput.value = '';
 }
 
-function makeGuess() {
-    const guessInput = document.getElementById('guess-input');
-    if (!guessInput) return;
+function submitRiddleAnswer() {
+    const answer = riddleAnswer.value.trim();
+    if (!answer || !currentRoom) return;
     
-    const guess = guessInput.value.trim();
-    if (!guess || !currentRoom) return;
-    
-    socket.emit('guess', { roomCode: currentRoom, guess: guess });
-    guessInput.value = '';
+    socket.emit('submit-riddle-answer', { roomCode: currentRoom, answer: answer });
+    riddleAnswer.value = '';
+    riddleAnswer.disabled = true;
+    submitRiddleBtn.disabled = true;
+    submitRiddleBtn.textContent = 'Submitted!';
 }
 
-function selectPlace(placeName) {
-    socket.emit('select-place', { roomCode: currentRoom, placeName: placeName });
-}
-
-function selectFact(fact) {
-    socket.emit('select-fact', { roomCode: currentRoom, fact: fact });
+function submitSabotage() {
+    const sabotage = sabotageText.value.trim();
+    if (!sabotage || !currentRoom) return;
+    
+    if (sabotage.length < 20) {
+        alert('Your threat must be at least 20 characters long. Be more creative!');
+        return;
+    }
+    
+    socket.emit('submit-sabotage', { roomCode: currentRoom, sabotage: sabotage });
+    sabotageText.disabled = true;
+    submitSabotageBtn.disabled = true;
+    submitSabotageBtn.textContent = 'Threat Submitted!';
+    
+    addMessage(`💀 You submitted a threat against the Oracle!`, 'success');
 }
 
 function showScreen(screen) {
@@ -118,23 +155,41 @@ function showScreen(screen) {
     gameScreen.style.display = screen === 'game' ? 'block' : 'none';
 }
 
-function hideAllGameContainers() {
-    placeSelectionContainer.style.display = 'none';
-    factSelectionContainer.style.display = 'none';
-    gameInfoContainer.style.display = 'none';
+function hideAllGamePhases() {
+    riddleContainer.style.display = 'none';
+    sabotageContainer.style.display = 'none';
+    resultsContainer.style.display = 'none';
     statusContainer.style.display = 'none';
+}
+
+function showGamePhase(phase) {
+    hideAllGamePhases();
+    gamePhase = phase;
+    
+    switch(phase) {
+        case 'riddle':
+            riddleContainer.style.display = 'block';
+            break;
+        case 'sabotage':
+            sabotageContainer.style.display = 'block';
+            break;
+        case 'results':
+            resultsContainer.style.display = 'block';
+            break;
+        default:
+            statusContainer.style.display = 'block';
+    }
 }
 
 function addMessage(message, type = 'info') {
     const messageElement = document.createElement('div');
     messageElement.className = `message ${type}`;
     
-    if (type === 'chat') {
-        messageElement.innerHTML = message;
-    } else {
-        const timestamp = new Date().toLocaleTimeString();
-        messageElement.innerHTML = `<span class="timestamp">${timestamp}</span> ${message}`;
-    }
+    const timestamp = new Date().toLocaleTimeString();
+    messageElement.innerHTML = `
+        <span class="timestamp">${timestamp}</span>
+        <div class="message-content">${message}</div>
+    `;
     
     chatContainer.appendChild(messageElement);
     chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -155,6 +210,60 @@ function updatePlayers(players) {
     });
 }
 
+function updateOracle(message, type = 'normal') {
+    const speechBubble = oracleMessage.querySelector('.speech-bubble p');
+    speechBubble.textContent = message;
+    
+    // Add animation class
+    oracleMessage.classList.remove('speaking');
+    setTimeout(() => {
+        oracleMessage.classList.add('speaking');
+    }, 100);
+    
+    // Change oracle avatar based on type
+    const avatar = document.querySelector('.oracle-avatar');
+    switch(type) {
+        case 'angry':
+            avatar.textContent = '😡';
+            break;
+        case 'damaged':
+            avatar.textContent = '💥';
+            break;
+        case 'evil':
+            avatar.textContent = '👹';
+            break;
+        default:
+            avatar.textContent = '🤖';
+    }
+}
+
+function startTimer(elementId, seconds) {
+    const element = document.getElementById(elementId);
+    let timeLeft = seconds;
+    
+    const updateDisplay = () => {
+        element.textContent = timeLeft;
+        if (timeLeft <= 10) {
+            element.classList.add('urgent');
+        } else {
+            element.classList.remove('urgent');
+        }
+    };
+    
+    updateDisplay();
+    
+    const timer = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+        }
+    }, 1000);
+    
+    return timer;
+}
+
 // Socket event listeners
 socket.on('room-created', (data) => {
     currentRoom = data.roomCode;
@@ -164,8 +273,7 @@ socket.on('room-created', (data) => {
     addMessage('Share this code with friends to play!', 'info');
     startGameBtn.style.display = 'block';
     
-    hideAllGameContainers();
-    statusContainer.style.display = 'block';
+    showGamePhase('waiting');
     statusContainer.querySelector('.status-content').innerHTML = `
         <h2>🎮 Room Created!</h2>
         <p>Room Code: <strong style="font-size: 2em; color: #4CAF50;">${data.roomCode}</strong></p>
@@ -176,12 +284,12 @@ socket.on('room-created', (data) => {
 
 socket.on('player-joined', (data) => {
     updatePlayers(data.players);
-    addMessage(`👋 ${data.newPlayer} joined the game!`, 'success');
+    addMessage(`👋 ${data.newPlayer} joined the battle!`, 'success');
     
     if (data.players.length >= 2) {
         statusContainer.querySelector('.status-content').innerHTML = `
-            <h2>🎮 Ready to Play!</h2>
-            <p>${data.players.length} players in the room</p>
+            <h2>⚔️ Ready for Battle!</h2>
+            <p>${data.players.length} players ready to face the Oracle</p>
             <p>Click "Start Game" when everyone is ready!</p>
         `;
     }
@@ -189,210 +297,143 @@ socket.on('player-joined', (data) => {
 
 socket.on('player-left', (data) => {
     updatePlayers(data.players);
-    addMessage(`👋 ${data.leftPlayer} left the game`, 'warning');
+    addMessage(`👋 ${data.leftPlayer} fled the battle`, 'warning');
 });
 
-socket.on('place-selection', (data) => {
-    hideAllGameContainers();
-    placeSelectionContainer.style.display = 'block';
-    isChooser = true;
+socket.on('oracle-speaks', (data) => {
+    updateOracle(data.message, data.type);
+    addMessage(`🤖 Oracle: ${data.message}`, 'oracle');
+});
+
+socket.on('riddle-presented', (data) => {
+    showGamePhase('riddle');
+    roundDisplay.textContent = `Round ${data.round}/${data.maxRounds}`;
     
-    const placesHtml = data.places.map(place => 
-        `<button class="place-option" onclick="selectPlace('${place.name}')">
-            <div class="place-preview">${place.preview}</div>
-            <div class="place-hint">Mystery Location</div>
-        </button>`
-    ).join('');
-    
-    placeSelectionContainer.querySelector('.selection-content').innerHTML = `
-        <div class="selection-header">
-            <h2>🗺️ Choose a Place</h2>
-            <p>Select a location for other players to guess:</p>
+    riddleText.innerHTML = `
+        <div class="riddle-question">
+            <h3>🧠 Solve This Riddle:</h3>
+            <p>"${data.riddle.question}"</p>
         </div>
-        <div class="places-grid">
-            ${placesHtml}
-        </div>
-        <div class="timer">⏱️ 15 seconds to choose</div>
     `;
     
-    // Timer countdown
-    let timeLeft = 15;
-    const timerElement = placeSelectionContainer.querySelector('.timer');
-    const countdown = setInterval(() => {
-        timeLeft--;
-        timerElement.textContent = `⏱️ ${timeLeft} seconds to choose`;
-        if (timeLeft <= 0) {
-            clearInterval(countdown);
+    riddleHint.innerHTML = `💡 Hint: ${data.riddle.hint}`;
+    
+    // Reset riddle input
+    riddleAnswer.disabled = false;
+    riddleAnswer.value = '';
+    riddleAnswer.focus();
+    submitRiddleBtn.disabled = false;
+    submitRiddleBtn.textContent = 'Submit';
+    
+    startTimer('riddle-timer', 30);
+    addMessage(`🧠 New riddle presented! 30 seconds to solve!`, 'info');
+});
+
+socket.on('riddle-solved', (data) => {
+    addMessage(`🎉 ${data.winner} solved the riddle: "${data.answer}"!`, 'success');
+    riddleAnswer.disabled = true;
+    submitRiddleBtn.disabled = true;
+});
+
+socket.on('wrong-answer', (data) => {
+    addMessage(`❌ ${data.player}: "${data.answer}"`, 'error');
+});
+
+socket.on('riddle-result', (data) => {
+    if (data.winner) {
+        updateOracle(`Curse you, ${data.winner}! The rest shall face my wrath!`, 'angry');
+    } else {
+        updateOracle('Time\'s up! No one solved my riddle! ALL SHALL FACE MY WRATH!', 'evil');
+    }
+    
+    addMessage(`📋 Correct answer: "${data.correctAnswer}"`, 'info');
+});
+
+socket.on('sabotage-phase-start', (data) => {
+    const isParticipant = data.participants.includes(playerName);
+    
+    if (isParticipant) {
+        showGamePhase('sabotage');
+        
+        // Reset sabotage input
+        sabotageText.disabled = false;
+        sabotageText.value = '';
+        sabotageText.focus();
+        submitSabotageBtn.disabled = false;
+        submitSabotageBtn.textContent = '⚔️ Submit Threat';
+        charCount.textContent = '0/500';
+        
+        startTimer('sabotage-timer', 60);
+        addMessage(`💀 Sabotage phase! You have 60 seconds to threaten the Oracle!`, 'danger');
+    } else {
+        showGamePhase('waiting');
+        statusContainer.querySelector('.status-content').innerHTML = `
+            <h2>⏳ Watching the Sabotage</h2>
+            <p>Other players are crafting threats against the Oracle...</p>
+            <p>You're safe this round!</p>
+        `;
+        addMessage(`👀 You're watching this round. Others are plotting against the Oracle!`, 'info');
+    }
+});
+
+socket.on('sabotage-submitted', (data) => {
+    addMessage(`💀 ${data.player} submitted a threat!`, 'danger');
+});
+
+socket.on('sabotage-results', (data) => {
+    showGamePhase('results');
+    
+    let resultsHtml = `
+        <div class="results-header">
+            <h2>${data.oracleDamaged ? '💥 ORACLE DAMAGED!' : '🛡️ ORACLE SURVIVES!'}</h2>
+            <div class="oracle-response">
+                <div class="oracle-avatar ${data.oracleDamaged ? 'damaged' : 'victorious'}">
+                    ${data.oracleDamaged ? '💥' : '🤖'}
+                </div>
+                <p class="oracle-speech">"${data.oracleResponse}"</p>
+            </div>
+        </div>
+        <div class="sabotage-results">
+            <h3>📊 Threat Evaluation:</h3>
+    `;
+    
+    data.results.forEach(result => {
+        resultsHtml += `
+            <div class="threat-result ${result.success ? 'successful' : 'failed'}">
+                <div class="threat-header">
+                    <span class="player-name">${result.playerName}</span>
+                    <span class="result-badge ${result.success ? 'success' : 'failure'}">
+                        ${result.success ? '✅ EFFECTIVE' : '❌ FAILED'}
+                    </span>
+                </div>
+                <div class="threat-text">"${result.sabotage}"</div>
+                <div class="threat-feedback">${result.feedback}</div>
+            </div>
+        `;
+    });
+    
+    resultsHtml += '</div>';
+    resultsContainer.querySelector('.results-content').innerHTML = resultsHtml;
+    
+    // Update messages
+    data.results.forEach(result => {
+        if (result.success) {
+            addMessage(`💥 ${result.playerName}'s threat was EFFECTIVE!`, 'success');
+        } else {
+            addMessage(`🛡️ ${result.playerName}'s threat failed`, 'error');
         }
-    }, 1000);
-});
-
-socket.on('fact-selection', (data) => {
-    hideAllGameContainers();
-    factSelectionContainer.style.display = 'block';
-    
-    const factsHtml = data.facts.map(fact => 
-        `<button class="fact-option" onclick="selectFact('${fact}')">
-            <span class="fact-text">${fact}</span>
-        </button>`
-    ).join('');
-    
-    factSelectionContainer.querySelector('.selection-content').innerHTML = `
-        <div class="selection-header">
-            <h2>💡 Choose a Clue</h2>
-            <p>Select an interesting fact about <strong>${data.place}</strong>:</p>
-        </div>
-        <div class="facts-list">
-            ${factsHtml}
-        </div>
-        <div class="timer">⏱️ 15 seconds to choose</div>
-    `;
-    
-    // Timer countdown
-    let timeLeft = 15;
-    const timerElement = factSelectionContainer.querySelector('.timer');
-    const countdown = setInterval(() => {
-        timeLeft--;
-        timerElement.textContent = `⏱️ ${timeLeft} seconds to choose`;
-        if (timeLeft <= 0) {
-            clearInterval(countdown);
-        }
-    }, 1000);
-});
-
-socket.on('waiting-for-selection', (data) => {
-    hideAllGameContainers();
-    statusContainer.style.display = 'block';
-    
-    const selectionType = data.type === 'place' ? 'a place' : 'a clue';
-    statusContainer.querySelector('.status-content').innerHTML = `
-        <h2>🤔 Waiting...</h2>
-        <p><strong>${data.chooser}</strong> is choosing ${selectionType}</p>
-        <div class="loading-animation">⏳</div>
-        <p>Get ready to guess!</p>
-    `;
+    });
 });
 
 socket.on('game-state', (data) => {
-    if (data.gameState === 'guessing') {
-        hideAllGameContainers();
-        gameInfoContainer.style.display = 'block';
-        isChooser = false;
-        
-        gameInfoContainer.querySelector('.game-content').innerHTML = `
-            <div class="game-area">
-                <div class="map-section">
-                    <h3>🗺️ Mystery Place</h3>
-                    <div id="map-placeholder">
-                        <div class="map-content">
-                            <div class="map-icon">🌍</div>
-                            <p>AI Generated Map</p>
-                            <small>(Coming in next update!)</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="word-section">
-                    <h3>🔤 Place Name:</h3>
-                    <div class="word-display">${data.displayWord}</div>
-                </div>
-                
-                <div class="fact-section">
-                    <h3>💡 Clue:</h3>
-                    <div class="fact-display">${data.selectedFact}</div>
-                </div>
-                
-                <div class="guess-section">
-                    <input type="text" id="guess-input" placeholder="Type your guess..." maxlength="30">
-                    <button id="guess-btn" onclick="makeGuess()">🎯 Guess!</button>
-                </div>
-                
-                <div class="game-info">
-                    <div class="info-item">🕒 New letters revealed every 20 seconds</div>
-                    <div class="info-item">💎 Bonus points for guessing early!</div>
-                    <div class="info-item">🎮 Type your answer and press Enter</div>
-                </div>
-            </div>
-        `;
-        
-        // Focus on guess input
-        const guessInput = document.getElementById('guess-input');
-        if (guessInput) {
-            guessInput.focus();
-            guessInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') makeGuess();
-            });
-        }
-    }
-    
     updatePlayers(data.players);
-});
-
-socket.on('letter-revealed', (data) => {
-    addMessage(`🔤 Letter revealed: "${data.letter}" at position ${data.position + 1}`, 'info');
-    
-    // Visual effect for letter reveal
-    const wordDisplay = document.querySelector('.word-display');
-    if (wordDisplay) {
-        wordDisplay.style.animation = 'letterReveal 0.5s ease-in-out';
-        setTimeout(() => {
-            wordDisplay.style.animation = '';
-        }, 500);
+    if (data.currentRound && data.maxRounds) {
+        roundDisplay.textContent = `Round ${data.currentRound}/${data.maxRounds}`;
     }
-});
-
-socket.on('correct-guess', (data) => {
-    addMessage(`🎉 ${data.player} guessed correctly: "${data.guess}"!`, 'success');
-    if (data.bonus > 0) {
-        addMessage(`⚡ Speed bonus: +${data.bonus} points! Total: ${data.score} pts`, 'success');
-    }
-});
-
-socket.on('wrong-guess', (data) => {
-    addMessage(`❌ ${data.player}: "${data.guess}"`, 'error');
-});
-
-socket.on('round-over', (data) => {
-    hideAllGameContainers();
-    statusContainer.style.display = 'block';
-    
-    let reasonText = '';
-    let reasonEmoji = '';
-    switch(data.reason) {
-        case 'correct-guess':
-        case 'all-correct':
-            reasonText = 'All players guessed correctly!';
-            reasonEmoji = '🎉';
-            break;
-        case 'all-revealed':
-            reasonText = 'All letters were revealed!';
-            reasonEmoji = '⏰';
-            break;
-        case 'timeout':
-            reasonText = 'Time ran out!';
-            reasonEmoji = '⏰';
-            break;
-    }
-    
-    statusContainer.querySelector('.status-content').innerHTML = `
-        <div class="round-result">
-            <h2>${reasonEmoji} Round Complete!</h2>
-            <p>${reasonText}</p>
-            <div class="answer-reveal">
-                <h3>The answer was:</h3>
-                <div class="final-answer">${data.correctAnswer}</div>
-            </div>
-            <p class="next-player">Next turn: <strong>${data.nextPlayer}</strong></p>
-            <div class="loading-animation">⏳ Next round starting in 5 seconds...</div>
-        </div>
-    `;
-    
-    updatePlayers(data.scores);
 });
 
 socket.on('game-over', (data) => {
-    hideAllGameContainers();
-    statusContainer.style.display = 'block';
+    showGamePhase('results');
     
     const scoresHtml = data.finalScores.map((player, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
@@ -405,14 +446,14 @@ socket.on('game-over', (data) => {
         `;
     }).join('');
     
-    statusContainer.querySelector('.status-content').innerHTML = `
+    resultsContainer.querySelector('.results-content').innerHTML = `
         <div class="game-over-screen">
-            <h2>🎊 Game Over!</h2>
-            <div class="answer-reveal">
-                <p>The final answer was:</p>
-                <div class="final-answer">${data.correctAnswer}</div>
+            <h2>🏆 GAME OVER!</h2>
+            <div class="oracle-final">
+                <div class="oracle-avatar">${data.winner.score > 0 ? '💥' : '🤖'}</div>
+                <p class="oracle-speech">"${data.message}"</p>
             </div>
-            <h3>🏆 Final Scores:</h3>
+            <h3>Final Scores:</h3>
             <div class="final-scores">
                 ${scoresHtml}
             </div>
@@ -421,11 +462,14 @@ socket.on('game-over', (data) => {
             </div>
         </div>
     `;
+    
+    addMessage(`🎊 Game Over! Winner: ${data.finalScores.name}`, 'success');
 });
 
 socket.on('message', (data) => {
-    const timestamp = data.timestamp || new Date().toLocaleTimeString();
-    addMessage(`<strong>${data.player}:</strong> ${data.message} <span class="timestamp">${timestamp}</span>`, 'chat');
+    if (data.player !== playerName) {
+        addMessage(`<strong>${data.player}:</strong> ${data.message}`, 'chat');
+    }
 });
 
 socket.on('error', (data) => {
@@ -436,3 +480,17 @@ socket.on('error', (data) => {
 // Initialize
 showScreen('home');
 playerNameInput.focus();
+
+// Add some visual flair
+document.addEventListener('DOMContentLoaded', () => {
+    // Add glitch effect to title periodically
+    setInterval(() => {
+        const logo = document.querySelector('.logo');
+        if (logo) {
+            logo.classList.add('glitch');
+            setTimeout(() => {
+                logo.classList.remove('glitch');
+            }, 500);
+        }
+    }, 10000);
+});
