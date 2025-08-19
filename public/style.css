@@ -24,9 +24,9 @@ body::before {
     width: 100%;
     height: 100%;
     background: 
-        radial-gradient(circle at 30% 70%, rgba(255, 0, 0, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 70% 30%, rgba(138, 43, 226, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(0, 100, 200, 0.08) 0%, transparent 70%);
+        radial-gradient(circle at 30% 70%, rgba(255, 0, 0, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(138, 43, 226, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(0, 100, 200, 0.06) 0%, transparent 70%);
     animation: backgroundPulse 8s ease-in-out infinite alternate;
     z-index: -1;
 }
@@ -47,6 +47,7 @@ body::before {
     justify-content: center;
     align-items: center;
     transition: all 0.3s ease;
+    overflow-y: auto;
 }
 
 .page.active {
@@ -55,21 +56,21 @@ body::before {
 
 .page-content {
     width: 100%;
-    max-width: 800px;
-    padding: 20px;
+    max-width: 1200px;
+    padding: 12px;
     text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 80vh;
+    min-height: 70vh;
 }
 
 /* Logo and Branding */
 .logo h1 {
-    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-size: clamp(1.8rem, 5vw, 3rem);
     font-weight: 900;
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     background: linear-gradient(45deg, #ff0040, #8a2be2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -83,31 +84,31 @@ body::before {
 }
 
 .logo p {
-    font-size: clamp(1rem, 3vw, 1.4rem);
+    font-size: clamp(0.8rem, 2vw, 1.1rem);
     color: #cccccc;
-    margin-bottom: 50px;
+    margin-bottom: 30px;
 }
 
 /* Buttons */
 .btn {
-    padding: 18px 40px;
+    padding: 14px 32px;
     border: none;
     border-radius: 12px;
     font-family: 'Orbitron', monospace;
     font-weight: 700;
-    font-size: clamp(14px, 3vw, 18px);
+    font-size: clamp(13px, 2.5vw, 16px);
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
     position: relative;
     overflow: hidden;
-    min-width: 200px;
+    min-width: 180px;
 }
 
 .btn.large {
-    padding: 22px 50px;
-    font-size: clamp(16px, 4vw, 20px);
-    min-width: 250px;
+    padding: 18px 40px;
+    font-size: clamp(15px, 3.5vw, 18px);
+    min-width: 220px;
 }
 
 .btn::before {
@@ -161,13 +162,13 @@ body::before {
 /* Input Elements */
 input[type="text"], textarea {
     width: 100%;
-    max-width: 500px;
-    padding: 20px 25px;
+    max-width: 450px;
+    padding: 16px 20px;
     background: rgba(255, 255, 255, 0.1);
     border: 3px solid #333;
     border-radius: 12px;
     color: #ffffff;
-    font-size: clamp(16px, 3vw, 20px);
+    font-size: clamp(14px, 2.5vw, 18px);
     font-family: 'Orbitron', monospace;
     transition: all 0.3s ease;
     text-align: center;
@@ -186,16 +187,16 @@ input[type="text"]::placeholder, textarea::placeholder {
 }
 
 .answer-input {
-    font-size: clamp(18px, 4vw, 24px) !important;
+    font-size: clamp(16px, 3.5vw, 20px) !important;
     font-weight: 600;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 }
 
 .threat-input {
-    min-height: 150px;
-    max-height: 300px;
+    min-height: 120px;
+    max-height: 250px;
     resize: vertical;
-    font-size: clamp(14px, 3vw, 18px) !important;
+    font-size: clamp(13px, 2.5vw, 16px) !important;
     text-align: left !important;
     line-height: 1.5;
 }
@@ -208,7 +209,7 @@ input[type="text"]::placeholder, textarea::placeholder {
 .action-section, .answer-section, .threat-section {
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 20px;
     align-items: center;
     width: 100%;
 }
@@ -217,7 +218,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     display: flex;
     gap: 15px;
     width: 100%;
-    max-width: 500px;
+    max-width: 450px;
 }
 
 .join-section input {
@@ -231,54 +232,54 @@ input[type="text"]::placeholder, textarea::placeholder {
 
 /* Lobby Screen */
 .lobby-header h2 {
-    font-size: clamp(2rem, 6vw, 3rem);
-    margin-bottom: 20px;
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    margin-bottom: 15px;
     color: #ff0040;
 }
 
 .room-info {
-    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-size: clamp(1rem, 3.5vw, 1.4rem);
     color: #cccccc;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .players-section h3 {
-    font-size: clamp(1.4rem, 4vw, 1.8rem);
-    margin-bottom: 20px;
+    font-size: clamp(1.2rem, 3.5vw, 1.6rem);
+    margin-bottom: 15px;
     color: #8a2be2;
 }
 
 #players-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 12px;
     justify-content: center;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .player {
     background: rgba(255, 255, 255, 0.15);
-    padding: 12px 20px;
+    padding: 10px 16px;
     border-radius: 10px;
-    font-size: clamp(14px, 3vw, 18px);
+    font-size: clamp(13px, 2.5vw, 16px);
     font-weight: 600;
     border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .waiting-text {
     color: #888;
-    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
 }
 
 /* Oracle Elements */
 .oracle-avatar {
-    font-size: clamp(3rem, 12vw, 5rem);
-    margin: 20px 0;
+    font-size: clamp(2.5rem, 10vw, 4rem);
+    margin: 15px 0;
     animation: oracleFloat 3s ease-in-out infinite;
 }
 
 .oracle-avatar.large {
-    font-size: clamp(4rem, 15vw, 8rem);
+    font-size: clamp(3.5rem, 12vw, 6rem);
 }
 
 @keyframes oracleFloat {
@@ -288,32 +289,32 @@ input[type="text"]::placeholder, textarea::placeholder {
 
 .oracle-message {
     background: rgba(138, 43, 226, 0.2);
-    padding: 25px 30px;
+    padding: 20px 25px;
     border-radius: 15px;
     border: 3px solid #8a2be2;
     font-style: italic;
-    font-size: clamp(1rem, 4vw, 1.4rem);
-    max-width: 600px;
-    margin: 20px auto;
+    font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+    max-width: 550px;
+    margin: 15px auto;
     line-height: 1.6;
     box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
 }
 
 /* Timer */
 .timer-section {
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .timer {
     display: inline-block;
-    font-size: clamp(3rem, 12vw, 6rem);
+    font-size: clamp(2.5rem, 10vw, 4.5rem);
     font-weight: 900;
     color: #00ff00;
     background: rgba(0, 255, 0, 0.15);
-    padding: 20px 40px;
+    padding: 15px 30px;
     border-radius: 20px;
     border: 4px solid #00ff00;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     animation: timerPulse 1s ease-in-out infinite;
 }
 
@@ -339,36 +340,240 @@ input[type="text"]::placeholder, textarea::placeholder {
 
 .timer-section p {
     color: #cccccc;
-    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
 }
 
 /* Question Sections */
 .riddle-section h2, .sabotage-section h2 {
-    font-size: clamp(1.8rem, 6vw, 2.5rem);
-    margin-bottom: 30px;
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    margin-bottom: 25px;
     color: #ffffff;
 }
 
 .riddle-question {
-    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    font-size: clamp(1.1rem, 3.5vw, 1.6rem);
     color: #cccccc;
     font-style: italic;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     line-height: 1.6;
-    max-width: 600px;
+    max-width: 650px;
 }
 
 .sabotage-section p {
-    font-size: clamp(1rem, 3vw, 1.3rem);
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
     color: #cccccc;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 /* Character Count */
 .char-count {
     color: #888;
-    font-size: clamp(12px, 2.5vw, 16px);
-    margin-top: -15px;
+    font-size: clamp(11px, 2vw, 14px);
+    margin-top: -12px;
+    margin-bottom: 15px;
+}
+
+/* AI Response Panel */
+.ai-commentary-panel {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(138, 43, 226, 0.15);
+    border: 3px solid #8a2be2;
+    border-radius: 15px;
+    max-width: 700px;
+    width: 100%;
+    animation: panelGlow 2s ease-in-out infinite alternate;
+    transition: all 0.5s ease;
+}
+
+@keyframes panelGlow {
+    0% { box-shadow: 0 0 10px rgba(138, 43, 226, 0.3); }
+    100% { box-shadow: 0 0 20px rgba(138, 43, 226, 0.6); }
+}
+
+.ai-commentary-panel.success {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.15);
+    animation: successGlow 1s ease-in-out infinite alternate;
+}
+
+.ai-commentary-panel.failure {
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.15);
+    animation: failureGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes successGlow {
+    0% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.4); }
+    100% { box-shadow: 0 0 25px rgba(40, 167, 69, 0.8); }
+}
+
+@keyframes failureGlow {
+    0% { box-shadow: 0 0 15px rgba(220, 53, 69, 0.4); }
+    100% { box-shadow: 0 0 25px rgba(220, 53, 69, 0.8); }
+}
+
+.ai-commentary-panel h3 {
+    color: #fff;
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    margin-bottom: 15px;
+    text-align: center;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.ai-commentary {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 18px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    min-height: 120px;
+    text-align: left;
+    line-height: 1.6;
+    border-left: 4px solid #8a2be2;
+    font-family: 'Orbitron', monospace;
+}
+
+.oracle-reaction {
+    color: #ff6b35;
+    font-weight: bold;
+    font-style: italic;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #ff6b35;
+}
+
+.threat-display {
+    color: #ccc;
+    margin: 12px 0;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    font-style: italic;
+}
+
+.ai-feedback {
+    color: #8a2be2;
+    font-weight: 600;
+    margin-top: 10px;
+    text-align: center;
+    font-size: 1.1em;
+}
+
+/* Points Table */
+.points-table-container, .final-points-table-container {
+    margin: 30px 0;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 25px;
+    border-radius: 15px;
+    border: 2px solid #8a2be2;
+    max-width: 800px;
+    width: 100%;
+}
+
+.points-table-container h3, .final-points-table-container h3 {
+    color: #8a2be2;
+    margin-bottom: 20px;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+}
+
+.points-table {
+    display: grid;
+    gap: 15px;
+    font-family: 'Orbitron', monospace;
+}
+
+.points-table-header {
+    display: grid;
+    grid-template-columns: 2fr repeat(5, 1fr) 1fr;
+    gap: 10px;
+    padding: 12px 15px;
+    background: rgba(138, 43, 226, 0.2);
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: clamp(0.8rem, 2.5vw, 1rem);
+    color: #fff;
+}
+
+.points-table-row {
+    display: grid;
+    grid-template-columns: 2fr repeat(5, 1fr) 1fr;
+    gap: 10px;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    align-items: center;
+    font-size: clamp(0.8rem, 2.5vw, 1rem);
+    transition: all 0.3s ease;
+}
+
+.points-table-row:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.player-name-cell {
+    font-weight: bold;
+    color: #fff;
+    text-align: left;
+}
+
+.round-result {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 4px 8px;
+    border-radius: 6px;
+    min-width: 30px;
+}
+
+.round-result.win {
+    background: rgba(40, 167, 69, 0.3);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.round-result.loss {
+    background: rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.total-score {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #ffd700;
+}
+
+/* Round Summary */
+.round-summary-section {
+    width: 100%;
+    max-width: 900px;
+}
+
+.round-summary-section h2 {
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    margin-bottom: 30px;
+    color: #ff0040;
+}
+
+.round-results {
+    margin: 25px 0;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.next-round-info {
+    margin-top: 30px;
+}
+
+.next-round-info p {
+    font-size: clamp(1.1rem, 3.5vw, 1.4rem);
+    color: #cccccc;
     margin-bottom: 20px;
 }
 
@@ -378,15 +583,15 @@ input[type="text"]::placeholder, textarea::placeholder {
 }
 
 .waiting-section h2 {
-    font-size: clamp(2rem, 6vw, 3rem);
-    margin-bottom: 20px;
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    margin-bottom: 15px;
     color: #ff0040;
 }
 
 .waiting-section p {
-    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-size: clamp(1.1rem, 3.5vw, 1.4rem);
     color: #cccccc;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .loading-dots {
@@ -414,32 +619,32 @@ input[type="text"]::placeholder, textarea::placeholder {
 /* Results and Game Over */
 .results-section, .game-over-section {
     width: 100%;
-    max-width: 700px;
+    max-width: 800px;
 }
 
 .game-over-section h1 {
-    font-size: clamp(2.5rem, 8vw, 4rem);
-    margin-bottom: 30px;
+    font-size: clamp(2.2rem, 7vw, 3.5rem);
+    margin-bottom: 25px;
     color: #ff0040;
 }
 
 .oracle-final {
-    margin: 30px 0;
+    margin: 25px 0;
 }
 
 #final-scores {
-    margin: 30px 0;
+    margin: 25px 0;
 }
 
 .final-score {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 25px;
-    margin: 10px 0;
+    padding: 12px 20px;
+    margin: 8px 0;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    font-size: clamp(1rem, 3vw, 1.3rem);
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
     border: 2px solid transparent;
 }
 
@@ -450,8 +655,8 @@ input[type="text"]::placeholder, textarea::placeholder {
 }
 
 .round-info {
-    margin-top: 20px;
-    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    margin-top: 15px;
+    font-size: clamp(1.1rem, 3.5vw, 1.4rem);
     color: #8a2be2;
     font-weight: 600;
 }
@@ -461,17 +666,31 @@ input[type="text"]::placeholder, textarea::placeholder {
     .page-content {
         min-height: auto;
         justify-content: flex-start;
-        padding-top: 40px;
+        padding-top: 30px;
     }
     
     .oracle-avatar {
-        font-size: clamp(2rem, 8vw, 3rem);
-        margin: 10px 0;
+        font-size: clamp(2rem, 6vw, 2.5rem);
+        margin: 8px 0;
     }
     
     .timer {
-        font-size: clamp(2rem, 8vw, 3rem);
-        padding: 15px 25px;
+        font-size: clamp(2rem, 6vw, 2.5rem);
+        padding: 12px 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .points-table-header,
+    .points-table-row {
+        grid-template-columns: 1.5fr repeat(5, 0.8fr) 0.8fr;
+        font-size: clamp(0.7rem, 2vw, 0.9rem);
+        padding: 8px 10px;
+    }
+    
+    .round-result {
+        font-size: 0.9em;
+        padding: 2px 4px;
     }
 }
 
@@ -487,5 +706,16 @@ input[type="text"]::placeholder, textarea::placeholder {
     
     input[type="text"], textarea {
         max-width: 100%;
+    }
+    
+    .points-table-header,
+    .points-table-row {
+        grid-template-columns: 1fr repeat(5, 0.7fr) 0.7fr;
+        font-size: 0.7rem;
+        padding: 6px 8px;
+    }
+    
+    .player-name-cell {
+        font-size: 0.8rem;
     }
 }
