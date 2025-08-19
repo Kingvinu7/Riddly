@@ -1,4 +1,4 @@
-const socket = io();
+lconst socket = io();
 let currentRoom = null;
 let playerName = null;
 
@@ -11,6 +11,7 @@ const pages = {
     sabotage: document.getElementById('sabotage-screen'),
     waiting: document.getElementById('waiting-screen'),
     results: document.getElementById('results-screen'),
+    roundSummary: document.getElementById('round-summary-screen'),
     gameOver: document.getElementById('game-over-screen')
 };
 
@@ -139,12 +140,61 @@ function submitSabotage() {
     sabotageText.disabled = true;
     submitSabotageBtn.disabled = true;
     submitSabotageBtn.textContent = 'Threat Submitted!';
+    
+    // Show AI commentary panel with loading state
+    const panel = document.getElementById('ai-commentary-panel');
+    panel.style.display = 'block';
+    document.getElementById('oracle-response-text').innerHTML = `
+        <div class="oracle-reaction">🤖 The Oracle is examining your threat...</div>
+        <div class="loading-dots" style="text-align: center; margin: 20px 0;">
+            <span style="animation: bounce 1.4s ease-in-out infinite both;"></span>
+            <span style="animation: bounce 1.4s ease-in-out infinite both; animation-delay: 0.16s;"></span>
+            <span style="animation: bounce 1.4s ease-in-out infinite both; animation-delay: 0.32s;"></span>
+        </div>
+    `;
 }
 
 function updatePlayers(players) {
     playersListEl.innerHTML = players.map(player => 
         `<div class="player">${player.name}: ${player.score}pts</div>`
     ).join('');
+}
+
+function createPointsTable(roundHistory, tableId) {
+    const table = document.getElementById(tableId);
+    if (!table || !roundHistory || roundHistory.length === 0) return;
+    
+    let tableHtml = '<div class="points-table">';
+    
+    // Header
+    tableHtml += '<div class="points-table-header">';
+    tableHtml += '<div>Player</div>';
+    for (let i = 1; i <= 5; i++) {
+        tableHtml += `<div>R${i}</div>`;
+    }
+    tableHtml += '<div>Total</div>';
+    tableHtml += '</div>';
+    
+    // Player rows
+    roundHistory.forEach(playerHistory => {
+        tableHtml += '<div class="points-table-row">';
+        tableHtml += `<div class="player-name-cell">${playerHistory.playerName}</div>`;
+        
+        // Round results
+        for (let i = 0; i < 5; i++) {
+            const result = playerHistory.rounds[i] || '-';
+            const resultClass = result === 'W' ? 'win' : result === 'L' ? 'loss' : '';
+            tableHtml += `<div class="round-result ${resultClass}">${result}</div>`;
+        }
+        
+        // Total score
+        const totalWins = playerHistory.rounds.filter(r => r === 'W').length;
+        tableHtml += `<div class="total-score">${totalWins}</div>`;
+        tableHtml += '</div>';
+    });
+    
+    tableHtml += '</div>';
+    table.innerHTML = tableHtml;
 }
 
 function startTimer(elementId, seconds) {
@@ -242,6 +292,9 @@ socket.on('sabotage-phase-start', (data) => {
         submitSabotageBtn.disabled = false;
         submitSabotageBtn.textContent = 'Submit Threat';
         
+        // Hide AI commentary panel
+        document.getElementById('ai-commentary-panel').style.display = 'none';
+        
         showPage('sabotage');
         startTimer('sabotage-timer', 60);
     } else {
@@ -249,6 +302,53 @@ socket.on('sabotage-phase-start', (data) => {
         document.getElementById('waiting-message').textContent = 'Other players are threatening the Oracle. You\'re safe this round!';
         showPage('waiting');
     }
+});
+
+socket.on('oracle-individual-response', (data) => {
+    if (data.playerName === playerName) {
+        const panel = document.getElementById('ai-commentary-panel');
+        const responseText = document.getElementById('oracle-response-text');
+        
+        // Update panel styling based on success/failure
+        panel.classList.remove('success', 'failure');
+        if (data.success) {
+            panel.classList.add('success');
+        } else {
+            panel.classList.add('failure');
+        }
+        
+        // Display Oracle's dramatic response
+        responseText.innerHTML = `
+            <div class="oracle-reaction">
+                🤖 "${data.oracleReaction}"
+            </div>
+            <div class="threat-display">
+                <strong>Your Threat:</strong> "${data.sabotage}"
+            </div>
+            <div class="ai-feedback">
+                ${data.success ? '💥 YOUR THREAT SUCCEEDED!' : '🛡️ ORACLE SURVIVED YOUR ATTACK'}
+                <br>
+                <em>${data.feedback}</em>
+            </div>
+        `;
+    }
+});
+
+socket.on('round-summary', (data) => {
+    document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
+    
+    // Create points table
+    createPointsTable(data.roundHistory, 'points-table');
+    
+    // Update round info
+    const nextRoundText = document.getElementById('next-round-text');
+    if (data.round >= data.maxRounds) {
+        nextRoundText.textContent = 'Final results coming up...';
+    } else {
+        nextRoundText.textContent = `Round ${data.round + 1} starting soon...`;
+    }
+    
+    showPage('roundSummary');
 });
 
 socket.on('sabotage-results', (data) => {
@@ -262,8 +362,20 @@ socket.on('sabotage-results', (data) => {
                 <p class="oracle-message">"${data.oracleResponse}"</p>
             </div>
         </div>
+        <div class="all-threats">
+            <h3>📊 All Threat Evaluations:</h3>
     `;
     
+    data.results.forEach(result => {
+        resultsHtml += `
+            <div class="threat-evaluation ${result.success ? 'successful' : 'failed'}">
+                <strong>${result.playerName}:</strong> "${result.sabotage}"
+                <em>${result.feedback}</em>
+            </div>
+        `;
+    });
+    
+    resultsHtml += '</div>';
     document.getElementById('results-content').innerHTML = resultsHtml;
     showPage('results');
 });
@@ -282,6 +394,9 @@ socket.on('game-over', (data) => {
     document.getElementById('final-oracle').textContent = data.winner.score > 0 ? '💥' : '🤖';
     document.getElementById('final-oracle-message').textContent = `"${data.message}"`;
     document.getElementById('final-scores').innerHTML = scoresHtml;
+    
+    // Create final points table
+    createPointsTable(data.roundHistory, 'final-points-table');
     
     showPage('gameOver');
 });
