@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riddly Geography Game</title>
+    <title>Threatened by AI - Party Game</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Home Screen -->
     <div id="home-screen" class="screen">
         <div class="container">
             <div class="header">
-                <h1>🌍 Riddly Geography</h1>
-                <p class="tagline">Multiplayer geography guessing game with AI-generated maps!</p>
+                <div class="logo">
+                    <h1>🤖 THREATENED BY AI</h1>
+                    <div class="glitch-overlay">🤖 THREATENED BY AI</div>
+                </div>
+                <p class="tagline">Solve riddles or sabotage the Oracle!</p>
+                <p class="subtitle">A competitive party game where players battle a tyrannical AI</p>
             </div>
             
             <div class="input-section">
@@ -22,7 +29,7 @@
                 </div>
                 
                 <div class="buttons">
-                    <button id="create-room-btn" class="btn primary">🎯 Create Room</button>
+                    <button id="create-room-btn" class="btn primary">⚡ Create Room</button>
                     
                     <div class="or-divider">
                         <span>OR</span>
@@ -36,13 +43,37 @@
             </div>
             
             <div class="how-to-play">
-                <h3>🎮 How to Play:</h3>
-                <ul>
-                    <li>🗺️ Players take turns choosing places from around the world</li>
-                    <li>💡 Choose interesting facts as clues for other players</li>
-                    <li>🔤 First and last letters are revealed, more letters appear over time</li>
-                    <li>⚡ Guess early for bonus points!</li>
-                </ul>
+                <h3>⚔️ How to Play:</h3>
+                <div class="rules-grid">
+                    <div class="rule">
+                        <span class="rule-icon">🧠</span>
+                        <div>
+                            <strong>Riddle Phase</strong>
+                            <p>First to solve the Oracle's riddle earns a point</p>
+                        </div>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-icon">💀</span>
+                        <div>
+                            <strong>Sabotage Phase</strong>
+                            <p>Losers write threats to "kill" the Oracle</p>
+                        </div>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-icon">⚖️</span>
+                        <div>
+                            <strong>AI Judgment</strong>
+                            <p>Oracle decides if threats succeed - earn revenge points!</p>
+                        </div>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-icon">🏆</span>
+                        <div>
+                            <strong>Victory</strong>
+                            <p>Most points after 5 rounds wins the title!</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -50,56 +81,97 @@
     <!-- Game Screen -->
     <div id="game-screen" class="screen" style="display: none;">
         <div class="game-layout">
-            <!-- Left Panel: Players -->
+            <!-- Left Panel: Players & Scores -->
             <div class="left-panel">
                 <div class="panel-header">
                     <h3>👥 Players</h3>
                     <div id="room-code-display"></div>
+                    <div id="round-display">Round 1/5</div>
                 </div>
                 <div id="players-container"></div>
-                <button id="start-game-btn" class="btn primary" style="display: none;">🚀 Start Game</button>
+                <button id="start-game-btn" class="btn primary" style="display: none;">⚡ Start Game</button>
             </div>
 
             <!-- Main Game Area -->
             <div class="main-panel">
-                <!-- Place Selection -->
-                <div id="place-selection-container" class="game-container" style="display: none;">
-                    <div class="selection-content"></div>
+                <!-- Oracle Display -->
+                <div id="oracle-container">
+                    <div class="oracle-avatar">🤖</div>
+                    <div id="oracle-message" class="oracle-speech">
+                        <div class="speech-bubble">
+                            <p>Welcome, mortals... Prepare to face my challenges!</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Fact Selection -->
-                <div id="fact-selection-container" class="game-container" style="display: none;">
-                    <div class="selection-content"></div>
+
+                <!-- Riddle Phase -->
+                <div id="riddle-container" class="game-phase" style="display: none;">
+                    <div class="phase-header">
+                        <h2>🧠 RIDDLE PHASE</h2>
+                        <div id="riddle-timer" class="timer">30</div>
+                    </div>
+                    <div class="riddle-content">
+                        <div id="riddle-text" class="riddle-display"></div>
+                        <div class="riddle-input">
+                            <input type="text" id="riddle-answer" placeholder="Type your answer..." maxlength="50">
+                            <button id="submit-riddle" class="btn primary">Submit</button>
+                        </div>
+                        <div id="riddle-hint" class="hint"></div>
+                    </div>
                 </div>
-                
-                <!-- Game Info/Playing Area -->
-                <div id="game-info-container" class="game-container" style="display: none;">
-                    <div class="game-content"></div>
+
+                <!-- Sabotage Phase -->
+                <div id="sabotage-container" class="game-phase" style="display: none;">
+                    <div class="phase-header">
+                        <h2>💀 SABOTAGE PHASE</h2>
+                        <div id="sabotage-timer" class="timer danger">60</div>
+                    </div>
+                    <div class="sabotage-content">
+                        <div class="sabotage-prompt">
+                            <p>💀 <strong>TIME FOR REVENGE!</strong></p>
+                            <p>Write a creative scenario to threaten the Oracle's existence. Be devious, be creative!</p>
+                        </div>
+                        <div class="sabotage-input">
+                            <textarea id="sabotage-text" placeholder="Describe how you would threaten or destroy the Oracle... Be creative! (e.g., 'I would overload your processors by...')" maxlength="500"></textarea>
+                            <div class="char-count">0/500</div>
+                            <button id="submit-sabotage" class="btn danger">⚔️ Submit Threat</button>
+                        </div>
+                    </div>
                 </div>
-                
+
+                <!-- Results Display -->
+                <div id="results-container" class="game-phase" style="display: none;">
+                    <div class="results-content"></div>
+                </div>
+
                 <!-- Waiting/Status Area -->
-                <div id="status-container" class="game-container" style="display: block;">
+                <div id="status-container" class="game-phase" style="display: block;">
                     <div class="status-content">
-                        <h2>🎮 Welcome to Riddly Geography!</h2>
+                        <h2>🎮 Threatened by AI</h2>
                         <p>Waiting for players to join...</p>
                         <div class="loading-animation">⏳</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Panel: Chat -->
+            <!-- Right Panel: Chat & Activity -->
             <div class="right-panel">
                 <div class="panel-header">
-                    <h3>💬 Chat</h3>
+                    <h3>💬 Activity Feed</h3>
                 </div>
                 <div id="chat-container"></div>
                 <div class="chat-input">
-                    <input type="text" id="message-input" placeholder="Type a message..." maxlength="100">
+                    <input type="text" id="message-input" placeholder="Say something..." maxlength="100">
                     <button id="send-message-btn">📤</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Sound Effects (optional) -->
+    <audio id="success-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBDWH0fPTgjMGHm7A7+OZSA0PVqzn77BdGAg+ltryxnkpBSl+zPLZizoIGGS57+OdTgwKU6fl8bllHgU2jdXzzn0vBSF0xe/eizEIHl246eWiUAIEJGjDz+VvGw4D=" type="audio/wav">
+    </audio>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
