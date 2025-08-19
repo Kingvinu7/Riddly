@@ -105,6 +105,41 @@
                 <textarea id="sabotage-text" placeholder="Describe how you would threaten or destroy the Oracle... Be creative and detailed!" class="threat-input"></textarea>
                 <div class="char-count">0/500</div>
                 <button id="submit-sabotage" class="btn danger large">Submit Threat</button>
+                
+                <!-- Oracle Response Panel -->
+                <div class="ai-commentary-panel" id="ai-commentary-panel" style="display: none;">
+                    <h3>🤖 Oracle's Judgment</h3>
+                    <div class="ai-commentary">
+                        <div id="oracle-response-text">The Oracle is evaluating your threat...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Round Summary Screen -->
+    <div id="round-summary-screen" class="page">
+        <div class="page-content">
+            <div class="round-summary-section">
+                <h2 id="round-summary-title">Round 1 Complete!</h2>
+                
+                <div class="points-table-container">
+                    <h3>📊 Points Table</h3>
+                    <div id="points-table"></div>
+                </div>
+                
+                <div class="round-results">
+                    <div id="round-winner-info"></div>
+                </div>
+                
+                <div class="next-round-info">
+                    <p id="next-round-text">Next round starting soon...</p>
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -145,6 +180,12 @@
                     <div class="oracle-avatar large" id="final-oracle">🤖</div>
                     <p id="final-oracle-message" class="oracle-message"></p>
                 </div>
+                
+                <div class="final-points-table-container">
+                    <h3>📊 Final Points Table</h3>
+                    <div id="final-points-table"></div>
+                </div>
+                
                 <div id="final-scores"></div>
                 <button class="btn primary large" onclick="location.reload()">Play Again</button>
             </div>
