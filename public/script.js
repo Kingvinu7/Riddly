@@ -1,4 +1,4 @@
-lconst socket = io();
+const socket = io();
 let currentRoom = null;
 let playerName = null;
 
@@ -10,7 +10,6 @@ const pages = {
     riddle: document.getElementById('riddle-screen'),
     sabotage: document.getElementById('sabotage-screen'),
     waiting: document.getElementById('waiting-screen'),
-    results: document.getElementById('results-screen'),
     roundSummary: document.getElementById('round-summary-screen'),
     gameOver: document.getElementById('game-over-screen')
 };
@@ -112,6 +111,7 @@ function joinRoom() {
 }
 
 function startGame() {
+    console.log('Start game clicked for room:', currentRoom);
     if (currentRoom) {
         socket.emit('start-game', { roomCode: currentRoom });
     }
@@ -141,16 +141,11 @@ function submitSabotage() {
     submitSabotageBtn.disabled = true;
     submitSabotageBtn.textContent = 'Threat Submitted!';
     
-    // Show AI commentary panel with loading state
+    // Show AI commentary panel
     const panel = document.getElementById('ai-commentary-panel');
     panel.style.display = 'block';
     document.getElementById('oracle-response-text').innerHTML = `
         <div class="oracle-reaction">🤖 The Oracle is examining your threat...</div>
-        <div class="loading-dots" style="text-align: center; margin: 20px 0;">
-            <span style="animation: bounce 1.4s ease-in-out infinite both;"></span>
-            <span style="animation: bounce 1.4s ease-in-out infinite both; animation-delay: 0.16s;"></span>
-            <span style="animation: bounce 1.4s ease-in-out infinite both; animation-delay: 0.32s;"></span>
-        </div>
     `;
 }
 
@@ -223,6 +218,7 @@ function startTimer(elementId, seconds) {
 
 // Socket event listeners
 socket.on('room-created', (data) => {
+    console.log('Room created:', data.roomCode);
     currentRoom = data.roomCode;
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
     startGameBtn.classList.remove('hidden');
@@ -231,6 +227,7 @@ socket.on('room-created', (data) => {
 });
 
 socket.on('join-success', (data) => {
+    console.log('Joined room:', data.roomCode);
     currentRoom = data.roomCode;
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
     document.querySelector('.waiting-text').style.display = 'block';
@@ -309,7 +306,7 @@ socket.on('oracle-individual-response', (data) => {
         const panel = document.getElementById('ai-commentary-panel');
         const responseText = document.getElementById('oracle-response-text');
         
-        // Update panel styling based on success/failure
+        // Update panel styling
         panel.classList.remove('success', 'failure');
         if (data.success) {
             panel.classList.add('success');
@@ -317,7 +314,7 @@ socket.on('oracle-individual-response', (data) => {
             panel.classList.add('failure');
         }
         
-        // Display Oracle's dramatic response
+        // Display Oracle's response
         responseText.innerHTML = `
             <div class="oracle-reaction">
                 🤖 "${data.oracleReaction}"
@@ -340,7 +337,7 @@ socket.on('round-summary', (data) => {
     // Create points table
     createPointsTable(data.roundHistory, 'points-table');
     
-    // Update round info
+    // Update next round info
     const nextRoundText = document.getElementById('next-round-text');
     if (data.round >= data.maxRounds) {
         nextRoundText.textContent = 'Final results coming up...';
@@ -349,35 +346,6 @@ socket.on('round-summary', (data) => {
     }
     
     showPage('roundSummary');
-});
-
-socket.on('sabotage-results', (data) => {
-    let resultsHtml = `
-        <div class="results-header">
-            <h2>${data.oracleDamaged ? '💥 ORACLE DAMAGED!' : '🛡️ ORACLE SURVIVES!'}</h2>
-            <div class="oracle-response">
-                <div class="oracle-avatar ${data.oracleDamaged ? 'damaged' : 'victorious'}">
-                    ${data.oracleDamaged ? '💥' : '🤖'}
-                </div>
-                <p class="oracle-message">"${data.oracleResponse}"</p>
-            </div>
-        </div>
-        <div class="all-threats">
-            <h3>📊 All Threat Evaluations:</h3>
-    `;
-    
-    data.results.forEach(result => {
-        resultsHtml += `
-            <div class="threat-evaluation ${result.success ? 'successful' : 'failed'}">
-                <strong>${result.playerName}:</strong> "${result.sabotage}"
-                <em>${result.feedback}</em>
-            </div>
-        `;
-    });
-    
-    resultsHtml += '</div>';
-    document.getElementById('results-content').innerHTML = resultsHtml;
-    showPage('results');
 });
 
 socket.on('game-over', (data) => {
@@ -402,9 +370,12 @@ socket.on('game-over', (data) => {
 });
 
 socket.on('error', (data) => {
+    console.error('Socket error:', data.message);
     alert(data.message);
 });
 
 // Initialize
 showPage('home');
 playerNameInput.focus();
+
+console.log('Script loaded successfully');
