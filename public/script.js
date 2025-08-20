@@ -8,7 +8,9 @@ const pages = {
     lobby: document.getElementById('lobby-screen'),
     oracleIntro: document.getElementById('oracle-intro-screen'),
     riddle: document.getElementById('riddle-screen'),
-    sabotage: document.getElementById('sabotage-screen'),
+    riddleResults: document.getElementById('riddle-results-screen'),
+    puzzle: document.getElementById('puzzle-screen'),
+    puzzleResults: document.getElementById('puzzle-results-screen'),
     waiting: document.getElementById('waiting-screen'),
     roundSummary: document.getElementById('round-summary-screen'),
     gameOver: document.getElementById('game-over-screen')
@@ -18,14 +20,19 @@ const pages = {
 const playerNameInput = document.getElementById('player-name');
 const roomCodeInput = document.getElementById('room-code');
 const riddleAnswer = document.getElementById('riddle-answer');
-const sabotageText = document.getElementById('sabotage-text');
 
 // Button elements
 const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const startGameBtn = document.getElementById('start-game-btn');
 const submitRiddleBtn = document.getElementById('submit-riddle');
-const submitSabotageBtn = document.getElementById('submit-sabotage');
+
+// Choice buttons
+const choiceButtons = {
+    a: document.getElementById('choice-a'),
+    b: document.getElementById('choice-b'),
+    c: document.getElementById('choice-c')
+};
 
 // Display elements
 const roomCodeDisplay = document.getElementById('room-code-display');
@@ -33,14 +40,12 @@ const roundDisplay = document.getElementById('round-display');
 const playersListEl = document.getElementById('players-list');
 const oracleIntroMessage = document.getElementById('oracle-intro-message');
 const riddleText = document.getElementById('riddle-text');
-const charCount = document.querySelector('.char-count');
 
 // Event listeners
 createRoomBtn.addEventListener('click', createRoom);
 joinRoomBtn.addEventListener('click', joinRoom);
 startGameBtn.addEventListener('click', startGame);
 submitRiddleBtn.addEventListener('click', submitRiddleAnswer);
-submitSabotageBtn.addEventListener('click', submitSabotage);
 
 playerNameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createRoom();
@@ -54,12 +59,12 @@ riddleAnswer.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') submitRiddleAnswer();
 });
 
-sabotageText.addEventListener('input', () => {
-    const count = sabotageText.value.length;
-    if (charCount) {
-        charCount.textContent = `${count}/500`;
-        charCount.style.color = count > 450 ? '#ff0040' : '#888';
-    }
+// Add choice button event listeners
+Object.values(choiceButtons).forEach(button => {
+    button.addEventListener('click', (e) => {
+        const choice = e.currentTarget.dataset.choice;
+        submitPuzzleChoice(choice);
+    });
 });
 
 // Page navigation
@@ -127,33 +132,22 @@ function submitRiddleAnswer() {
     submitRiddleBtn.textContent = 'Submitted!';
 }
 
-function submitSabotage() {
-    const sabotage = sabotageText.value.trim();
-    if (!sabotage || !currentRoom) return;
+function submitPuzzleChoice(choice) {
+    if (!currentRoom) return;
     
-    if (sabotage.length < 20) {
-        alert('Your threat must be at least 20 characters long. Be more creative!');
-        return;
+    socket.emit('submit-puzzle-choice', { roomCode: currentRoom, choice: choice });
+    
+    // Disable all choice buttons
+    Object.values(choiceButtons).forEach(btn => {
+        btn.disabled = true;
+        btn.classList.remove('selected');
+    });
+    
+    // Highlight selected choice
+    const selectedButton = choiceButtons[choice.toLowerCase()];
+    if (selectedButton) {
+        selectedButton.classList.add('selected');
     }
-    
-    socket.emit('submit-sabotage', { roomCode: currentRoom, sabotage: sabotage });
-    sabotageText.disabled = true;
-    submitSabotageBtn.disabled = true;
-    submitSabotageBtn.textContent = 'Threat Submitted!';
-    
-    // Show AI commentary panel
-    const panel = document.getElementById('ai-commentary-panel');
-    panel.style.display = 'block';
-    document.getElementById('oracle-response-text').innerHTML = `
-        <div class="oracle-reaction">🔍 The Oracle is analyzing your threat...</div>
-        <div class="loading-animation">
-            <div class="loading-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    `;
 }
 
 function updatePlayers(players) {
@@ -223,20 +217,6 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// Typing effect function
-function typeWriter(element, text, speed = 30) {
-    element.textContent = '';
-    let i = 0;
-    const typeEffect = setInterval(() => {
-        if (i < text.length) {
-            element.textContent += text.charAt(i);
-            i++;
-        } else {
-            clearInterval(typeEffect);
-        }
-    }, speed);
-}
-
 // Socket event listeners
 socket.on('room-created', (data) => {
     console.log('Room created:', data.roomCode);
@@ -289,81 +269,115 @@ socket.on('riddle-presented', (data) => {
     submitRiddleBtn.disabled = false;
     submitRiddleBtn.textContent = 'Submit Answer';
     
+    // Reset submission counter
+    document.getElementById('submission-count').textContent = '0/0 players answered';
+    
     showPage('riddle');
     startTimer('riddle-timer', 30);
 });
 
-socket.on('riddle-solved', (data) => {
-    riddleAnswer.disabled = true;
-    submitRiddleBtn.disabled = true;
-    submitRiddleBtn.textContent = `${data.winner} Won!`;
+socket.on('answer-submitted', (data) => {
+    document.getElementById('submission-count').textContent = 
+        `${data.totalSubmissions}/${data.totalPlayers} players answered`;
 });
 
-socket.on('sabotage-phase-start', (data) => {
+socket.on('riddle-results-reveal', (data) => {
+    // Update results message
+    document.getElementById('riddle-results-message').textContent = data.message;
+    
+    // Show all answers
+    const answersListEl = document.getElementById('all-answers-list');
+    let answersHtml = '';
+    
+    data.allAnswers.forEach((answerData, index) => {
+        const isCorrect = answerData.correct;
+        const isWinner = answerData.winner;
+        const orderText = index === 0 ? '1st' : index === 1 ? '2nd' : index === 2 ? '3rd' : `${index + 1}th`;
+        
+        answersHtml += `
+            <div class="answer-item ${isCorrect ? 'correct' : 'incorrect'} ${isWinner ? 'winner' : ''}">
+                <div class="answer-header">
+                    <span class="player-name">${answerData.playerName}</span>
+                    <span class="answer-order">${orderText}</span>
+                    ${isWinner ? '<span class="winner-badge">🏆 WINNER</span>' : ''}
+                </div>
+                <div class="answer-text">"${answerData.answer}"</div>
+                <div class="answer-status">
+                    ${isCorrect ? '✅ Correct' : '❌ Incorrect'}
+                </div>
+            </div>
+        `;
+    });
+    
+    answersListEl.innerHTML = answersHtml;
+    showPage('riddleResults');
+});
+
+socket.on('puzzle-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
-        // Reset inputs
-        sabotageText.disabled = false;
-        sabotageText.value = '';
-        sabotageText.focus();
-        submitSabotageBtn.disabled = false;
-        submitSabotageBtn.textContent = 'Submit Threat';
+        // Show puzzle to participant
+        document.getElementById('puzzle-scenario').textContent = data.puzzle.scenario;
         
-        // Hide AI commentary panel
-        document.getElementById('ai-commentary-panel').style.display = 'none';
+        // Set up choice options
+        document.getElementById('choice-a-text').textContent = data.puzzle.options.find(opt => opt.id === 'A')?.text || 'Option A';
+        document.getElementById('choice-b-text').textContent = data.puzzle.options.find(opt => opt.id === 'B')?.text || 'Option B';
+        document.getElementById('choice-c-text').textContent = data.puzzle.options.find(opt => opt.id === 'C')?.text || 'Option C';
         
-        showPage('sabotage');
-        startTimer('sabotage-timer', 60);
+        // Reset choice buttons
+        Object.values(choiceButtons).forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('selected');
+        });
+        
+        // Reset submission counter
+        document.getElementById('puzzle-submission-count').textContent = `0/${data.participants.length} non-winners chose`;
+        
+        showPage('puzzle');
+        startTimer('puzzle-timer', 30);
     } else {
-        document.getElementById('waiting-title').textContent = 'Others are plotting...';
-        document.getElementById('waiting-message').textContent = 'Other players are threatening the Oracle. You\'re safe this round!';
+        document.getElementById('waiting-title').textContent = 'Others are facing a challenge...';
+        document.getElementById('waiting-message').textContent = 'Non-winners are solving a survival puzzle!';
         showPage('waiting');
     }
 });
 
-// NEW: Consequence narration event handler
-socket.on('consequence-narration', (data) => {
-    if (data.playerName === playerName) {
-        const panel = document.getElementById('ai-commentary-panel');
-        const responseText = document.getElementById('oracle-response-text');
-        
-        // Update panel styling
-        panel.classList.remove('success', 'failure');
-        if (data.success) {
-            panel.classList.add('success');
-        } else {
-            panel.classList.add('failure');
-        }
-        
-        // Display the dramatic consequence narration
-        responseText.innerHTML = `
-            <div class="consequence-header">
-                <h4>🎭 CONSEQUENCE NARRATION</h4>
-            </div>
-            <div class="player-action">
-                <strong>Your Action:</strong> "${data.sabotage}"
-            </div>
-            <div class="consequence-story"></div>
-            <div class="consequence-result ${data.success ? 'success' : 'failure'}">
-                <strong>${data.success ? '💥 ORACLE DAMAGED!' : '🛡️ ORACLE SURVIVES!'}</strong>
-                <br>
-                <em>${data.feedback}</em>
-            </div>
-        `;
-        
-        // Add dramatic typing effect for the story
-        const storyElement = responseText.querySelector('.consequence-story');
-        typeWriter(storyElement, data.narration, 20);
-    }
+socket.on('puzzle-choice-submitted', (data) => {
+    document.getElementById('puzzle-submission-count').textContent = 
+        `${data.totalSubmissions}/${data.expectedSubmissions} non-winners chose`;
 });
 
-// NEW: Oracle final judgment event handler
+socket.on('puzzle-choice-result', (data) => {
+    const resultsContent = document.getElementById('puzzle-results-content');
+    
+    const resultHtml = `
+        <div class="choice-result ${data.survived ? 'survived' : 'eliminated'}">
+            <div class="choice-header">
+                <h3>Option ${data.optionId}: ${data.optionText}</h3>
+                <div class="players-list">
+                    ${data.players.map(name => `<span class="player-tag">${name}</span>`).join('')}
+                </div>
+            </div>
+            <div class="fate-narration">
+                ${data.narration}
+            </div>
+            <div class="result-status">
+                ${data.survived ? '✅ SURVIVED' : '💀 ELIMINATED'}
+            </div>
+        </div>
+    `;
+    
+    resultsContent.innerHTML += resultHtml;
+    
+    // Auto-scroll to new result
+    resultsContent.scrollTop = resultsContent.scrollHeight;
+    
+    showPage('puzzleResults');
+});
+
 socket.on('oracle-final-judgment', (data) => {
     console.log('Oracle Final Judgment:', data.message);
-    
-    // You can display this as a modal or notification if needed
-    // For now, it's logged to console
 });
 
 socket.on('round-summary', (data) => {
