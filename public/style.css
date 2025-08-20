@@ -192,21 +192,8 @@ input[type="text"]::placeholder, textarea::placeholder {
     margin-bottom: 25px;
 }
 
-.threat-input {
-    min-height: 120px;
-    max-height: 250px;
-    resize: vertical;
-    font-size: clamp(13px, 2.5vw, 16px) !important;
-    text-align: left !important;
-    line-height: 1.5;
-}
-
-.threat-input::placeholder {
-    text-align: left;
-}
-
 /* Action Sections */
-.action-section, .answer-section, .threat-section {
+.action-section, .answer-section {
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -344,7 +331,7 @@ input[type="text"]::placeholder, textarea::placeholder {
 }
 
 /* Question Sections */
-.riddle-section h2, .sabotage-section h2 {
+.riddle-section h2, .puzzle-section h2 {
     font-size: clamp(1.6rem, 5vw, 2.2rem);
     margin-bottom: 25px;
     color: #ffffff;
@@ -359,107 +346,328 @@ input[type="text"]::placeholder, textarea::placeholder {
     max-width: 650px;
 }
 
-.sabotage-section p {
-    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
-    color: #cccccc;
+/* NEW: Puzzle Challenge Styles */
+.puzzle-section {
     margin-bottom: 30px;
 }
 
-/* Character Count */
-.char-count {
-    color: #888;
-    font-size: clamp(11px, 2vw, 14px);
-    margin-top: -12px;
-    margin-bottom: 15px;
-}
-
-/* AI Response Panel */
-.ai-commentary-panel {
-    margin-top: 20px;
+.puzzle-description {
+    font-size: clamp(1rem, 3.5vw, 1.4rem);
+    color: #cccccc;
+    font-style: italic;
+    margin-bottom: 30px;
+    line-height: 1.6;
+    max-width: 650px;
+    background: rgba(255, 255, 255, 0.05);
     padding: 20px;
-    background: rgba(138, 43, 226, 0.15);
-    border: 3px solid #8a2be2;
-    border-radius: 15px;
-    max-width: 700px;
+    border-radius: 12px;
+    border-left: 4px solid #ff0040;
+}
+
+.choices-section {
     width: 100%;
-    animation: panelGlow 2s ease-in-out infinite alternate;
-    transition: all 0.5s ease;
+    max-width: 700px;
 }
 
-@keyframes panelGlow {
-    0% { box-shadow: 0 0 10px rgba(138, 43, 226, 0.3); }
-    100% { box-shadow: 0 0 20px rgba(138, 43, 226, 0.6); }
+.choice-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.ai-commentary-panel.success {
+.choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px 25px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 3px solid #666;
+    border-radius: 12px;
+    color: #ffffff;
+    font-family: 'Orbitron', monospace;
+    font-weight: 600;
+    font-size: clamp(14px, 3vw, 18px);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.choice-btn:hover {
+    border-color: #8a2be2;
+    background: rgba(138, 43, 226, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
+}
+
+.choice-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.choice-btn.selected {
+    border-color: #ff0040;
+    background: rgba(255, 0, 64, 0.2);
+    box-shadow: 0 0 20px rgba(255, 0, 64, 0.4);
+}
+
+.choice-letter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, #ff0040, #8a2be2);
+    border-radius: 50%;
+    font-weight: 900;
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.choice-text {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.submission-status {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.submission-status p {
+    color: #888;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+}
+
+/* NEW: Riddle Results Styles */
+.results-header {
+    margin-bottom: 30px;
+}
+
+.results-header h2 {
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    margin-bottom: 20px;
+    color: #ff0040;
+}
+
+.all-answers-section {
+    width: 100%;
+    max-width: 800px;
+}
+
+.all-answers-section h3 {
+    color: #8a2be2;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    margin-bottom: 20px;
+}
+
+#all-answers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.answer-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #666;
+    transition: all 0.3s ease;
+}
+
+.answer-item.correct {
     border-color: #28a745;
     background: rgba(40, 167, 69, 0.15);
-    animation: successGlow 1s ease-in-out infinite alternate;
 }
 
-.ai-commentary-panel.failure {
+.answer-item.incorrect {
     border-color: #dc3545;
     background: rgba(220, 53, 69, 0.15);
-    animation: failureGlow 1s ease-in-out infinite alternate;
 }
 
-@keyframes successGlow {
-    0% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.4); }
-    100% { box-shadow: 0 0 25px rgba(40, 167, 69, 0.8); }
+.answer-item.winner {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.15);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    transform: scale(1.02);
 }
 
-@keyframes failureGlow {
-    0% { box-shadow: 0 0 15px rgba(220, 53, 69, 0.4); }
-    100% { box-shadow: 0 0 25px rgba(220, 53, 69, 0.8); }
+.answer-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
 }
 
-.ai-commentary-panel h3 {
-    color: #fff;
-    font-size: clamp(1.1rem, 3vw, 1.4rem);
-    margin-bottom: 15px;
-    text-align: center;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-}
-
-.ai-commentary {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 18px;
-    border-radius: 10px;
-    color: #fff;
-    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
-    min-height: 120px;
-    text-align: left;
-    line-height: 1.6;
-    border-left: 4px solid #8a2be2;
-    font-family: 'Orbitron', monospace;
-}
-
-.oracle-reaction {
-    color: #ff6b35;
+.player-name {
     font-weight: bold;
-    font-style: italic;
-    margin-bottom: 15px;
-    padding: 10px;
-    background: rgba(255, 107, 53, 0.1);
-    border-radius: 8px;
-    border-left: 3px solid #ff6b35;
-}
-
-.threat-display {
-    color: #ccc;
-    margin: 12px 0;
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
-    font-style: italic;
-}
-
-.ai-feedback {
-    color: #8a2be2;
-    font-weight: 600;
-    margin-top: 10px;
-    text-align: center;
+    color: #fff;
     font-size: 1.1em;
+}
+
+.answer-order {
+    background: rgba(138, 43, 226, 0.3);
+    color: #8a2be2;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.winner-badge {
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    color: #000;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 700;
+    animation: winnerPulse 2s ease-in-out infinite;
+}
+
+@keyframes winnerPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.answer-text {
+    font-style: italic;
+    color: #ccc;
+    margin: 10px 0;
+    font-size: 1.1em;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+.answer-status {
+    font-weight: 600;
+    font-size: 1em;
+}
+
+.answer-item.correct .answer-status {
+    color: #28a745;
+}
+
+.answer-item.incorrect .answer-status {
+    color: #dc3545;
+}
+
+/* NEW: Puzzle Results Styles */
+.puzzle-results-section {
+    width: 100%;
+    max-width: 900px;
+}
+
+.puzzle-results-section h2 {
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    margin-bottom: 30px;
+    color: #ff0040;
+}
+
+#puzzle-results-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.choice-result {
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 25px;
+    border-radius: 15px;
+    padding: 25px;
+    border: 3px solid;
+    animation: resultAppear 0.6s ease-out;
+}
+
+@keyframes resultAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.choice-result.survived {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.15);
+}
+
+.choice-result.eliminated {
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.15);
+}
+
+.choice-header {
+    margin-bottom: 20px;
+}
+
+.choice-header h3 {
+    color: #fff;
+    font-size: clamp(1.2rem, 3.5vw, 1.6rem);
+    margin-bottom: 15px;
+}
+
+.players-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.player-tag {
+    background: rgba(138, 43, 226, 0.3);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    border: 1px solid #8a2be2;
+}
+
+.fate-narration {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    font-size: clamp(1rem, 2.8vw, 1.2rem);
+    line-height: 1.6;
+    color: #fff;
+    border-left: 4px solid;
+    font-style: italic;
+}
+
+.choice-result.survived .fate-narration {
+    border-left-color: #28a745;
+}
+
+.choice-result.eliminated .fate-narration {
+    border-left-color: #dc3545;
+}
+
+.result-status {
+    text-align: center;
+    padding: 15px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    margin-top: 15px;
+}
+
+.choice-result.survived .result-status {
+    background: rgba(40, 167, 69, 0.3);
+    color: #28a745;
+    border: 2px solid #28a745;
+}
+
+.choice-result.eliminated .result-status {
+    background: rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+    border: 2px solid #dc3545;
 }
 
 /* Points Table */
@@ -685,6 +893,21 @@ input[type="text"]::placeholder, textarea::placeholder {
         font-size: 0.9em;
         padding: 2px 4px;
     }
+    
+    .choice-buttons {
+        gap: 10px;
+    }
+    
+    .choice-btn {
+        padding: 15px 20px;
+        font-size: clamp(12px, 2.5vw, 16px);
+    }
+    
+    .choice-letter {
+        width: 35px;
+        height: 35px;
+        font-size: 1em;
+    }
 }
 
 @media (max-width: 480px) {
@@ -710,5 +933,31 @@ input[type="text"]::placeholder, textarea::placeholder {
     
     .player-name-cell {
         font-size: 0.8rem;
+    }
+    
+    .answer-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .choice-btn {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .choice-letter {
+        align-self: center;
+    }
+    
+    .players-list {
+        justify-content: center;
+    }
+    
+    .player-tag {
+        font-size: 0.8em;
+        padding: 4px 8px;
     }
 }
