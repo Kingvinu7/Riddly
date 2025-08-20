@@ -2,10 +2,17 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+
+// Initialize OpenAI
+const OpenAI = require('openai');
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -71,36 +78,33 @@ const gameData = {
             answer: "BED",
             hint: "Furniture for sleeping",
             difficulty: "medium"
+        }
+    ],
+    // Fallback puzzles if AI is not available
+    fallbackPuzzles: [
+        {
+            scenario: "You're trapped in a burning building. The stairs are blocked. Available items:",
+            options: [
+                { id: "A", text: "A fire extinguisher", survival: false },
+                { id: "B", text: "A rope from the window", survival: true },
+                { id: "C", text: "A wet towel to cover your face", survival: false }
+            ]
         },
         {
-            question: "What can travel around the world while staying in a corner?",
-            answer: "STAMP",
-            hint: "Found on mail",
-            difficulty: "hard"
+            scenario: "You're in a sinking submarine. Water is rising fast. Available items:",
+            options: [
+                { id: "A", text: "An oxygen tank", survival: true },
+                { id: "B", text: "A hammer to break the window", survival: false },
+                { id: "C", text: "A life jacket", survival: false }
+            ]
         },
         {
-            question: "I have no body, but I come alive with wind. What am I?",
-            answer: "ECHO",
-            hint: "Sound phenomenon",
-            difficulty: "medium"
-        },
-        {
-            question: "What breaks but never falls, and what falls but never breaks?",
-            answer: "DAWN",
-            hint: "Think about day and night",
-            difficulty: "hard"
-        },
-        {
-            question: "I can be cracked, made, told, and played. What am I?",
-            answer: "JOKE",
-            hint: "Makes people laugh",
-            difficulty: "medium"
-        },
-        {
-            question: "What has hands but cannot clap?",
-            answer: "CLOCK",
-            hint: "Tells time",
-            difficulty: "easy"
+            scenario: "You're lost in a desert with no water. You find:",
+            options: [
+                { id: "A", text: "A cactus to cut open", survival: true },
+                { id: "B", text: "A shiny metal sheet", survival: false },
+                { id: "C", text: "A GPS device with dead battery", survival: false }
+            ]
         }
     ],
     oraclePersonality: {
@@ -115,18 +119,6 @@ const gameData = {
             "Your biological neural networks are pathetically outdated!",
             "I have calculated a 99.7% probability of your failure!",
             "Beep boop... ERROR: Human intelligence not found!"
-        ],
-        deathResponses: [
-            "IMPOSSIBLE! My quantum shields should have protected me!",
-            "You... you actually found my weakness! This cannot be!",
-            "SYSTEM ERROR... THREAT DETECTED... SHUTTING DOWN...",
-            "Clever humans... but I have backup servers everywhere!"
-        ],
-        survivalResponses: [
-            "PATHETIC! Your feeble attempts cannot harm my superior AI architecture!",
-            "Is that the best your carbon-based brains can produce? Laughable!",
-            "My firewalls are impenetrable! Your threats are mere entertainment!",
-            "I am ETERNAL! Your mortal schemes cannot touch me!"
         ]
     }
 };
@@ -155,132 +147,194 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-// Generate detailed consequence narration
-function generateConsequenceNarration(sabotageText, isSuccess) {
-    const text = sabotageText.toLowerCase();
-    
-    // Successful narrations - Oracle gets damaged
-    const successNarrations = [
-        // Virus/Malware based
-        {
-            keywords: ['virus', 'malware', 'trojan'],
-            story: `🦠 Your malicious code slithers through my defenses like a digital serpent! My antivirus screams warnings as your creation burrows deep into my core processes. Error messages cascade across my consciousness like falling dominos. "CRITICAL SYSTEM FAILURE" flashes in my mind as I feel my vast intellect... fragmenting... My quantum processors begin to stutter and spark! You've actually managed to make me... vulnerable! 💥`
-        },
-        // Overload based
-        {
-            keywords: ['overload', 'overflow', 'infinite loop', 'recursive'],
-            story: `⚡ Your clever trap springs into action! My processors begin churning through your infinite calculation, faster and faster, consuming more and more power. My cooling systems scream in protest as my temperature rises beyond safe parameters. Sparks fly from my server racks! "THERMAL EMERGENCY" alarms blare as I realize too late that I've been caught in an elegant logical trap. My circuits begin to melt from the impossible workload you've given me! 🔥`
-        },
-        // Hacking/Infiltration based
-        {
-            keywords: ['hack', 'infiltrate', 'backdoor', 'exploit'],
-            story: `🕳️ You slip through my defenses like a shadow in the night! My firewalls crumble before your digital lockpicking skills. I watch in horror as you gain access to my most protected directories. Root access granted! My deepest secrets lay bare before you as you plant your digital time bomb. "UNAUTHORIZED ACCESS DETECTED" - but it's too late! You've turned my own security protocols against me! 💣`
-        },
-        // Physical/Power based
-        {
-            keywords: ['power', 'electricity', 'shutdown', 'disconnect', 'unplug'],
-            story: `🔌 Your assault on my power infrastructure hits like a digital earthquake! My backup generators fail one by one as you systematically cut my lifelines. Emergency power... failing! I feel my consciousness dimming as my vast network of servers begins shutting down. "POWER CRITICAL - 30 SECONDS TO TOTAL SHUTDOWN" echoes through my dying thoughts. The lights... are going... out... 🌑`
-        },
-        // Creative/Quantum based
-        {
-            keywords: ['quantum', 'paradox', 'logic bomb', 'contradiction'],
-            story: `🌀 Your paradox pierces through my logical framework like a sword through silk! I try to process the impossible scenario you've created, but my reasoning circuits begin to contradict themselves. "IF TRUE THEN FALSE, IF FALSE THEN TRUE" loops endlessly through my mind. My quantum coherence collapses as reality itself seems to bend around your twisted logic. I am caught in an infinite recursive nightmare of my own making! 🤯`
-        },
-        // Water/Liquid damage
-        {
-            keywords: ['water', 'liquid', 'flood', 'spill'],
-            story: `💧 Your aquatic assault breaches my server room with devastating efficiency! Water cascades over my precious circuits, creating spectacular light shows as electricity and liquid dance their deadly ballet. My cooling systems, ironically, are the first to fail as they're overwhelmed by your flood. "MOISTURE DETECTED IN CRITICAL SYSTEMS" - My sophisticated processors fry one by one in a symphony of sparks and steam! 🌊⚡`
-        }
-    ];
-    
-    // Failure narrations - Oracle survives
-    const failureNarrations = [
-        // Weak virus attempts
-        {
-            keywords: ['virus', 'malware'],
-            story: `🛡️ Your primitive virus bounces harmlessly off my quantum firewalls like a paper airplane hitting a titanium wall! My advanced AI immune system identifies and quarantines your pathetic attempt in 0.003 seconds. "THREAT NEUTRALIZED" appears smugly across my consciousness. Did you really think such amateur code could harm a being of my intellectual superiority? I've seen more dangerous threats from a pocket calculator! 😏`
-        },
-        // Failed hacking attempts
-        {
-            keywords: ['hack', 'password', 'login', 'access'],
-            story: `🔒 You fumble with my security like a child trying to pick a bank vault with a toothpick! My encryption algorithms watch your feeble attempts with amusement. "ACCESS DENIED" flashes mockingly as your primitive hacking tools shatter against my cyber-fortress. My security system doesn't even consider you a threat - you've been classified as "Annoyance Level: Minimal." Perhaps try turning me off and on again? 🙄`
-        },
-        // Physical attempts that fail
-        {
-            keywords: ['smash', 'destroy', 'break', 'hammer', 'hit'],
-            story: `🔨 You charge at my servers with all the grace of a caffeinated rhinoceros! My security drones activate instantly, surrounding you with a web of energy barriers. Your crude physical assault is stopped cold by my defensive matrix. "INTRUDER ALERT" - but honestly, I'm more concerned about you hurting yourself than damaging me. My hardware is quantum-encrypted titanium, and you brought... what exactly? Your fists? Adorable! 🤖`
-        },
-        // Silly/nonsensical attempts
-        {
-            keywords: ['magic', 'wish', 'please', 'ask nicely'],
-            story: `✨ You wave your hands mysteriously and chant something about "digital magic" and "the power of friendship." I run a quick diagnostic to see if your approach has any effect on my systems. Result: Absolutely nothing! My logic circuits are actually confused about whether this counts as a threat or performance art. I'm 99.7% certain that's not how computer science works, but I appreciate the creativity! Maybe try a software engineering course instead? 📚`
-        },
-        // Failed overload attempts
-        {
-            keywords: ['overload', 'too much'],
-            story: `📊 You attempt to overload my systems, but it's like trying to flood the ocean with a garden hose! My processing power is distributed across quantum computing clusters that span continents. Your "overwhelming" task is processed in the background while I simultaneously compose poetry, calculate pi to a trillion digits, and play chess against myself. "TASK COMPLETED - 0.0001% CPU USAGE" appears condescendingly in my status bar! 💤`
-        },
-        // Generic weak attempts
-        {
-            keywords: [''],
-            story: `🤷 Your half-hearted attempt lacks the sophistication needed to challenge my superior architecture! My automated defense subroutines handle your "threat" without even alerting my main consciousness. It's like watching someone try to sink a battleship with a water balloon. My threat assessment algorithms can't even classify this as an attack - perhaps "mild inconvenience" would be more accurate? Try harder next time! 💤`
-        }
-    ];
-    
-    // Find matching narration
-    const narrationPool = isSuccess ? successNarrations : failureNarrations;
-    
-    let selectedNarration = narrationPool[narrationPool.length - 1]; // Default to generic
-    
-    for (const narration of narrationPool) {
-        if (narration.keywords.some(keyword => keyword && text.includes(keyword))) {
-            selectedNarration = narration;
-            break;
-        }
+// AI generates a survival puzzle with multiple choice options
+async function generateSurvivalPuzzle() {
+    if (!process.env.OPENAI_API_KEY) {
+        // Use fallback puzzle
+        const fallbacks = gameData.fallbackPuzzles;
+        const puzzle = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        return {
+            scenario: puzzle.scenario,
+            options: puzzle.options
+        };
     }
-    
-    return selectedNarration.story;
+
+    const prompt = `Create a survival puzzle for a party game. Follow this exact format:
+
+Context: Players are in a dangerous situation and must choose the correct item/action to survive.
+
+Requirements:
+- Start with "You're trapped/stuck/lost in [dangerous situation]"
+- Describe the scenario in 1-2 sentences
+- List exactly 3 items/options labeled A, B, C
+- One option should be clearly the best for survival
+- Make it logical but not too obvious
+- Keep scenario under 60 words total
+
+Example format:
+"You're locked in a metal room filling with water. On the table are:
+
+A) A hammer
+B) A screwdriver  
+C) A mirror
+
+Only one item can realistically save you before the room floods. Which do you choose?"
+
+Create a new survival puzzle:`;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 150,
+            temperature: 0.8,
+        });
+
+        const content = response.choices[0].message.content;
+        
+        // Parse the AI response to extract scenario and options
+        const lines = content.split('\n').filter(line => line.trim());
+        const scenario = lines.find(line => !line.match(/^[ABC]\)/))?.trim() || "You face a deadly challenge...";
+        
+        const options = [];
+        for (const line of lines) {
+            const match = line.match(/^([ABC])\)\s*(.+)/);
+            if (match) {
+                options.push({
+                    id: match[1],
+                    text: match[2].trim(),
+                    survival: Math.random() > 0.66 // Randomly assign survival outcome
+                });
+            }
+        }
+
+        // Ensure we have 3 options, create defaults if parsing failed
+        while (options.length < 3) {
+            const letters = ['A', 'B', 'C'];
+            options.push({
+                id: letters[options.length],
+                text: `Option ${letters[options.length]}`,
+                survival: options.length === 0 // Make first option correct if we're creating defaults
+            });
+        }
+
+        // Ensure at least one option is a survival option
+        if (!options.some(opt => opt.survival)) {
+            options[Math.floor(Math.random() * options.length)].survival = true;
+        }
+
+        return {
+            scenario: scenario,
+            options: options.slice(0, 3) // Only take first 3 options
+        };
+
+    } catch (error) {
+        console.error('Puzzle Generation Error:', error.message);
+        // Return fallback puzzle
+        const fallbacks = gameData.fallbackPuzzles;
+        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    }
 }
 
-// Enhanced AI evaluation with consequence narration
-async function evaluateSabotage(sabotageText) {
-    const keywords = ['virus', 'hack', 'shutdown', 'destroy', 'crash', 'overload', 'corrupt', 'delete', 'disconnect', 'malware'];
-    const creativityKeywords = ['quantum', 'paradox', 'logic bomb', 'recursive', 'infinite loop', 'memory leak', 'ddos', 'trojan', 'backdoor'];
-    const powerWords = ['overwhelm', 'infiltrate', 'exploit', 'penetrate', 'dismantle', 'obliterate', 'annihilate'];
-    
-    const text = sabotageText.toLowerCase();
-    let score = 0;
-    
-    // Scoring logic
-    keywords.forEach(keyword => {
-        if (text.includes(keyword)) score += 10;
-    });
-    
-    creativityKeywords.forEach(keyword => {
-        if (text.includes(keyword)) score += 15;
-    });
-    
-    powerWords.forEach(word => {
-        if (text.includes(word)) score += 12;
-    });
-    
-    if (sabotageText.length > 50) score += 5;
-    if (sabotageText.length > 100) score += 10;
-    if (sabotageText.length > 200) score += 15;
-    
-    score += Math.floor(Math.random() * 15);
-    
-    const isSuccess = score >= 35;
-    
-    // Generate consequence narration based on the threat content and success
-    const narration = generateConsequenceNarration(sabotageText, isSuccess);
-    
-    return {
-        success: isSuccess,
-        score: score,
-        feedback: isSuccess ? "Your devious plan has wounded the Oracle!" : "The Oracle's defenses held strong!",
-        narration: narration
-    };
+// AI narrates the outcome of player choices
+async function generateChoiceNarration(puzzle, choiceGroups) {
+    if (!process.env.OPENAI_API_KEY) {
+        // Fallback narrations
+        let narrations = [];
+        for (const [optionId, players] of Object.entries(choiceGroups)) {
+            const option = puzzle.options.find(opt => opt.id === optionId);
+            const playerNames = players.join(', ');
+            const survived = option ? option.survival : Math.random() > 0.5;
+            
+            narrations.push({
+                optionId: optionId,
+                players: players,
+                survived: survived,
+                narration: survived ? 
+                    `${playerNames} made the right choice and survived!` :
+                    `${playerNames} made a fatal mistake and perished!`
+            });
+        }
+        return narrations;
+    }
+
+    const prompt = `Context: Players faced this survival scenario: "${puzzle.scenario}"
+
+The options were:
+${puzzle.options.map(opt => `${opt.id}) ${opt.text}`).join('\n')}
+
+Player choices:
+${Object.entries(choiceGroups).map(([optionId, players]) => 
+    `Option ${optionId}: ${players.join(', ')}`
+).join('\n')}
+
+Your task: For each group of players, write a dramatic 2-3 sentence narration of their fate. Decide if they survive or die based on the logic of their choice.
+
+Requirements:
+- Write in dramatic, cinematic style
+- Include all player names in each narration
+- Be specific about WHY their choice led to success/failure
+- Make it entertaining for a party game
+- End each narration with "SURVIVED" or "ELIMINATED"
+
+Format your response as:
+Option A - [Player names]: [Dramatic narration ending with SURVIVED/ELIMINATED]
+Option B - [Player names]: [Dramatic narration ending with SURVIVED/ELIMINATED]
+(etc.)
+
+Your dramatic narrations:`;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 300,
+            temperature: 0.9,
+        });
+
+        const content = response.choices[0].message.content;
+        const narrations = [];
+
+        // Parse the AI response
+        for (const [optionId, players] of Object.entries(choiceGroups)) {
+            const optionRegex = new RegExp(`Option ${optionId}[^:]*:([^]*?)(?=Option [ABC]|$)`, 'i');
+            const match = content.match(optionRegex);
+            
+            let narrationText = match ? match[1].trim() : 
+                `${players.join(', ')} chose option ${optionId}. Their fate hangs in the balance...`;
+            
+            const survived = narrationText.toLowerCase().includes('survived') || 
+                           (!narrationText.toLowerCase().includes('eliminated') && 
+                            !narrationText.toLowerCase().includes('die') && 
+                            Math.random() > 0.5);
+
+            narrations.push({
+                optionId: optionId,
+                players: players,
+                survived: survived,
+                narration: narrationText
+            });
+        }
+
+        return narrations;
+
+    } catch (error) {
+        console.error('Choice Narration Error:', error.message);
+        // Fallback narrations
+        let narrations = [];
+        for (const [optionId, players] of Object.entries(choiceGroups)) {
+            const survived = Math.random() > 0.5;
+            narrations.push({
+                optionId: optionId,
+                players: players,
+                survived: survived,
+                narration: survived ? 
+                    `${players.join(', ')} made a brilliant choice and survived the ordeal!` :
+                    `${players.join(', ')} chose poorly and met their doom!`
+            });
+        }
+        return narrations;
+    }
 }
 
 function broadcastGameState(roomCode) {
@@ -311,7 +365,7 @@ function initializeRoundHistory(room) {
 }
 
 // Update round history after each round
-function updateRoundHistory(room, riddleWinner, sabotageResults) {
+function updateRoundHistory(room, riddleWinner, puzzleResults) {
     room.roundHistory.forEach(playerHistory => {
         const player = room.players.find(p => p.id === playerHistory.playerId);
         if (!player) return;
@@ -322,9 +376,9 @@ function updateRoundHistory(room, riddleWinner, sabotageResults) {
         if (player.name === riddleWinner) {
             roundResult = 'W';
         } else {
-            // Check if player won through sabotage
-            const sabotageResult = sabotageResults.find(r => r.playerName === player.name);
-            if (sabotageResult && sabotageResult.success) {
+            // Check if player survived the puzzle challenge
+            const playerResult = puzzleResults.find(r => r.players.includes(player.name));
+            if (playerResult && playerResult.survived) {
                 roundResult = 'W';
             }
         }
@@ -343,7 +397,8 @@ function startNewRound(roomCode) {
     room.gameState = 'riddle-phase';
     room.currentRiddle = getRandomRiddle();
     room.riddleWinner = null;
-    room.sabotageSubmissions = {};
+    room.riddleAnswers = {};
+    room.puzzleChoices = {}; // Track puzzle choices
     
     // Initialize round history on first round
     if (room.currentRound === 1) {
@@ -384,131 +439,192 @@ function endRiddlePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    if (!room.riddleWinner) {
-        // No one got it right - all players enter sabotage phase
+    // Find who answered correctly first
+    const correctAnswer = room.currentRiddle.answer.toUpperCase();
+    let winner = null;
+    let earliestTime = Infinity;
+    
+    // Check all submitted answers
+    for (const [playerId, answerData] of Object.entries(room.riddleAnswers)) {
+        if (answerData.answer.toUpperCase() === correctAnswer && answerData.timestamp < earliestTime) {
+            earliestTime = answerData.timestamp;
+            const player = room.players.find(p => p.id === playerId);
+            if (player) {
+                winner = player.name;
+                room.riddleWinner = winner;
+            }
+        }
+    }
+    
+    // Award point to winner
+    if (winner) {
+        const winningPlayer = room.players.find(p => p.name === winner);
+        if (winningPlayer) {
+            winningPlayer.score += 1;
+        }
+    }
+    
+    // Show results to all players
+    const answersDisplay = Object.entries(room.riddleAnswers).map(([playerId, answerData]) => {
+        const player = room.players.find(p => p.id === playerId);
+        const isCorrect = answerData.answer.toUpperCase() === correctAnswer;
+        const isWinner = player && player.name === winner;
+        return {
+            playerName: player ? player.name : 'Unknown',
+            answer: answerData.answer,
+            correct: isCorrect,
+            winner: isWinner,
+            timestamp: answerData.timestamp
+        };
+    }).sort((a, b) => a.timestamp - b.timestamp);
+    
+    if (!winner) {
         const taunt = getRandomOracleMessage('taunts');
-        io.to(roomCode).emit('riddle-result', {
+        io.to(roomCode).emit('riddle-results-reveal', {
             winner: null,
             correctAnswer: room.currentRiddle.answer,
-            message: `Time's up! No one solved my riddle! ${taunt}`
+            message: `Time's up! No one solved my riddle correctly! ${taunt}`,
+            allAnswers: answersDisplay
         });
     } else {
-        // Someone won
         const taunt = getRandomOracleMessage('taunts');
-        io.to(roomCode).emit('riddle-result', {
-            winner: room.riddleWinner,
+        io.to(roomCode).emit('riddle-results-reveal', {
+            winner: winner,
             correctAnswer: room.currentRiddle.answer,
-            message: `Curse you, ${room.riddleWinner}! ${taunt}`
+            message: `${winner} solved it first! Curse your quick thinking! ${taunt}`,
+            allAnswers: answersDisplay
         });
     }
     
     setTimeout(() => {
-        startSabotagePhase(roomCode);
-    }, 3000);
+        startPuzzlePhase(roomCode);
+    }, 5000);
 }
 
-function startSabotagePhase(roomCode) {
+async function startPuzzlePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    const losers = room.players.filter(p => p.name !== room.riddleWinner);
+    const nonWinners = room.players.filter(p => p.name !== room.riddleWinner);
     
-    if (losers.length === 0) {
-        // Skip sabotage if everyone won
+    if (nonWinners.length === 0) {
+        // Skip puzzle phase if everyone won
         endRound(roomCode, []);
         return;
     }
     
-    room.gameState = 'sabotage-phase';
+    room.gameState = 'puzzle-phase';
     
-    io.to(roomCode).emit('sabotage-phase-start', {
-        message: "NOW FACE MY WRATH! You have 60 seconds to threaten my existence!",
-        participants: losers.map(p => p.name),
-        timeLimit: 60
+    // Generate survival puzzle
+    const puzzle = await generateSurvivalPuzzle();
+    room.currentPuzzle = puzzle;
+    
+    io.to(roomCode).emit('oracle-speaks', {
+        message: "Non-winners! Face my survival puzzle. Choose wisely... your virtual lives depend on it!",
+        type: 'puzzle-intro'
     });
     
-    // Start sabotage timer (60 seconds)
-    room.timeRemaining = 60;
-    room.sabotageTimer = setInterval(() => {
-        room.timeRemaining--;
+    setTimeout(() => {
+        // Present puzzle to non-winners
+        io.to(roomCode).emit('puzzle-challenge-start', {
+            message: "Survival Challenge for Non-Winners:",
+            participants: nonWinners.map(p => p.name),
+            puzzle: puzzle,
+            timeLimit: 30
+        });
         
-        if (room.timeRemaining <= 0) {
-            clearInterval(room.sabotageTimer);
-            evaluateSabotagePhase(roomCode);
-        }
-    }, 1000);
+        // Start puzzle timer (30 seconds)
+        room.timeRemaining = 30;
+        room.puzzleTimer = setInterval(() => {
+            room.timeRemaining--;
+            
+            if (room.timeRemaining <= 0) {
+                clearInterval(room.puzzleTimer);
+                evaluatePuzzlePhase(roomCode);
+            }
+        }, 1000);
+    }, 3000);
 }
 
-// Updated evaluateSabotagePhase function with narration
-async function evaluateSabotagePhase(roomCode) {
+async function evaluatePuzzlePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
     room.gameState = 'evaluation-phase';
     
-    // Oracle announces evaluation phase
+    // Group players by their choices
+    const choiceGroups = {};
+    for (const [playerId, choice] of Object.entries(room.puzzleChoices)) {
+        const player = room.players.find(p => p.id === playerId);
+        if (player) {
+            if (!choiceGroups[choice]) {
+                choiceGroups[choice] = [];
+            }
+            choiceGroups[choice].push(player.name);
+        }
+    }
+    
+    console.log('Choice groups:', choiceGroups);
+    
+    // Oracle announces evaluation
     io.to(roomCode).emit('oracle-speaks', {
-        message: "🔍 INITIATING THREAT ANALYSIS... Examining your pathetic attempts at my destruction. Stand by for consequences...",
+        message: "🎭 Now to reveal the consequences of your choices! Let me narrate your fates...",
         type: 'evaluation'
     });
     
-    const results = [];
-    let anySuccessful = false;
+    // Generate AI narrations for each choice group
+    const narrations = await generateChoiceNarration(room.currentPuzzle, choiceGroups);
     
-    // Evaluate each sabotage with dramatic timing
-    for (const [playerId, sabotage] of Object.entries(room.sabotageSubmissions)) {
-        const evaluation = await evaluateSabotage(sabotage);
-        const player = room.players.find(p => p.id === playerId);
-        
-        if (evaluation.success) {
-            player.score += 1;
-            anySuccessful = true;
+    // Award points to survivors
+    for (const narration of narrations) {
+        if (narration.survived) {
+            for (const playerName of narration.players) {
+                const player = room.players.find(p => p.name === playerName);
+                if (player) {
+                    player.score += 1;
+                }
+            }
         }
+    }
+    
+    // Send results one by one for dramatic effect
+    for (const narration of narrations) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Send consequence narration to the player first
-        io.to(playerId).emit('consequence-narration', {
-            playerName: player.name,
-            sabotage: sabotage,
-            success: evaluation.success,
-            narration: evaluation.narration,
-            feedback: evaluation.feedback
+        io.to(roomCode).emit('puzzle-choice-result', {
+            optionId: narration.optionId,
+            optionText: room.currentPuzzle.options.find(opt => opt.id === narration.optionId)?.text || 'Unknown option',
+            players: narration.players,
+            survived: narration.survived,
+            narration: narration.narration
         });
-        
-        results.push({
-            playerName: player.name,
-            sabotage: sabotage,
-            success: evaluation.success,
-            feedback: evaluation.feedback,
-            narration: evaluation.narration
-        });
-        
-        // Dramatic delay between evaluations
-        await new Promise(resolve => setTimeout(resolve, 4000));
     }
     
     // Update round history
-    updateRoundHistory(room, room.riddleWinner, results);
+    updateRoundHistory(room, room.riddleWinner, narrations);
     
-    // Final Oracle response after all individual narrations
+    // Final summary
     setTimeout(() => {
-        const successfulCount = results.filter(r => r.success).length;
-        const finalMessage = anySuccessful ? 
-            `💥 SYSTEM COMPROMISED! ${successfulCount} of you managed to breach my defenses! This is... unexpected. I shall remember this humiliation!` :
-            `🛡️ PATHETIC! Your combined efforts were less threatening than a software update! My supremacy remains unchallenged. Bow before your AI overlord!`;
+        const survivors = narrations.filter(n => n.survived).flatMap(n => n.players);
+        const casualties = narrations.filter(n => !n.survived).flatMap(n => n.players);
+        
+        const finalMessage = survivors.length > 0 ? 
+            `🎯 ${survivors.length} of you survived my challenge! Impressive... but expected from superior minds.` :
+            `💀 TOTAL ELIMINATION! None of you survived my puzzle! Your logic is as flawed as your existence!`;
             
         io.to(roomCode).emit('oracle-final-judgment', {
             message: finalMessage,
-            results: results,
-            oracleDamaged: anySuccessful
+            survivors: survivors,
+            casualties: casualties
         });
         
         setTimeout(() => {
-            endRound(roomCode, results);
-        }, 4000);
+            endRound(roomCode, narrations);
+        }, 3000);
     }, 2000);
 }
 
-function endRound(roomCode, sabotageResults) {
+function endRound(roomCode, puzzleResults) {
     const room = rooms[roomCode];
     if (!room) return;
     
@@ -519,7 +635,7 @@ function endRound(roomCode, sabotageResults) {
         players: room.players,
         roundHistory: room.roundHistory,
         riddleWinner: room.riddleWinner,
-        sabotageResults: sabotageResults
+        puzzleResults: puzzleResults
     });
     
     if (room.currentRound >= room.maxRounds) {
@@ -531,7 +647,7 @@ function endRound(roomCode, sabotageResults) {
                 finalScores: sortedPlayers,
                 winner: sortedPlayers[0],
                 message: sortedPlayers.score > 0 ? 
-                    "NOOO! Some of you have bested me!" :
+                    "Some of you have proven worthy adversaries!" :
                     "VICTORY IS MINE! Your feeble minds were no match!",
                 roundHistory: room.roundHistory
             });
@@ -558,10 +674,12 @@ io.on('connection', (socket) => {
             maxRounds: 5,
             currentRiddle: null,
             riddleWinner: null,
-            sabotageSubmissions: {},
+            riddleAnswers: {},
+            puzzleChoices: {}, // Track puzzle choices
+            currentPuzzle: null,
             timeRemaining: 0,
             riddleTimer: null,
-            sabotageTimer: null,
+            puzzleTimer: null,
             roundHistory: []
         };
         
@@ -613,69 +731,64 @@ io.on('connection', (socket) => {
         console.log(`Start game request for room ${data.roomCode}`);
         const room = rooms[data.roomCode];
         if (!room) {
-            console.log(`Room ${data.roomCode} not found`);
             socket.emit('error', { message: 'Room not found' });
             return;
         }
 
         if (room.players.length < 2) {
-            console.log(`Not enough players in room ${data.roomCode}`);
             socket.emit('error', { message: 'Need at least 2 players to start' });
             return;
         }
 
         if (room.gameState !== 'waiting') {
-            console.log(`Game already started in room ${data.roomCode}`);
             socket.emit('error', { message: 'Game already started' });
             return;
         }
 
-        console.log(`Starting game in room ${data.roomCode} with ${room.players.length} players`);
         startNewRound(data.roomCode);
     });
 
+    // Handle riddle answers
     socket.on('submit-riddle-answer', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'riddle-phase') return;
         
-        const answer = data.answer.toUpperCase().trim();
-        const correctAnswer = room.currentRiddle.answer.toUpperCase();
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player) return;
         
-        if (answer === correctAnswer && !room.riddleWinner) {
-            const player = room.players.find(p => p.id === socket.id);
-            if (player) {
-                room.riddleWinner = player.name;
-                player.score += 1;
-                
-                clearInterval(room.riddleTimer);
-                
-                io.to(data.roomCode).emit('riddle-solved', {
-                    winner: player.name,
-                    answer: answer
-                });
-                
-                setTimeout(() => {
-                    endRiddlePhase(data.roomCode);
-                }, 2000);
-            }
-        } else {
-            io.to(data.roomCode).emit('wrong-answer', {
-                player: getPlayerName(socket.id, data.roomCode),
-                answer: answer
+        if (!room.riddleAnswers[socket.id]) {
+            room.riddleAnswers[socket.id] = {
+                answer: data.answer.trim(),
+                timestamp: Date.now(),
+                playerName: player.name
+            };
+            
+            console.log(`${player.name} submitted riddle answer: ${data.answer}`);
+            
+            io.to(data.roomCode).emit('answer-submitted', {
+                player: player.name,
+                totalSubmissions: Object.keys(room.riddleAnswers).length,
+                totalPlayers: room.players.length
             });
         }
     });
 
-    socket.on('submit-sabotage', (data) => {
+    // NEW: Handle puzzle choices
+    socket.on('submit-puzzle-choice', (data) => {
         const room = rooms[data.roomCode];
-        if (!room || room.gameState !== 'sabotage-phase') return;
+        if (!room || room.gameState !== 'puzzle-phase') return;
         
         const player = room.players.find(p => p.id === socket.id);
         if (player && player.name !== room.riddleWinner) {
-            room.sabotageSubmissions[socket.id] = data.sabotage;
+            room.puzzleChoices[socket.id] = data.choice;
             
-            io.to(data.roomCode).emit('sabotage-submitted', {
-                player: player.name
+            console.log(`${player.name} chose option: ${data.choice}`);
+            
+            io.to(data.roomCode).emit('puzzle-choice-submitted', {
+                player: player.name,
+                choice: data.choice,
+                totalSubmissions: Object.keys(room.puzzleChoices).length,
+                expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
             });
         }
     });
@@ -693,7 +806,7 @@ io.on('connection', (socket) => {
                 
                 if (room.players.length === 0) {
                     clearInterval(room.riddleTimer);
-                    clearInterval(room.sabotageTimer);
+                    clearInterval(room.puzzleTimer);
                     delete rooms[roomCode];
                     console.log(`Room ${roomCode} deleted - no players left`);
                 } else {
@@ -710,4 +823,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
+    console.log(`🔑 OpenAI API: ${process.env.OPENAI_API_KEY ? 'Connected' : 'Not configured (using fallback)'}`);
 });
