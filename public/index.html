@@ -13,7 +13,7 @@
         <div class="page-content">
             <div class="logo">
                 <h1>🤖 THREATENED BY AI</h1>
-                <p>Solve riddles or sabotage the Oracle</p>
+                <p>Solve riddles or survive the Oracle's challenges</p>
             </div>
             
             <div class="action-section">
@@ -84,34 +84,77 @@
             <div class="answer-section">
                 <input type="text" id="riddle-answer" placeholder="Your answer..." class="answer-input">
                 <button id="submit-riddle" class="btn primary large">Submit Answer</button>
+                
+                <div class="submission-status" id="riddle-submission-status">
+                    <p id="submission-count">0/4 players answered</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Sabotage Screen -->
-    <div id="sabotage-screen" class="page">
+    <!-- Riddle Results Screen -->
+    <div id="riddle-results-screen" class="page">
+        <div class="page-content">
+            <div class="results-header">
+                <h2 id="riddle-results-title">📊 Riddle Results</h2>
+                <div class="oracle-response">
+                    <div class="oracle-avatar">🤖</div>
+                    <p id="riddle-results-message" class="oracle-message"></p>
+                </div>
+            </div>
+            
+            <div class="all-answers-section">
+                <h3>All Player Answers:</h3>
+                <div id="all-answers-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Puzzle Challenge Screen -->
+    <div id="puzzle-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
-                <div id="sabotage-timer" class="timer danger">60</div>
-                <p>seconds to threaten the Oracle</p>
+                <div id="puzzle-timer" class="timer danger">30</div>
+                <p>seconds to choose</p>
             </div>
             
-            <div class="sabotage-section">
-                <h2>💀 THREATEN THE ORACLE</h2>
-                <p>Write a creative threat to destroy the AI Oracle!</p>
+            <div class="puzzle-section">
+                <h2>🧩 SURVIVAL CHALLENGE</h2>
+                <p id="puzzle-scenario" class="puzzle-description"></p>
             </div>
             
-            <div class="threat-section">
-                <textarea id="sabotage-text" placeholder="Describe how you would threaten or destroy the Oracle... Be creative and detailed!" class="threat-input"></textarea>
-                <div class="char-count">0/500</div>
-                <button id="submit-sabotage" class="btn danger large">Submit Threat</button>
+            <div class="choices-section">
+                <div class="choice-buttons">
+                    <button id="choice-a" class="choice-btn" data-choice="A">
+                        <span class="choice-letter">A</span>
+                        <span class="choice-text" id="choice-a-text">Option A</span>
+                    </button>
+                    <button id="choice-b" class="choice-btn" data-choice="B">
+                        <span class="choice-letter">B</span>
+                        <span class="choice-text" id="choice-b-text">Option B</span>
+                    </button>
+                    <button id="choice-c" class="choice-btn" data-choice="C">
+                        <span class="choice-letter">C</span>
+                        <span class="choice-text" id="choice-c-text">Option C</span>
+                    </button>
+                </div>
                 
-                <!-- Oracle Response Panel -->
-                <div class="ai-commentary-panel" id="ai-commentary-panel" style="display: none;">
-                    <h3>🤖 Oracle's Judgment</h3>
-                    <div class="ai-commentary">
-                        <div id="oracle-response-text">The Oracle is evaluating your threat...</div>
-                    </div>
+                <div class="submission-status" id="puzzle-submission-status">
+                    <p id="puzzle-submission-count">0/3 non-winners chose</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Puzzle Results Screen -->
+    <div id="puzzle-results-screen" class="page">
+        <div class="page-content">
+            <div class="puzzle-results-section">
+                <h2>⚖️ FATE REVEALED</h2>
+                <div class="oracle-avatar large">🎭</div>
+                
+                <div id="puzzle-results-content">
+                    <!-- Results will be populated dynamically -->
                 </div>
             </div>
         </div>
@@ -145,8 +188,8 @@
         <div class="page-content">
             <div class="waiting-section">
                 <div class="oracle-avatar">🤖</div>
-                <h2 id="waiting-title">Others are plotting...</h2>
-                <p id="waiting-message">Sit back and watch the chaos unfold!</p>
+                <h2 id="waiting-title">Others are choosing...</h2>
+                <p id="waiting-message">Watch as other players face the challenge!</p>
                 <div class="loading-dots">
                     <span></span>
                     <span></span>
