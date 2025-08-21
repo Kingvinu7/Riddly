@@ -106,39 +106,79 @@ function getFallbackPuzzle() {
 }
 
 // --- AI Generation Sections ---
-
 async function generateSurvivalPuzzle() {
-    if (!genAI) return getFallbackPuzzle();
+    if (!genAI) {
+        console.log("❌ No genAI instance, using fallback");
+        return getFallbackPuzzle();
+    }
+    
     try {
+        console.log("🤖 Calling Gemini API for new puzzle...");
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = `Create a survival puzzle for a party game. Use this format:
+        
+        const prompt = `Create a survival puzzle for a party game. Use this EXACT format:
 
-You're trapped in [describe scenario in 1-2 sentences]
-A) [item 1]
-B) [item 2]
-C) [item 3]
+[Scenario description in one sentence]
+A) [Option 1]
+B) [Option 2]
+C) [Option 3]
 
-One item logically increases survival the most (but not too obvious). Only one should be "correct".
+Example:
+You're trapped in a collapsing building during an earthquake.
+A) Hide under a desk
+B) Run outside immediately
+C) Stand in a doorway
 
-Just output the scenario & options.`;
+Create a NEW survival scenario:`;
+
         const result = await model.generateContent(prompt);
         const resp = (await result.response).text();
-        const lines = resp.split('\n').filter(x => x);
+        
+        console.log("📝 Gemini returned this:");
+        console.log(resp);
+        console.log("---End of Gemini response---");
+        
+        const lines = resp.split('\n').filter(x => x.trim());
+        console.log("📋 Parsed lines:", lines);
+        
+        if (lines.length < 4) {
+            console.log("⚠️ Not enough lines in response, using fallback");
+            return getFallbackPuzzle();
+        }
+        
         const scenario = lines[0];
         const options = [];
+        
         for (let line of lines.slice(1)) {
-            const match = line.match(/^([ABC])\)[\s.:-]*(.+)$/i);
+            const match = line.match(/^([ABC])\)\s*(.+)$/i);
             if (match) {
-                options.push({ id: match[1].toUpperCase(), text: match[2], survival: false });
+                options.push({ 
+                    id: match[1].toUpperCase(), 
+                    text: match[2].trim(), 
+                    survival: false 
+                });
+                console.log(`✅ Parsed option ${match[1]}: ${match[2].trim()}`);
+            } else {
+                console.log(`❌ Failed to parse line: "${line}"`);
             }
         }
-        if (options.length === 3) options[Math.floor(Math.random()*3)].survival = true;
-        return { scenario, options: options.slice(0, 3) };
+        
+        if (options.length === 3) {
+            options[Math.floor(Math.random() * 3)].survival = true;
+            console.log("🎯 AI puzzle created successfully!");
+            return { scenario, options };
+        } else {
+            console.log(`⚠️ Only got ${options.length} options, need 3. Using fallback.`);
+            return getFallbackPuzzle();
+        }
+        
     } catch(e) {
-        console.error('Gemini puzzle error:', e.message);
+        console.error('❌ Gemini API error:', e.message);
+        console.log("🔄 Using fallback puzzle");
         return getFallbackPuzzle();
     }
 }
+
 
 // ENHANCED: More detailed cinematic narrations
 async function generateChoiceNarration(puzzle, choiceGroups) {
