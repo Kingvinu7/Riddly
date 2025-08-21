@@ -2,7 +2,7 @@ const socket = io();
 let currentRoom = null;
 let playerName = null;
 
-// DOM elements - same as before
+// DOM elements
 const pages = {
     home: document.getElementById('home-screen'),
     lobby: document.getElementById('lobby-screen'),
@@ -36,7 +36,7 @@ const playersListEl = document.getElementById('players-list');
 const oracleIntroMessage = document.getElementById('oracle-intro-message');
 const riddleText = document.getElementById('riddle-text');
 
-// Event listeners - same as before
+// Event listeners
 createRoomBtn.addEventListener('click', createRoom);
 joinRoomBtn.addEventListener('click', joinRoom);
 startGameBtn.addEventListener('click', startGame);
@@ -61,7 +61,7 @@ Object.values(choiceButtons).forEach(button => {
     });
 });
 
-// Utility functions - same as before
+// Utility functions
 function showPage(pageName) {
     Object.values(pages).forEach(page => page.classList.remove('active'));
     if (pages[pageName]) {
@@ -198,6 +198,32 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
+// ENHANCED: Typing effect function
+function typeWriter(element, text, speed = 30) {
+    element.textContent = '';
+    let i = 0;
+    
+    function typeNextChar() {
+        if (i < text.length) {
+            element.textContent += text.charAt(i);
+            i++;
+            
+            // Slow down at punctuation for dramatic effect
+            const char = text.charAt(i - 1);
+            let delay = speed;
+            if (char === '.' || char === '!' || char === '?') {
+                delay = speed * 3;
+            } else if (char === ',' || char === ';') {
+                delay = speed * 2;
+            }
+            
+            setTimeout(typeNextChar, delay);
+        }
+    }
+    
+    typeNextChar();
+}
+
 // Socket event listeners
 socket.on('room-created', (data) => {
     currentRoom = data.roomCode;
@@ -250,7 +276,6 @@ socket.on('riddle-presented', (data) => {
     document.getElementById('submission-count').textContent = '0/0 players answered';
     
     showPage('riddle');
-    // FIXED: 45 seconds for riddle timer
     startTimer('riddle-timer', 45);
 });
 
@@ -307,7 +332,6 @@ socket.on('puzzle-challenge-start', (data) => {
         document.getElementById('puzzle-submission-count').textContent = `0/${data.participants.length} non-winners chose`;
         
         showPage('puzzle');
-        // FIXED: 45 seconds for puzzle timer
         startTimer('puzzle-timer', 45);
     } else {
         document.getElementById('waiting-title').textContent = 'Others are facing a challenge...';
@@ -321,11 +345,11 @@ socket.on('puzzle-choice-submitted', (data) => {
         `${data.totalSubmissions}/${data.expectedSubmissions} non-winners chose`;
 });
 
-// FIXED: Only show current result, clear previous ones
+// ENHANCED: Puzzle results with typing effect
 socket.on('puzzle-choice-result', (data) => {
     const resultsContent = document.getElementById('puzzle-results-content');
     
-    // FIXED: Clear previous results
+    // Clear previous results
     resultsContent.innerHTML = '';
     
     const resultHtml = `
@@ -336,8 +360,8 @@ socket.on('puzzle-choice-result', (data) => {
                     ${data.players.map(name => `<span class="player-tag">${name}</span>`).join('')}
                 </div>
             </div>
-            <div class="fate-narration">
-                ${data.narration}
+            <div class="fate-narration" id="fate-narration-text">
+                <!-- Text will be typed here -->
             </div>
             <div class="result-status">
                 ${data.survived ? '✅ SURVIVED' : '💀 ELIMINATED'}
@@ -346,6 +370,11 @@ socket.on('puzzle-choice-result', (data) => {
     `;
     
     resultsContent.innerHTML = resultHtml;
+    
+    // ENHANCED: Add typing effect to the narration
+    const narrationElement = document.getElementById('fate-narration-text');
+    typeWriter(narrationElement, data.narration, 35); // 35ms per character
+    
     showPage('puzzleResults');
 });
 
@@ -375,6 +404,10 @@ socket.on('game-over', (data) => {
         `;
     }).join('');
     
+    // ENHANCED: Big winner announcement
+    const bigWinnerEl = document.getElementById('big-winner-announcement');
+    bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>`;
+    
     document.getElementById('final-oracle').textContent = data.winner.score > 0 ? '💥' : '🤖';
     document.getElementById('final-oracle-message').textContent = `"${data.message}"`;
     document.getElementById('final-scores').innerHTML = scoresHtml;
@@ -392,4 +425,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v2.1');
+console.log('Frontend loaded - Threatened by AI v2.2 (Cinematic Edition)');
