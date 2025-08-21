@@ -25,7 +25,17 @@ const gameData = {
         { question: "The more you take, the more you leave behind. What am I?", answer: "FOOTSTEPS", difficulty: "easy" },
         { question: "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?", answer: "MAP", difficulty: "medium" },
         { question: "What has keys but no locks, space but no room, and you can enter but not go inside?", answer: "KEYBOARD", difficulty: "medium" },
-        { question: "What gets wet while drying?", answer: "TOWEL", difficulty: "easy" }
+        { question: "What gets wet while drying?", answer: "TOWEL", difficulty: "easy" },
+        { question: "I am not alive, but I grow; I don't have lungs, but I need air; I don't have a mouth, but water kills me. What am I?", answer: "FIRE", difficulty: "medium" },
+        { question: "What comes once in a minute, twice in a moment, but never in a thousand years?", answer: "M", difficulty: "hard" },
+        { question: "I have a golden head and a golden tail, but no body. What am I?", answer: "COIN", difficulty: "easy" },
+        { question: "I am tall when I am young, and short when I am old. What am I?", answer: "CANDLE", difficulty: "medium" },
+        { question: "What has one head, one foot, and four legs?", answer: "BED", difficulty: "medium" },
+        { question: "What can travel around the world while staying in a corner?", answer: "STAMP", difficulty: "hard" },
+        { question: "What breaks but never falls, and what falls but never breaks?", answer: "DAWN", difficulty: "hard" },
+        { question: "I can be cracked, made, told, and played. What am I?", answer: "JOKE", difficulty: "medium" },
+        { question: "What has hands but cannot clap?", answer: "CLOCK", difficulty: "easy" },
+        { question: "What runs around the whole yard without moving?", answer: "FENCE", difficulty: "medium" }
     ],
     fallbackPuzzles: [
         {
@@ -48,11 +58,15 @@ const gameData = {
     oraclePersonality: {
         introductions: [
             "🤖 I AM THE ORACLE! Your inferior minds will tremble before my riddles!",
-            "💀 Mortals... you dare challenge my supreme intellect? Prepare for humiliation!"
+            "💀 Mortals... you dare challenge my supreme intellect? Prepare for humiliation!",
+            "⚡ I am the AI overlord of puzzles! Your feeble attempts amuse me!",
+            "🔥 Welcome to your intellectual doom, humans! I shall crush your spirits!"
         ],
         taunts: [
             "Too slow, meat-based processors! My quantum brain operates at light speed!",
-            "Beep boop... ERROR: Human intelligence not found!"
+            "Beep boop... ERROR: Human intelligence not found!",
+            "Your biological neural networks are pathetically outdated!",
+            "I have calculated a 99.7% probability of your failure!"
         ]
     }
 };
@@ -69,10 +83,20 @@ function getPlayerName(playerId, roomCode) {
     const player = room.players.find(p => p.id === playerId);
     return player ? player.name : 'Unknown';
 }
-function getRandomRiddle() {
-    const riddles = gameData.riddles;
-    return riddles[Math.floor(Math.random() * riddles.length)];
+
+// FIXED: No more repeating riddles
+function getRandomRiddle(usedIndices = []) {
+    const availableRiddles = gameData.riddles.filter((_, index) => !usedIndices.includes(index));
+    if (availableRiddles.length === 0) {
+        // All riddles used, reset
+        return { riddle: gameData.riddles[0], index: 0 };
+    }
+    const randomIndex = Math.floor(Math.random() * availableRiddles.length);
+    const selectedRiddle = availableRiddles[randomIndex];
+    const originalIndex = gameData.riddles.indexOf(selectedRiddle);
+    return { riddle: selectedRiddle, index: originalIndex };
 }
+
 function getRandomOracleMessage(type) {
     const messages = gameData.oraclePersonality[type] || [];
     return messages[Math.floor(Math.random() * messages.length)];
@@ -204,7 +228,12 @@ function startNewRound(roomCode) {
     if (!room) return;
     room.currentRound++;
     room.gameState = 'riddle-phase';
-    room.currentRiddle = getRandomRiddle();
+    
+    // FIXED: No repeating riddles
+    const { riddle, index } = getRandomRiddle(room.usedRiddleIndices);
+    room.currentRiddle = riddle;
+    room.usedRiddleIndices.push(index);
+    
     room.riddleWinner = null;
     room.riddleAnswers = {};
     room.puzzleChoices = {};
@@ -221,7 +250,8 @@ function startNewRound(roomCode) {
             round: room.currentRound,
             maxRounds: room.maxRounds
         });
-        room.timeRemaining = 30;
+        // FIXED: 45 seconds for riddle
+        room.timeRemaining = 45;
         room.riddleTimer = setInterval(() => {
             room.timeRemaining--;
             if (room.timeRemaining <= 0) {
@@ -295,9 +325,10 @@ async function startPuzzlePhase(roomCode) {
             message: "Survival Challenge for Non-Winners:",
             participants: nonWinners.map(p => p.name),
             puzzle: room.currentPuzzle,
-            timeLimit: 30
+            timeLimit: 45
         });
-        room.timeRemaining = 30;
+        // FIXED: 45 seconds for puzzle
+        room.timeRemaining = 45;
         room.puzzleTimer = setInterval(() => {
             room.timeRemaining--;
             if (room.timeRemaining <= 0) {
@@ -326,7 +357,7 @@ async function evaluatePuzzlePhase(roomCode) {
     });
     // Get fate narrations for each group
     const narrs = await generateChoiceNarration(room.currentPuzzle, choiceGroups);
-    // Score and notify
+    // Score and notify - FIXED: Show one at a time
     for (const narr of narrs) {
         if (narr.survived) {
             for (const pname of narr.players) {
@@ -334,6 +365,7 @@ async function evaluatePuzzlePhase(roomCode) {
                 if (player) player.score += 1;
             }
         }
+        // Send individual result (frontend will clear previous)
         io.to(roomCode).emit('puzzle-choice-result', {
             optionId: narr.optionId,
             optionText: room.currentPuzzle.options.find(opt => opt.id === narr.optionId)?.text || 'Unknown option',
@@ -341,7 +373,7 @@ async function evaluatePuzzlePhase(roomCode) {
             survived: narr.survived,
             narration: narr.narration
         });
-        await new Promise(res => setTimeout(res, 1800));
+        await new Promise(res => setTimeout(res, 3000));
     }
     updateRoundHistory(room, room.riddleWinner, narrs);
     setTimeout(() => {
@@ -395,6 +427,7 @@ io.on('connection', (socket) => {
             riddleAnswers: {},
             puzzleChoices: {},
             currentPuzzle: null,
+            usedRiddleIndices: [], // FIXED: Track used riddles
             timeRemaining: 0,
             riddleTimer: null,
             puzzleTimer: null,
