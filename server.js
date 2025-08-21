@@ -84,11 +84,10 @@ function getPlayerName(playerId, roomCode) {
     return player ? player.name : 'Unknown';
 }
 
-// FIXED: No more repeating riddles
+// No more repeating riddles
 function getRandomRiddle(usedIndices = []) {
     const availableRiddles = gameData.riddles.filter((_, index) => !usedIndices.includes(index));
     if (availableRiddles.length === 0) {
-        // All riddles used, reset
         return { riddle: gameData.riddles[0], index: 0 };
     }
     const randomIndex = Math.floor(Math.random() * availableRiddles.length);
@@ -125,7 +124,6 @@ Just output the scenario & options.`;
         const result = await model.generateContent(prompt);
         const resp = (await result.response).text();
         const lines = resp.split('\n').filter(x => x);
-        // Simple parse logic:
         const scenario = lines[0];
         const options = [];
         for (let line of lines.slice(1)) {
@@ -134,7 +132,6 @@ Just output the scenario & options.`;
                 options.push({ id: match[1].toUpperCase(), text: match[2], survival: false });
             }
         }
-        // Ensure one survival:
         if (options.length === 3) options[Math.floor(Math.random()*3)].survival = true;
         return { scenario, options: options.slice(0, 3) };
     } catch(e) {
@@ -143,24 +140,31 @@ Just output the scenario & options.`;
     }
 }
 
+// ENHANCED: More detailed cinematic narrations
 async function generateChoiceNarration(puzzle, choiceGroups) {
     if (!genAI) {
-        // Fallback narration
+        // Enhanced fallback narrations with details
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const opt = puzzle.options.find(o => o.id === optionId);
-            const survived = opt?.survival;
+            const survived = opt?.survival ?? (Math.random() > 0.5);
+            
+            let detailedStory;
+            if (survived) {
+                detailedStory = `${players.join(', ')} make a brilliant decision! They carefully use their chosen tool to create an escape route. With quick thinking and steady nerves, they manage to overcome the deadly situation. Against all odds, they find safety and live to fight another day. SURVIVED`;
+            } else {
+                detailedStory = `${players.join(', ')} attempt to use their chosen tool, but it proves inadequate for the dire situation. Their plan backfires spectacularly, and they find themselves in even greater peril. Despite their best efforts, the harsh reality of their poor choice becomes apparent. ELIMINATED`;
+            }
+            
             narr.push({
-                optionId, players,
-                survived,
-                narration: survived
-                    ? `${players.join(', ')} survive thanks to their clever choice!`
-                    : `${players.join(', ')} meet their doom for picking ${optionId}.`
+                optionId, players, survived,
+                narration: detailedStory
             });
         }
         return narr;
     }
-    // Use Gemini
+    
+    // Enhanced AI prompt for detailed narrations
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const prompt = `Scenario: "${puzzle.scenario}"
@@ -170,28 +174,63 @@ ${puzzle.options.map(o => o.id + ') ' + o.text).join('\n')}
 Player groups:
 ${Object.entries(choiceGroups).map(([k,v]) => `Option ${k}: ${v.join(', ')}`).join('\n')}
 
-For each option, narrate the fate of those players (be dramatic), and decide if they survived or died. End each story with "SURVIVED" or "ELIMINATED".`;
+For each option group, write a vivid, cinematic and detailed narration (3-5 sentences):
+
+If SURVIVED: 
+- Describe exactly how they escape/survive step-by-step
+- Include dramatic detail about their clever use of the chosen item
+- Show their resourcefulness and the moment of triumph
+- Make it feel like an action movie escape scene
+
+If ELIMINATED: 
+- Describe how/why their attempt fails with vivid detail
+- Show the fatal flaw in their plan
+- Include the dramatic moment of realization
+- Make it feel like a suspenseful thriller
+
+Write in dramatic, cinematic style. Be specific about actions taken. Always end with: "SURVIVED" or "ELIMINATED"
+
+Example format:
+Option A - [Names]: [Detailed story of their escape/demise]. SURVIVED/ELIMINATED`;
+
         const result = await model.generateContent(prompt);
         const content = (await result.response).text();
         let narr = [];
+        
         for (const [optionId, players] of Object.entries(choiceGroups)) {
-            const regex = new RegExp(`Option ${optionId}[^:]*:[^\n]*(?:\\n|)([^]+?)(SURVIVED|ELIMINATED)`, 'i');
+            const regex = new RegExp(`Option ${optionId}[^:]*:[^]*?([^]+?)(SURVIVED|ELIMINATED)`, 'i');
             const match = content.match(regex);
-            let narration = match ? match[1].trim() + (match[2] ? ' ' + match[2].toUpperCase() : '') : `${players.join(', ')} face their fate.`;
-            const survived = narration.toLowerCase().includes('survived');
+            
+            let narration;
+            let survived;
+            
+            if (match) {
+                narration = match[1].trim() + ' ' + match[2].toUpperCase();
+                survived = match[2].toUpperCase() === 'SURVIVED';
+            } else {
+                // Fallback if parsing fails
+                survived = Math.random() > 0.5;
+                narration = survived ? 
+                    `${players.join(', ')} use their wits and chosen tool to cleverly escape the deadly situation, finding an unexpected path to safety. SURVIVED` :
+                    `${players.join(', ')} attempt their escape plan, but their chosen approach proves fatal, leading to their dramatic downfall. ELIMINATED`;
+            }
+            
             narr.push({ optionId, players, survived, narration });
         }
         return narr;
     } catch (e) {
-        // fallback quick path
+        console.error('Narration generation error:', e.message);
+        // Enhanced fallback
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const survived = Math.random() > 0.5;
+            const detailedStory = survived ?
+                `${players.join(', ')} demonstrate remarkable ingenuity! They use their chosen item in an unexpected way, creating a brilliant escape route that saves them from certain doom. SURVIVED` :
+                `${players.join(', ')} put their plan into action, but a critical oversight leads to catastrophic failure. Their hopes are crushed as their escape attempt ends in disaster. ELIMINATED`;
+            
             narr.push({
                 optionId, players, survived,
-                narration: survived
-                    ? `${players.join(', ')} survived heroically! SURVIVED`
-                    : `${players.join(', ')} were eliminated. ELIMINATED`
+                narration: detailedStory
             });
         }
         return narr;
@@ -229,7 +268,6 @@ function startNewRound(roomCode) {
     room.currentRound++;
     room.gameState = 'riddle-phase';
     
-    // FIXED: No repeating riddles
     const { riddle, index } = getRandomRiddle(room.usedRiddleIndices);
     room.currentRiddle = riddle;
     room.usedRiddleIndices.push(index);
@@ -238,19 +276,17 @@ function startNewRound(roomCode) {
     room.riddleAnswers = {};
     room.puzzleChoices = {};
     if (room.currentRound === 1) initializeRoundHistory(room);
-    // Oracle intro
+    
     io.to(roomCode).emit('oracle-speaks', {
         message: getRandomOracleMessage('introductions'),
         type: 'introduction'
     });
     setTimeout(() => {
-        // Riddle phase start
         io.to(roomCode).emit('riddle-presented', {
             riddle: room.currentRiddle,
             round: room.currentRound,
             maxRounds: room.maxRounds
         });
-        // FIXED: 45 seconds for riddle
         room.timeRemaining = 45;
         room.riddleTimer = setInterval(() => {
             room.timeRemaining--;
@@ -265,7 +301,7 @@ function startNewRound(roomCode) {
 function endRiddlePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
-    // First correct answer wins
+    
     const correctAnswer = room.currentRiddle.answer.toUpperCase();
     let winner = null, earliest = Infinity;
     for (const [pid, ans] of Object.entries(room.riddleAnswers)) {
@@ -279,6 +315,7 @@ function endRiddlePhase(roomCode) {
         const player = room.players.find(p => p.name === winner);
         if (player) player.score += 1;
     }
+    
     const answersDisplay = Object.entries(room.riddleAnswers).map(([pid, ans]) => {
         const player = room.players.find(p => p.id === pid);
         return {
@@ -309,12 +346,10 @@ async function startPuzzlePhase(roomCode) {
 
     const nonWinners = room.players.filter(p => p.name !== room.riddleWinner);
     if (nonWinners.length === 0) {
-        // Everyone won, skip
         endRound(roomCode, []);
         return;
     }
     room.gameState = 'puzzle-phase';
-    // Generate puzzle
     room.currentPuzzle = await generateSurvivalPuzzle();
     io.to(roomCode).emit('oracle-speaks', {
         message: "Non-winners! Face my survival puzzle. Choose wisely...",
@@ -327,7 +362,6 @@ async function startPuzzlePhase(roomCode) {
             puzzle: room.currentPuzzle,
             timeLimit: 45
         });
-        // FIXED: 45 seconds for puzzle
         room.timeRemaining = 45;
         room.puzzleTimer = setInterval(() => {
             room.timeRemaining--;
@@ -355,9 +389,9 @@ async function evaluatePuzzlePhase(roomCode) {
         message: "Now to reveal the consequences of your choices...",
         type: 'evaluation'
     });
-    // Get fate narrations for each group
+    
     const narrs = await generateChoiceNarration(room.currentPuzzle, choiceGroups);
-    // Score and notify - FIXED: Show one at a time
+    
     for (const narr of narrs) {
         if (narr.survived) {
             for (const pname of narr.players) {
@@ -365,7 +399,7 @@ async function evaluatePuzzlePhase(roomCode) {
                 if (player) player.score += 1;
             }
         }
-        // Send individual result (frontend will clear previous)
+        
         io.to(roomCode).emit('puzzle-choice-result', {
             optionId: narr.optionId,
             optionText: room.currentPuzzle.options.find(opt => opt.id === narr.optionId)?.text || 'Unknown option',
@@ -373,7 +407,7 @@ async function evaluatePuzzlePhase(roomCode) {
             survived: narr.survived,
             narration: narr.narration
         });
-        await new Promise(res => setTimeout(res, 3000));
+        await new Promise(res => setTimeout(res, 5000)); // More time for typing effect
     }
     updateRoundHistory(room, room.riddleWinner, narrs);
     setTimeout(() => {
@@ -427,7 +461,7 @@ io.on('connection', (socket) => {
             riddleAnswers: {},
             puzzleChoices: {},
             currentPuzzle: null,
-            usedRiddleIndices: [], // FIXED: Track used riddles
+            usedRiddleIndices: [],
             timeRemaining: 0,
             riddleTimer: null,
             puzzleTimer: null,
@@ -541,14 +575,12 @@ io.on('connection', (socket) => {
     });
 });
 
-// --- Server Listen ---
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
     if (genAI) {
-        console.log('🔑 Gemini API key detected: Using Google AI for narratives.');
+        console.log('🔑 Gemini API key detected: Using Google AI for cinematic narratives.');
     } else {
-        console.log('⚠️ No Gemini API key: Using fallback hardcoded responses.');
+        console.log('⚠️ No Gemini API key: Using enhanced fallback narratives.');
     }
 });
