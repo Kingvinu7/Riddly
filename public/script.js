@@ -36,7 +36,6 @@ const choiceButtons = {
 
 // Display elements
 const roomCodeDisplay = document.getElementById('room-code-display');
-const roundDisplay = document.getElementById('round-display');
 const playersListEl = document.getElementById('players-list');
 const oracleIntroMessage = document.getElementById('oracle-intro-message');
 const riddleText = document.getElementById('riddle-text');
@@ -116,7 +115,6 @@ function joinRoom() {
 }
 
 function startGame() {
-    console.log('Start game clicked for room:', currentRoom);
     if (currentRoom) {
         socket.emit('start-game', { roomCode: currentRoom });
     }
@@ -219,7 +217,6 @@ function startTimer(elementId, seconds) {
 
 // Socket event listeners
 socket.on('room-created', (data) => {
-    console.log('Room created:', data.roomCode);
     currentRoom = data.roomCode;
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
     startGameBtn.classList.remove('hidden');
@@ -228,7 +225,6 @@ socket.on('room-created', (data) => {
 });
 
 socket.on('join-success', (data) => {
-    console.log('Joined room:', data.roomCode);
     currentRoom = data.roomCode;
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
     document.querySelector('.waiting-text').style.display = 'block';
@@ -259,7 +255,7 @@ socket.on('oracle-speaks', (data) => {
 });
 
 socket.on('riddle-presented', (data) => {
-    roundDisplay.textContent = `Round ${data.round}/${data.maxRounds}`;
+    document.getElementById('round-display').textContent = `Round ${data.round}/${data.maxRounds}`;
     riddleText.textContent = data.riddle.question;
     
     // Reset inputs
@@ -376,10 +372,6 @@ socket.on('puzzle-choice-result', (data) => {
     showPage('puzzleResults');
 });
 
-socket.on('oracle-final-judgment', (data) => {
-    console.log('Oracle Final Judgment:', data.message);
-});
-
 socket.on('round-summary', (data) => {
     document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
     
@@ -427,4 +419,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Script loaded successfully');
+console.log('Frontend loaded - Threatened by AI v2.0');
