@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+/* UPDATED: Ubuntu Mono for much better readability */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap');
 
 * {
     margin: 0;
@@ -6,7 +7,8 @@
     box-sizing: border-box;
 }
 body {
-    font-family: 'Orbitron', monospace;
+    /* UPDATED: Ubuntu Mono instead of Orbitron for better readability */
+    font-family: 'Ubuntu Mono', 'Consolas', 'Monaco', monospace;
     background: #0a0a0a;
     color: #fff;
     min-height: 100vh;
@@ -28,7 +30,7 @@ body {
 }
 .logo h1 {
     font-size: 2.3em;
-    font-weight: 900;
+    font-weight: 700; /* Reduced from 900 for Ubuntu Mono */
     margin-bottom: 8px;
     background: linear-gradient(45deg, #ff0040, #8a2be2);
     -webkit-background-clip: text;
@@ -40,7 +42,7 @@ body {
     padding: 14px 32px;
     border: none;
     border-radius: 12px;
-    font-family: 'Orbitron', monospace;
+    font-family: 'Ubuntu Mono', monospace; /* Updated font */
     font-weight: 700;
     font-size: 1.1em;
     cursor: pointer;
@@ -66,6 +68,7 @@ input[type="text"], textarea {
     border-radius: 12px;
     color: #ffffff;
     font-size: 1.1em;
+    font-family: 'Ubuntu Mono', monospace; /* Updated font */
     text-align: center;
     margin: 8px 0;
 }
@@ -107,7 +110,7 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     padding: 6px 8px;
     border-radius: 10px;
     font-size: 1em;
-    font-weight: 600;
+    font-weight: 700; /* Updated weight for Ubuntu Mono */
     border: 2px solid rgba(255, 255, 255, 0.3);
 }
 .waiting-text { color: #888; }
@@ -133,7 +136,7 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
 .timer {
     display: block;
     font-size: 3em;
-    font-weight: 900;
+    font-weight: 700; /* Updated for Ubuntu Mono */
     color: #00ff00;
     background: rgba(0, 255, 0, 0.12);
     padding: 10px 20px;
@@ -153,7 +156,13 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     font-size: 1.35em;
     margin-bottom: 12px;
 }
-.riddle-question { color: #cccccc; font-style: italic; margin-bottom: 18px; line-height: 1.5; }
+.riddle-question { 
+    color: #cccccc; 
+    font-style: italic; 
+    margin-bottom: 18px; 
+    line-height: 1.6; /* Improved line spacing for readability */
+    font-size: 1.1em; /* Slightly larger for better readability */
+}
 .puzzle-description {
     color: #cccccc;
     font-style: italic;
@@ -162,6 +171,8 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     background: rgba(255,255,255,0.07);
     border-radius: 10px;
     border-left: 4px solid #ff0040;
+    line-height: 1.6; /* Improved line spacing */
+    font-size: 1.05em; /* Slightly larger for better readability */
 }
 .choices-section { width: 100%; max-width: 500px; }
 .choice-buttons {
@@ -180,8 +191,8 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     border: 3px solid #666;
     border-radius: 12px;
     color: #fff;
-    font-family: 'Orbitron', monospace;
-    font-weight: 600;
+    font-family: 'Ubuntu Mono', monospace; /* Updated font */
+    font-weight: 700; /* Updated weight */
     font-size: 1.05em;
     cursor: pointer;
     transition: all 0.3s;
@@ -208,13 +219,17 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     height: 38px;
     background: linear-gradient(45deg, #ff0040, #8a2be2);
     border-radius: 50%;
-    font-weight: 900;
+    font-weight: 700; /* Updated for Ubuntu Mono */
     font-size: 1em;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.choice-text { flex: 1; line-height: 1.4; }
+.choice-text { 
+    flex: 1; 
+    line-height: 1.5; /* Improved line spacing */
+    text-align: left; /* Better alignment for readability */
+}
 .submission-status {
     text-align: center;
     margin-top: 12px;
@@ -251,13 +266,13 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     box-shadow: 0 0 12px rgba(255,215,0,0.14);
 }
 .answer-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap;}
-.player-name { font-weight: bold; color: #fff;}
+.player-name { font-weight: 700; color: #fff;} /* Updated weight */
 .answer-order {
     background: rgba(138,43,226,0.2);
     color: #8a2be2;
     padding: 3px 8px;
     border-radius: 5px;
-    font-weight: 600;
+    font-weight: 700; /* Updated weight */
     font-size: 0.95em;
 }
 .winner-badge {
@@ -265,16 +280,21 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     color: #000;
     padding: 2px 12px;
     border-radius: 16px;
-    font-weight: 700;
+    font-weight: 700; /* Updated weight */
     animation: winnerPulse 2s ease-in-out infinite;
 }
 @keyframes winnerPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.08); }
 }
-.answer-text { color: #ccc; font-size: 1.1em; padding: 7px 0;}
+.answer-text { 
+    color: #ccc; 
+    font-size: 1.1em; 
+    padding: 7px 0;
+    line-height: 1.4; /* Better line spacing */
+}
 .answer-status {
-    font-weight: 600;
+    font-weight: 700; /* Updated weight */
     font-size: 0.95em;
 }
 .answer-item.correct .answer-status { color: #28a745; }
@@ -311,7 +331,7 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     padding: 5px 10px;
     border-radius: 18px;
     font-size: 1em;
-    font-weight: 600;
+    font-weight: 700; /* Updated weight */
     border: 1.2px solid #8a2be2;
 }
 .fate-narration {
@@ -323,6 +343,7 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     color: #fff;
     border-left: 4px solid;
     font-style: italic;
+    line-height: 1.5; /* Better line spacing for readability */
 }
 .choice-result.survived .fate-narration { border-left-color: #28a745; }
 .choice-result.eliminated .fate-narration { border-left-color: #dc3545; }
@@ -330,7 +351,7 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     text-align: center;
     padding: 10px;
     border-radius: 7px;
-    font-weight: bold;
+    font-weight: 700; /* Updated weight */
     font-size: 1.09em;
     margin-top: 8px;
 }
@@ -359,7 +380,8 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
 }
 .points-table-header {
     background: rgba(138,43,226,0.18);
-    color: #fff; font-weight: bold;
+    color: #fff; 
+    font-weight: 700; /* Updated weight */
     border-radius: 8px;
 }
 .points-table-row {
@@ -368,14 +390,23 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     align-items: center;
     margin-bottom: 2px;
 }
-.round-result { text-align: center; font-size: 1.1em; border-radius: 4px;}
+.round-result { 
+    text-align: center; 
+    font-size: 1.1em; 
+    border-radius: 4px;
+    font-weight: 700; /* Updated weight */
+}
 .round-result.win {
     background: rgba(40,167,69,0.2); color: #28a745; border: 1px solid #28a745;
 }
 .round-result.loss {
     background: rgba(220,53,69,0.23); color: #dc3545; border: 1px solid #dc3545;
 }
-.total-score { text-align: center; font-weight: bold; color: #ffd700; }
+.total-score { 
+    text-align: center; 
+    font-weight: 700; /* Updated weight */
+    color: #ffd700; 
+}
 
 .big-winner-announcement {
     background: linear-gradient(45deg, #ffd700, #ffed4e);
@@ -385,7 +416,7 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     margin: 30px 0;
     text-align: center;
     font-size: clamp(1.7em, 5vw, 2.3em);
-    font-weight: 900;
+    font-weight: 700; /* Updated weight for Ubuntu Mono */
     animation: winnerGlow 2s ease-in-out infinite alternate;
     border: 4px solid #ffd700;
 }
@@ -394,11 +425,34 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     100% { box-shadow: 0 0 38px rgba(255, 215, 0, 0.76);}
 }
 
+.loading-dots {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.loading-dots span {
+    width: 12px;
+    height: 12px;
+    background: #8a2be2;
+    border-radius: 50%;
+    animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
 @media (max-width: 750px) {
     .page-content { max-width: 99vw; }
     .points-table-header, .points-table-row { font-size: 0.9em; }
     .timer { font-size: 2.2em !important; }
-    .big-winner-announcement { font-size: 1.3em; padding: 10px; }
+    .big-winner-announcement { font-size: 1.3em; padding: 15px; }
 }
 
 @media (max-width: 500px) {
@@ -406,5 +460,5 @@ input[type="text"]::placeholder { color: #888; text-align: center; }
     .points-table-header, .points-table-row { font-size: 0.85em; }
     .timer { font-size: 1.7em !important; }
     .choice-btn { padding: 15px 6px; font-size: 1em;}
-    .choice-letter {width: 28px; height: 28px;font-size: 0.9em;}
+    .choice-letter {width: 28px; height: 28px; font-size: 0.9em;}
 }
