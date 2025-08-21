@@ -2,7 +2,7 @@ const socket = io();
 let currentRoom = null;
 let playerName = null;
 
-// DOM elements
+// DOM elements - same as before
 const pages = {
     home: document.getElementById('home-screen'),
     lobby: document.getElementById('lobby-screen'),
@@ -16,31 +16,27 @@ const pages = {
     gameOver: document.getElementById('game-over-screen')
 };
 
-// Input elements
 const playerNameInput = document.getElementById('player-name');
 const roomCodeInput = document.getElementById('room-code');
 const riddleAnswer = document.getElementById('riddle-answer');
 
-// Button elements
 const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const startGameBtn = document.getElementById('start-game-btn');
 const submitRiddleBtn = document.getElementById('submit-riddle');
 
-// Choice buttons
 const choiceButtons = {
     a: document.getElementById('choice-a'),
     b: document.getElementById('choice-b'),
     c: document.getElementById('choice-c')
 };
 
-// Display elements
 const roomCodeDisplay = document.getElementById('room-code-display');
 const playersListEl = document.getElementById('players-list');
 const oracleIntroMessage = document.getElementById('oracle-intro-message');
 const riddleText = document.getElementById('riddle-text');
 
-// Event listeners
+// Event listeners - same as before
 createRoomBtn.addEventListener('click', createRoom);
 joinRoomBtn.addEventListener('click', joinRoom);
 startGameBtn.addEventListener('click', startGame);
@@ -58,7 +54,6 @@ riddleAnswer.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') submitRiddleAnswer();
 });
 
-// Add choice button event listeners
 Object.values(choiceButtons).forEach(button => {
     button.addEventListener('click', (e) => {
         const choice = e.currentTarget.dataset.choice;
@@ -66,7 +61,7 @@ Object.values(choiceButtons).forEach(button => {
     });
 });
 
-// Page navigation
+// Utility functions - same as before
 function showPage(pageName) {
     Object.values(pages).forEach(page => page.classList.remove('active'));
     if (pages[pageName]) {
@@ -74,19 +69,16 @@ function showPage(pageName) {
     }
 }
 
-// Utility functions
 function createRoom() {
     const name = playerNameInput.value.trim();
     if (!name) {
         alert('Please enter your name');
         return;
     }
-    
     if (name.length > 15) {
         alert('Name must be 15 characters or less');
         return;
     }
-    
     playerName = name;
     socket.emit('create-room', { playerName: name });
 }
@@ -99,17 +91,14 @@ function joinRoom() {
         alert('Please enter your name and room code');
         return;
     }
-    
     if (name.length > 15) {
         alert('Name must be 15 characters or less');
         return;
     }
-    
     if (roomCode.length !== 6) {
         alert('Room code must be 6 characters');
         return;
     }
-    
     playerName = name;
     socket.emit('join-room', { playerName: name, roomCode: roomCode });
 }
@@ -135,13 +124,11 @@ function submitPuzzleChoice(choice) {
     
     socket.emit('submit-puzzle-choice', { roomCode: currentRoom, choice: choice });
     
-    // Disable all choice buttons
     Object.values(choiceButtons).forEach(btn => {
         btn.disabled = true;
         btn.classList.remove('selected');
     });
     
-    // Highlight selected choice
     const selectedButton = choiceButtons[choice.toLowerCase()];
     if (selectedButton) {
         selectedButton.classList.add('selected');
@@ -160,7 +147,6 @@ function createPointsTable(roundHistory, tableId) {
     
     let tableHtml = '<div class="points-table">';
     
-    // Header
     tableHtml += '<div class="points-table-header">';
     tableHtml += '<div>Player</div>';
     for (let i = 1; i <= 5; i++) {
@@ -169,19 +155,16 @@ function createPointsTable(roundHistory, tableId) {
     tableHtml += '<div>Total</div>';
     tableHtml += '</div>';
     
-    // Player rows
     roundHistory.forEach(playerHistory => {
         tableHtml += '<div class="points-table-row">';
         tableHtml += `<div class="player-name-cell">${playerHistory.playerName}</div>`;
         
-        // Round results
         for (let i = 0; i < 5; i++) {
             const result = playerHistory.rounds[i] || '-';
             const resultClass = result === 'W' ? 'win' : result === 'L' ? 'loss' : '';
             tableHtml += `<div class="round-result ${resultClass}">${result}</div>`;
         }
         
-        // Total score
         const totalWins = playerHistory.rounds.filter(r => r === 'W').length;
         tableHtml += `<div class="total-score">${totalWins}</div>`;
         tableHtml += '</div>';
@@ -258,18 +241,17 @@ socket.on('riddle-presented', (data) => {
     document.getElementById('round-display').textContent = `Round ${data.round}/${data.maxRounds}`;
     riddleText.textContent = data.riddle.question;
     
-    // Reset inputs
     riddleAnswer.disabled = false;
     riddleAnswer.value = '';
     riddleAnswer.focus();
     submitRiddleBtn.disabled = false;
     submitRiddleBtn.textContent = 'Submit Answer';
     
-    // Reset submission counter
     document.getElementById('submission-count').textContent = '0/0 players answered';
     
     showPage('riddle');
-    startTimer('riddle-timer', 30);
+    // FIXED: 45 seconds for riddle timer
+    startTimer('riddle-timer', 45);
 });
 
 socket.on('answer-submitted', (data) => {
@@ -278,10 +260,8 @@ socket.on('answer-submitted', (data) => {
 });
 
 socket.on('riddle-results-reveal', (data) => {
-    // Update results message
     document.getElementById('riddle-results-message').textContent = data.message;
     
-    // Show all answers
     const answersListEl = document.getElementById('all-answers-list');
     let answersHtml = '';
     
@@ -313,25 +293,22 @@ socket.on('puzzle-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
-        // Show puzzle to participant
         document.getElementById('puzzle-scenario').textContent = data.puzzle.scenario;
         
-        // Set up choice options
         document.getElementById('choice-a-text').textContent = data.puzzle.options.find(opt => opt.id === 'A')?.text || 'Option A';
         document.getElementById('choice-b-text').textContent = data.puzzle.options.find(opt => opt.id === 'B')?.text || 'Option B';
         document.getElementById('choice-c-text').textContent = data.puzzle.options.find(opt => opt.id === 'C')?.text || 'Option C';
         
-        // Reset choice buttons
         Object.values(choiceButtons).forEach(btn => {
             btn.disabled = false;
             btn.classList.remove('selected');
         });
         
-        // Reset submission counter
         document.getElementById('puzzle-submission-count').textContent = `0/${data.participants.length} non-winners chose`;
         
         showPage('puzzle');
-        startTimer('puzzle-timer', 30);
+        // FIXED: 45 seconds for puzzle timer
+        startTimer('puzzle-timer', 45);
     } else {
         document.getElementById('waiting-title').textContent = 'Others are facing a challenge...';
         document.getElementById('waiting-message').textContent = 'Non-winners are solving a survival puzzle!';
@@ -344,8 +321,12 @@ socket.on('puzzle-choice-submitted', (data) => {
         `${data.totalSubmissions}/${data.expectedSubmissions} non-winners chose`;
 });
 
+// FIXED: Only show current result, clear previous ones
 socket.on('puzzle-choice-result', (data) => {
     const resultsContent = document.getElementById('puzzle-results-content');
+    
+    // FIXED: Clear previous results
+    resultsContent.innerHTML = '';
     
     const resultHtml = `
         <div class="choice-result ${data.survived ? 'survived' : 'eliminated'}">
@@ -364,21 +345,15 @@ socket.on('puzzle-choice-result', (data) => {
         </div>
     `;
     
-    resultsContent.innerHTML += resultHtml;
-    
-    // Auto-scroll to new result
-    resultsContent.scrollTop = resultsContent.scrollHeight;
-    
+    resultsContent.innerHTML = resultHtml;
     showPage('puzzleResults');
 });
 
 socket.on('round-summary', (data) => {
     document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
     
-    // Create points table
     createPointsTable(data.roundHistory, 'points-table');
     
-    // Update next round info
     const nextRoundText = document.getElementById('next-round-text');
     if (data.round >= data.maxRounds) {
         nextRoundText.textContent = 'Final results coming up...';
@@ -404,9 +379,7 @@ socket.on('game-over', (data) => {
     document.getElementById('final-oracle-message').textContent = `"${data.message}"`;
     document.getElementById('final-scores').innerHTML = scoresHtml;
     
-    // Create final points table
     createPointsTable(data.roundHistory, 'final-points-table');
-    
     showPage('gameOver');
 });
 
@@ -419,4 +392,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v2.0');
+console.log('Frontend loaded - Threatened by AI v2.1');
