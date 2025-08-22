@@ -1,6 +1,7 @@
 const socket = io();
 let currentRoom = null;
 let playerName = null;
+let isRoomOwner = false;  // ADDED: Track if current player is room owner
 
 // DOM elements
 const pages = {
@@ -135,10 +136,56 @@ function submitPuzzleChoice(choice) {
     }
 }
 
+// ENHANCED: Update lobby to show room owner status
+function updateLobbyOwnerDisplay() {
+    const lobbyHeader = document.querySelector('.lobby-header');
+    const existingOwnerBadge = document.querySelector('.owner-badge');
+    
+    if (existingOwnerBadge) {
+        existingOwnerBadge.remove();
+    }
+    
+    if (isRoomOwner) {
+        const ownerBadge = document.createElement('div');
+        ownerBadge.className = 'owner-badge';
+        ownerBadge.innerHTML = '👑 You are the Room Owner';
+        lobbyHeader.appendChild(ownerBadge);
+    }
+}
+
+// ENHANCED: Smart start button display
+function updateStartButton() {
+    const playerCount = document.querySelectorAll('.player').length;
+    const waitingText = document.querySelector('.waiting-text');
+    
+    if (isRoomOwner && playerCount >= 2) {
+        startGameBtn.classList.remove('hidden');
+        startGameBtn.disabled = false;
+        startGameBtn.textContent = 'Start Game';
+        waitingText.style.display = 'none';
+    } else if (isRoomOwner && playerCount < 2) {
+        startGameBtn.classList.remove('hidden');
+        startGameBtn.disabled = true;
+        startGameBtn.textContent = 'Need More Players';
+        waitingText.textContent = 'Waiting for more players...';
+        waitingText.style.display = 'block';
+    } else {
+        startGameBtn.classList.add('hidden');
+        waitingText.textContent = 'Waiting for room owner to start...';
+        waitingText.style.display = 'block';
+    }
+}
+
+// ENHANCED: Better player list display
 function updatePlayers(players) {
-    playersListEl.innerHTML = players.map(player => 
-        `<div class="player">${player.name}: ${player.score}pts</div>`
-    ).join('');
+    playersListEl.innerHTML = players.map((player, index) => {
+        const isOwnerPlayer = index === 0; // First player is usually owner
+        return `
+            <div class="player ${isOwnerPlayer ? 'owner-player' : ''}">
+                ${isOwnerPlayer ? '👑 ' : ''}${player.name}: ${player.score}pts
+            </div>
+        `;
+    }).join('');
 }
 
 function createPointsTable(roundHistory, tableId) {
@@ -238,35 +285,34 @@ function typeWriter(element, text, speed = 30) {
 // Socket event listeners
 socket.on('room-created', (data) => {
     currentRoom = data.roomCode;
+    isRoomOwner = data.isOwner;  // ADDED: Track ownership
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
-    startGameBtn.classList.remove('hidden');
-    document.querySelector('.waiting-text').style.display = 'block';
+    
+    // ENHANCED: Show owner status
+    updateLobbyOwnerDisplay();
+    updateStartButton();
     showPage('lobby');
 });
 
 socket.on('join-success', (data) => {
     currentRoom = data.roomCode;
+    isRoomOwner = data.isOwner;  // ADDED: Track ownership
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
-    document.querySelector('.waiting-text').style.display = 'block';
+    
+    // ENHANCED: Show owner status
+    updateLobbyOwnerDisplay();
+    updateStartButton();
     showPage('lobby');
 });
 
 socket.on('player-joined', (data) => {
     updatePlayers(data.players);
-    
-    if (data.players.length >= 2) {
-        startGameBtn.classList.remove('hidden');
-        document.querySelector('.waiting-text').style.display = 'none';
-    }
+    updateStartButton();
 });
 
 socket.on('player-left', (data) => {
     updatePlayers(data.players);
-    
-    if (data.players.length < 2) {
-        startGameBtn.classList.add('hidden');
-        document.querySelector('.waiting-text').style.display = 'block';
-    }
+    updateStartButton();
 });
 
 socket.on('oracle-speaks', (data) => {
@@ -447,4 +493,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v2.3 (Fixed Edition)');
+console.log('Frontend loaded - Threatened by AI v3.0 (Owner Edition)');
