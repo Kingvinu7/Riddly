@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Google Gemini Setup
+// Google Gemini Setup - UPDATED for 2.5 Flash
 let genAI = null;
 if (process.env.GEMINI_API_KEY) {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -17,7 +17,7 @@ if (process.env.GEMINI_API_KEY) {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Game Data ---
+// --- Game Data (your existing data) ---
 const gameData = {
     riddles: [
         { question: "I speak without a mouth and hear without ears. What am I?", answer: "ECHO", difficulty: "easy" },
@@ -53,7 +53,7 @@ const gameData = {
                 { id: "C", text: "A wet towel to cover your face", survival: false }
             ]
         }
-        // ... add your expanded puzzle list here
+        // Add your expanded puzzle list here
     ],
     oraclePersonality: {
         introductions: [
@@ -70,9 +70,10 @@ const gameData = {
         ]
     }
 };
+
 let rooms = {};
 
-// --- Helpers ---
+// --- Helper Functions ---
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
@@ -98,7 +99,7 @@ function getFallbackPuzzle() {
     return puzzles[Math.floor(Math.random() * puzzles.length)];
 }
 
-// --- AI Generation ---
+// FIXED: Enhanced generateSurvivalPuzzle with error handling
 async function generateSurvivalPuzzle() {
     if (!genAI) {
         console.log("❌ No genAI instance, using fallback");
@@ -106,74 +107,115 @@ async function generateSurvivalPuzzle() {
     }
     
     try {
-        console.log("🤖 Calling Gemini API for new puzzle...");
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        console.log("🤖 Calling Gemini 2.5 Flash for new puzzle...");
+        // UPGRADED: Using gemini-2.5-flash for 1000 daily requests
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         
         const prompt = `Create a survival puzzle for a party game. Use this EXACT format:
 
-[Scenario description in one sentence]
-A) [Option 1]
-B) [Option 2]
-C) [Option 3]
+SCENARIO: [One sentence describing dangerous situation]
+A) [First survival option]
+B) [Second survival option] 
+C) [Third survival option]
 
 Example:
-You're trapped in a collapsing building during an earthquake.
-A) Hide under a desk
-B) Run outside immediately
-C) Stand in a doorway
+SCENARIO: You're trapped in a sinking submarine and water is rising rapidly.
+A) Try to break the window
+B) Look for an emergency oxygen tank
+C) Signal for help with a flashlight
 
-Create a NEW survival scenario:`;
+Generate a NEW survival puzzle now using the exact format above:`;
 
         const result = await model.generateContent(prompt);
-        const resp = (await result.response).text();
+        const respText = (await result.response).text();
         
-        const lines = resp.split('\n').filter(x => x.trim());
+        console.log("📝 Raw Gemini response:", respText);
         
-        if (lines.length < 4) {
-            console.log("⚠️ Not enough lines in response, using fallback");
-            return getFallbackPuzzle();
+        // FIXED: Defensive parsing with validation
+        if (!respText || typeof respText !== 'string' || respText.trim().length === 0) {
+            throw new Error('Empty or invalid response from Gemini API');
         }
         
-        const scenario = lines[0];
-        const options = [];
+        const lines = respText.split('\n').filter(line => line && line.trim().length > 0);
+        console.log("📋 Filtered lines:", lines.length);
         
-        for (let line of lines.slice(1)) {
-            const match = line.match(/^([ABC])\)\s*(.+)$/i);
-            if (match) {
-                options.push({ 
-                    id: match[1].toUpperCase(), 
-                    text: match[13].trim(), 
-                    survival: false 
-                });
+        if (lines.length < 4) {
+            throw new Error(`Insufficient lines in response. Got ${lines.length}, need at least 4`);
+        }
+        
+        // FIXED: Find scenario line more reliably
+        let scenario = '';
+        let optionStartIndex = 0;
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.toLowerCase().startsWith('scenario:')) {
+                scenario = line.substring(9).trim();
+                optionStartIndex = i + 1;
+                break;
+            } else if (!line.match(/^[ABC]\)/i) && !scenario) {
+                // First non-option line becomes scenario
+                scenario = line;
+                optionStartIndex = i + 1;
             }
         }
         
-        if (options.length === 3) {
-            options[Math.floor(Math.random() * 3)].survival = true;
-            console.log("🎯 AI puzzle created successfully!");
-            return { scenario, options };
-        } else {
-            console.log(`⚠️ Only got ${options.length} options, need 3. Using fallback.`);
-            return getFallbackPuzzle();
+        if (!scenario) {
+            throw new Error('Could not find scenario in response');
         }
         
+        const options = [];
+        
+        // FIXED: Robust option parsing
+        for (let i = optionStartIndex; i < lines.length && options.length < 3; i++) {
+            if (!lines[i]) continue;
+            
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const match = line.match(/^([ABC])\)\s*(.+)$/i);
+            if (match && match[2] && match[2].trim().length > 0) {
+                options.push({ 
+                    id: match[1].toUpperCase(), 
+                    text: match[2].trim(), 
+                    survival: false 
+                });
+                console.log(`✅ Parsed option ${match[1].toUpperCase()}: ${match[2].trim()}`);
+            }
+        }
+        
+        // FIXED: Validate we have exactly 3 options
+        if (options.length !== 3) {
+            throw new Error(`Expected 3 options, got ${options.length}. Available lines: ${lines.length}`);
+        }
+        
+        // Randomly assign survival option
+        const survivalIndex = Math.floor(Math.random() * 3);
+        options[survivalIndex].survival = true;
+        
+        console.log(`🎯 Gemini 2.5 Flash puzzle created! Survival option: ${options[survivalIndex].id}`);
+        
+        return { scenario, options };
+        
     } catch(e) {
-        console.error('❌ Gemini API error:', e.message);
+        console.error('❌ Gemini 2.5 Flash error:', e.message);
         console.log("🔄 Using fallback puzzle");
         return getFallbackPuzzle();
     }
 }
 
+// ENHANCED: Improved choice narration with better error handling
 async function generateChoiceNarration(puzzle, choiceGroups) {
     if (!genAI) {
+        // Enhanced fallback narrations
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const opt = puzzle.options.find(o => o.id === optionId);
             const survived = opt?.survival ?? (Math.random() > 0.5);
             
             let detailedStory = survived ?
-                `${players.join(', ')} demonstrate remarkable ingenuity! They use their chosen item in an unexpected way, creating a brilliant escape route that saves them from certain doom. Through quick thinking and steady nerves, they manage to overcome the deadly situation and find safety. SURVIVED` :
-                `${players.join(', ')} put their plan into action, but a critical oversight leads to catastrophic failure. Their chosen approach proves inadequate for the dire situation, and despite their best efforts, the harsh reality becomes apparent as their hopes are crushed. ELIMINATED`;
+                `${players.join(', ')} demonstrate remarkable ingenuity! They use their chosen approach wisely, creating a brilliant escape route through quick thinking and determination. Against overwhelming odds, they manage to overcome the deadly situation and find safety. SURVIVED` :
+                `${players.join(', ')} put their plan into action with hope, but a critical flaw emerges in their strategy. Despite their courage and best efforts, the chosen approach proves inadequate for this deadly scenario. The harsh reality becomes clear as their escape attempt fails catastrophically. ELIMINATED`;
             
             narr.push({ optionId, players, survived, narration: detailedStory });
         }
@@ -181,7 +223,7 @@ async function generateChoiceNarration(puzzle, choiceGroups) {
     }
     
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const prompt = `Scenario: "${puzzle.scenario}"
 Options:
 ${puzzle.options.map(o => o.id + ') ' + o.text).join('\n')}
@@ -189,19 +231,19 @@ ${puzzle.options.map(o => o.id + ') ' + o.text).join('\n')}
 Player groups:
 ${Object.entries(choiceGroups).map(([k,v]) => `Option ${k}: ${v.join(', ')}`).join('\n')}
 
-For each option group, write a vivid, cinematic and detailed narration (3-5 sentences):
+For each option group, write a vivid, cinematic narration (3-4 sentences):
 
 If SURVIVED: 
-- Describe exactly how they escape/survive step-by-step
-- Include dramatic detail about their clever use of the chosen item
-- Show their resourcefulness and the moment of triumph
+- Describe their clever escape step-by-step
+- Show resourcefulness and dramatic triumph
+- Include specific details about their actions
 
 If ELIMINATED: 
-- Describe how/why their attempt fails with vivid detail
-- Show the fatal flaw in their plan
-- Include the dramatic moment of realization
+- Describe the fatal flaw in their plan
+- Show the dramatic moment of failure
+- Include vivid consequences
 
-Write in dramatic, cinematic style. Always end with: "SURVIVED" or "ELIMINATED"`;
+Write dramatically and always end with: "SURVIVED" or "ELIMINATED"`;
 
         const result = await model.generateContent(prompt);
         const content = (await result.response).text();
@@ -214,13 +256,14 @@ Write in dramatic, cinematic style. Always end with: "SURVIVED" or "ELIMINATED"`
             let narration, survived;
             
             if (match) {
-                narration = match[1].trim() + ' ' + match[13].toUpperCase();
-                survived = match[13].toUpperCase() === 'SURVIVED';
+                narration = match[1].trim() + ' ' + match[2].toUpperCase();
+                survived = match[2].toUpperCase() === 'SURVIVED';
             } else {
+                // Enhanced fallback if parsing fails
                 survived = Math.random() > 0.5;
                 narration = survived ? 
-                    `${players.join(', ')} use their wits and chosen item to cleverly escape the deadly situation, finding an unexpected path to safety. SURVIVED` :
-                    `${players.join(', ')} attempt their escape plan, but their chosen approach proves fatal, leading to their dramatic downfall. ELIMINATED`;
+                    `${players.join(', ')} execute their plan with precision, using their chosen method to create an unexpected escape route that leads them to safety through ingenuity and courage. SURVIVED` :
+                    `${players.join(', ')} attempt their escape strategy with determination, but their chosen approach contains a fatal weakness that becomes apparent too late, sealing their fate. ELIMINATED`;
             }
             
             narr.push({ optionId, players, survived, narration });
@@ -228,12 +271,13 @@ Write in dramatic, cinematic style. Always end with: "SURVIVED" or "ELIMINATED"`
         return narr;
     } catch (e) {
         console.error('Narration generation error:', e.message);
+        // Enhanced fallback narrations
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const survived = Math.random() > 0.5;
             const detailedStory = survived ?
-                `${players.join(', ')} demonstrate remarkable ingenuity! They use their chosen item in an unexpected way, creating a brilliant escape route that saves them from certain doom. SURVIVED` :
-                `${players.join(', ')} put their plan into action, but a critical oversight leads to catastrophic failure. Their hopes are crushed as their escape attempt ends in disaster. ELIMINATED`;
+                `${players.join(', ')} show incredible resourcefulness! Their chosen strategy unfolds brilliantly, creating multiple escape opportunities through clever improvisation and teamwork. SURVIVED` :
+                `${players.join(', ')} execute their plan with hope, but unforeseen complications arise that their chosen method cannot overcome, leading to their dramatic downfall. ELIMINATED`;
             
             narr.push({ optionId, players, survived, narration: detailedStory });
         }
@@ -264,7 +308,7 @@ function updateRoundHistory(room, riddleWinner, puzzleResults) {
     });
 }
 
-// --- Core Game Flow ---
+// --- Game Flow Functions (all your existing functions remain the same) ---
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -413,7 +457,7 @@ async function evaluatePuzzlePhase(roomCode) {
             survived: narr.survived,
             narration: narr.narration
         });
-        await new Promise(res => setTimeout(res, 6000)); // Extra time for typing effect
+        await new Promise(res => setTimeout(res, 6000));
     }
     updateRoundHistory(room, room.riddleWinner, narrs);
     setTimeout(() => {
@@ -421,7 +465,7 @@ async function evaluatePuzzlePhase(roomCode) {
     }, 2200);
 }
 
-// FIXED: Winner calculation logic
+// FIXED: Winner calculation with proper sorting
 function endRound(roomCode, puzzleResults) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -439,25 +483,23 @@ function endRound(roomCode, puzzleResults) {
         setTimeout(() => {
             // FIXED: Proper winner calculation - highest score wins
             const sortedPlayers = [...room.players].sort((a, b) => {
-                // Sort by score descending (highest first)
                 if (b.score !== a.score) {
-                    return b.score - a.score;
+                    return b.score - a.score; // Descending by score
                 }
-                // If tied, sort alphabetically by name for consistency
-                return a.name.localeCompare(b.name);
+                return a.name.localeCompare(b.name); // Alphabetical for ties
             });
             
-            console.log('🏆 Final scores before winner selection:');
+            console.log('🏆 Final scores:');
             sortedPlayers.forEach((player, index) => {
                 console.log(`${index + 1}. ${player.name}: ${player.score} points`);
             });
             
             const winner = sortedPlayers[0];
-            console.log(`🎯 Winner determined: ${winner.name} with ${winner.score} points`);
+            console.log(`🎯 Winner: ${winner.name} with ${winner.score} points`);
             
             io.to(roomCode).emit('game-over', {
                 finalScores: sortedPlayers,
-                winner: winner, // This should now be the highest scorer
+                winner: winner,
                 message: winner.score > 0
                     ? "Some of you have proven worthy adversaries!"
                     : "VICTORY IS MINE! Your feeble minds were no match!",
@@ -471,7 +513,7 @@ function endRound(roomCode, puzzleResults) {
     }
 }
 
-// --- Socket Events ---
+// --- Socket Events (all your existing socket events remain the same) ---
 io.on('connection', (socket) => {
     socket.on('create-room', (data) => {
         const roomCode = generateRoomCode();
@@ -604,7 +646,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
     if (genAI) {
-        console.log('🔑 Gemini API key detected: Using Google AI for cinematic narratives.');
+        console.log('🔑 Gemini 2.5 Flash detected: 1000 free requests daily!');
     } else {
         console.log('⚠️ No Gemini API key: Using enhanced fallback narratives.');
     }
