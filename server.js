@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-// Google Gemini Setup - UPDATED for 2.5 Flash
+// Google Gemini Setup
 let genAI = null;
 if (process.env.GEMINI_API_KEY) {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -17,7 +17,7 @@ if (process.env.GEMINI_API_KEY) {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Game Data (your existing data) ---
+// --- Game Data ---
 const gameData = {
     riddles: [
         { question: "I speak without a mouth and hear without ears. What am I?", answer: "ECHO", difficulty: "easy" },
@@ -52,8 +52,39 @@ const gameData = {
                 { id: "B", text: "A rope from the window", survival: true },
                 { id: "C", text: "A wet towel to cover your face", survival: false }
             ]
+        },
+        {
+            scenario: "You're stranded on a desert island. A storm is approaching. You can only grab:",
+            options: [
+                { id: "A", text: "A solar panel", survival: false },
+                { id: "B", text: "A tarp and rope", survival: true },
+                { id: "C", text: "A fishing net", survival: false }
+            ]
+        },
+        {
+            scenario: "You're in a sinking submarine. Water is rising fast. Your options:",
+            options: [
+                { id: "A", text: "Put on a life jacket", survival: false },
+                { id: "B", text: "Find an oxygen tank", survival: true },
+                { id: "C", text: "Break a window", survival: false }
+            ]
+        },
+        {
+            scenario: "You're lost in a blizzard. Temperature is dropping. You see:",
+            options: [
+                { id: "A", text: "A cave entrance", survival: true },
+                { id: "B", text: "A tall tree to climb", survival: false },
+                { id: "C", text: "An abandoned car", survival: false }
+            ]
+        },
+        {
+            scenario: "You're trapped in an elevator between floors. The cable is snapping. You have:",
+            options: [
+                { id: "A", text: "A crowbar", survival: true },
+                { id: "B", text: "A cell phone", survival: false },
+                { id: "C", text: "A flashlight", survival: false }
+            ]
         }
-        // Add your expanded puzzle list here
     ],
     oraclePersonality: {
         introductions: [
@@ -99,7 +130,7 @@ function getFallbackPuzzle() {
     return puzzles[Math.floor(Math.random() * puzzles.length)];
 }
 
-// FIXED: Enhanced generateSurvivalPuzzle with error handling
+// FIXED: Enhanced generateSurvivalPuzzle with Gemini 2.5 Flash
 async function generateSurvivalPuzzle() {
     if (!genAI) {
         console.log("❌ No genAI instance, using fallback");
@@ -108,7 +139,6 @@ async function generateSurvivalPuzzle() {
     
     try {
         console.log("🤖 Calling Gemini 2.5 Flash for new puzzle...");
-        // UPGRADED: Using gemini-2.5-flash for 1000 daily requests
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         
         const prompt = `Create a survival puzzle for a party game. Use this EXACT format:
@@ -131,7 +161,6 @@ Generate a NEW survival puzzle now using the exact format above:`;
         
         console.log("📝 Raw Gemini response:", respText);
         
-        // FIXED: Defensive parsing with validation
         if (!respText || typeof respText !== 'string' || respText.trim().length === 0) {
             throw new Error('Empty or invalid response from Gemini API');
         }
@@ -143,7 +172,6 @@ Generate a NEW survival puzzle now using the exact format above:`;
             throw new Error(`Insufficient lines in response. Got ${lines.length}, need at least 4`);
         }
         
-        // FIXED: Find scenario line more reliably
         let scenario = '';
         let optionStartIndex = 0;
         
@@ -154,7 +182,6 @@ Generate a NEW survival puzzle now using the exact format above:`;
                 optionStartIndex = i + 1;
                 break;
             } else if (!line.match(/^[ABC]\)/i) && !scenario) {
-                // First non-option line becomes scenario
                 scenario = line;
                 optionStartIndex = i + 1;
             }
@@ -166,7 +193,6 @@ Generate a NEW survival puzzle now using the exact format above:`;
         
         const options = [];
         
-        // FIXED: Robust option parsing
         for (let i = optionStartIndex; i < lines.length && options.length < 3; i++) {
             if (!lines[i]) continue;
             
@@ -177,19 +203,17 @@ Generate a NEW survival puzzle now using the exact format above:`;
             if (match && match[2] && match[2].trim().length > 0) {
                 options.push({ 
                     id: match[1].toUpperCase(), 
-                    text: match[2].trim(), 
+                    text: match.trim(), 
                     survival: false 
                 });
-                console.log(`✅ Parsed option ${match[1].toUpperCase()}: ${match[2].trim()}`);
+                console.log(`✅ Parsed option ${match[1].toUpperCase()}: ${match.trim()}`);
             }
         }
         
-        // FIXED: Validate we have exactly 3 options
         if (options.length !== 3) {
             throw new Error(`Expected 3 options, got ${options.length}. Available lines: ${lines.length}`);
         }
         
-        // Randomly assign survival option
         const survivalIndex = Math.floor(Math.random() * 3);
         options[survivalIndex].survival = true;
         
@@ -204,10 +228,9 @@ Generate a NEW survival puzzle now using the exact format above:`;
     }
 }
 
-// ENHANCED: Improved choice narration with better error handling
+// Enhanced choice narration
 async function generateChoiceNarration(puzzle, choiceGroups) {
     if (!genAI) {
-        // Enhanced fallback narrations
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const opt = puzzle.options.find(o => o.id === optionId);
@@ -256,10 +279,9 @@ Write dramatically and always end with: "SURVIVED" or "ELIMINATED"`;
             let narration, survived;
             
             if (match) {
-                narration = match[1].trim() + ' ' + match[2].toUpperCase();
-                survived = match[2].toUpperCase() === 'SURVIVED';
+                narration = match[1].trim() + ' ' + match.toUpperCase();
+                survived = match.toUpperCase() === 'SURVIVED';
             } else {
-                // Enhanced fallback if parsing fails
                 survived = Math.random() > 0.5;
                 narration = survived ? 
                     `${players.join(', ')} execute their plan with precision, using their chosen method to create an unexpected escape route that leads them to safety through ingenuity and courage. SURVIVED` :
@@ -271,7 +293,6 @@ Write dramatically and always end with: "SURVIVED" or "ELIMINATED"`;
         return narr;
     } catch (e) {
         console.error('Narration generation error:', e.message);
-        // Enhanced fallback narrations
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const survived = Math.random() > 0.5;
@@ -308,7 +329,7 @@ function updateRoundHistory(room, riddleWinner, puzzleResults) {
     });
 }
 
-// --- Game Flow Functions (all your existing functions remain the same) ---
+// --- Game Flow Functions ---
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -513,7 +534,7 @@ function endRound(roomCode, puzzleResults) {
     }
 }
 
-// --- Socket Events (all your existing socket events remain the same) ---
+// --- Socket Events ---
 io.on('connection', (socket) => {
     socket.on('create-room', (data) => {
         const roomCode = generateRoomCode();
@@ -532,10 +553,15 @@ io.on('connection', (socket) => {
             timeRemaining: 0,
             riddleTimer: null,
             puzzleTimer: null,
-            roundHistory: []
+            roundHistory: [],
+            ownerId: socket.id  // ADDED: Track room owner
         };
         socket.join(roomCode);
-        socket.emit('room-created', { roomCode: roomCode, playerName: data.playerName });
+        socket.emit('room-created', { 
+            roomCode: roomCode, 
+            playerName: data.playerName,
+            isOwner: true  // ADDED: Tell client they're the owner
+        });
     });
 
     socket.on('join-room', (data) => {
@@ -561,7 +587,8 @@ io.on('connection', (socket) => {
         socket.join(data.roomCode);
         socket.emit('join-success', {
             roomCode: data.roomCode,
-            playerName: data.playerName
+            playerName: data.playerName,
+            isOwner: false  // ADDED: Tell client they're not the owner
         });
         io.to(data.roomCode).emit('player-joined', {
             players: room.players,
@@ -575,6 +602,13 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: 'Room not found' });
             return;
         }
+        
+        // ADDED: Check if socket is the room owner
+        if (room.ownerId !== socket.id) {
+            socket.emit('error', { message: 'Only the room owner can start the game' });
+            return;
+        }
+        
         if (room.players.length < 2) {
             socket.emit('error', { message: 'Need at least 2 players to start' });
             return;
