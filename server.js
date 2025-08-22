@@ -18,7 +18,6 @@ if (process.env.GEMINI_API_KEY) {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- Game Data ---
-
 const gameData = {
     riddles: [
         { question: "I speak without a mouth and hear without ears. What am I?", answer: "ECHO", difficulty: "easy" },
@@ -54,6 +53,7 @@ const gameData = {
                 { id: "C", text: "A wet towel to cover your face", survival: false }
             ]
         }
+        // ... add your expanded puzzle list here
     ],
     oraclePersonality: {
         introductions: [
@@ -73,18 +73,10 @@ const gameData = {
 let rooms = {};
 
 // --- Helpers ---
-
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
-function getPlayerName(playerId, roomCode) {
-    const room = rooms[roomCode];
-    if (!room) return 'Unknown';
-    const player = room.players.find(p => p.id === playerId);
-    return player ? player.name : 'Unknown';
-}
 
-// No more repeating riddles
 function getRandomRiddle(usedIndices = []) {
     const availableRiddles = gameData.riddles.filter((_, index) => !usedIndices.includes(index));
     if (availableRiddles.length === 0) {
@@ -100,12 +92,13 @@ function getRandomOracleMessage(type) {
     const messages = gameData.oraclePersonality[type] || [];
     return messages[Math.floor(Math.random() * messages.length)];
 }
+
 function getFallbackPuzzle() {
     const puzzles = gameData.fallbackPuzzles;
     return puzzles[Math.floor(Math.random() * puzzles.length)];
 }
 
-// --- AI Generation Sections ---
+// --- AI Generation ---
 async function generateSurvivalPuzzle() {
     if (!genAI) {
         console.log("❌ No genAI instance, using fallback");
@@ -134,12 +127,7 @@ Create a NEW survival scenario:`;
         const result = await model.generateContent(prompt);
         const resp = (await result.response).text();
         
-        console.log("📝 Gemini returned this:");
-        console.log(resp);
-        console.log("---End of Gemini response---");
-        
         const lines = resp.split('\n').filter(x => x.trim());
-        console.log("📋 Parsed lines:", lines);
         
         if (lines.length < 4) {
             console.log("⚠️ Not enough lines in response, using fallback");
@@ -154,12 +142,9 @@ Create a NEW survival scenario:`;
             if (match) {
                 options.push({ 
                     id: match[1].toUpperCase(), 
-                    text: match[2].trim(), 
+                    text: match[13].trim(), 
                     survival: false 
                 });
-                console.log(`✅ Parsed option ${match[1]}: ${match[2].trim()}`);
-            } else {
-                console.log(`❌ Failed to parse line: "${line}"`);
             }
         }
         
@@ -179,32 +164,22 @@ Create a NEW survival scenario:`;
     }
 }
 
-
-// ENHANCED: More detailed cinematic narrations
 async function generateChoiceNarration(puzzle, choiceGroups) {
     if (!genAI) {
-        // Enhanced fallback narrations with details
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const opt = puzzle.options.find(o => o.id === optionId);
             const survived = opt?.survival ?? (Math.random() > 0.5);
             
-            let detailedStory;
-            if (survived) {
-                detailedStory = `${players.join(', ')} make a brilliant decision! They carefully use their chosen tool to create an escape route. With quick thinking and steady nerves, they manage to overcome the deadly situation. Against all odds, they find safety and live to fight another day. SURVIVED`;
-            } else {
-                detailedStory = `${players.join(', ')} attempt to use their chosen tool, but it proves inadequate for the dire situation. Their plan backfires spectacularly, and they find themselves in even greater peril. Despite their best efforts, the harsh reality of their poor choice becomes apparent. ELIMINATED`;
-            }
+            let detailedStory = survived ?
+                `${players.join(', ')} demonstrate remarkable ingenuity! They use their chosen item in an unexpected way, creating a brilliant escape route that saves them from certain doom. Through quick thinking and steady nerves, they manage to overcome the deadly situation and find safety. SURVIVED` :
+                `${players.join(', ')} put their plan into action, but a critical oversight leads to catastrophic failure. Their chosen approach proves inadequate for the dire situation, and despite their best efforts, the harsh reality becomes apparent as their hopes are crushed. ELIMINATED`;
             
-            narr.push({
-                optionId, players, survived,
-                narration: detailedStory
-            });
+            narr.push({ optionId, players, survived, narration: detailedStory });
         }
         return narr;
     }
     
-    // Enhanced AI prompt for detailed narrations
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const prompt = `Scenario: "${puzzle.scenario}"
@@ -220,18 +195,13 @@ If SURVIVED:
 - Describe exactly how they escape/survive step-by-step
 - Include dramatic detail about their clever use of the chosen item
 - Show their resourcefulness and the moment of triumph
-- Make it feel like an action movie escape scene
 
 If ELIMINATED: 
 - Describe how/why their attempt fails with vivid detail
 - Show the fatal flaw in their plan
 - Include the dramatic moment of realization
-- Make it feel like a suspenseful thriller
 
-Write in dramatic, cinematic style. Be specific about actions taken. Always end with: "SURVIVED" or "ELIMINATED"
-
-Example format:
-Option A - [Names]: [Detailed story of their escape/demise]. SURVIVED/ELIMINATED`;
+Write in dramatic, cinematic style. Always end with: "SURVIVED" or "ELIMINATED"`;
 
         const result = await model.generateContent(prompt);
         const content = (await result.response).text();
@@ -241,17 +211,15 @@ Option A - [Names]: [Detailed story of their escape/demise]. SURVIVED/ELIMINATED
             const regex = new RegExp(`Option ${optionId}[^:]*:[^]*?([^]+?)(SURVIVED|ELIMINATED)`, 'i');
             const match = content.match(regex);
             
-            let narration;
-            let survived;
+            let narration, survived;
             
             if (match) {
-                narration = match[1].trim() + ' ' + match[2].toUpperCase();
-                survived = match[2].toUpperCase() === 'SURVIVED';
+                narration = match[1].trim() + ' ' + match[13].toUpperCase();
+                survived = match[13].toUpperCase() === 'SURVIVED';
             } else {
-                // Fallback if parsing fails
                 survived = Math.random() > 0.5;
                 narration = survived ? 
-                    `${players.join(', ')} use their wits and chosen tool to cleverly escape the deadly situation, finding an unexpected path to safety. SURVIVED` :
+                    `${players.join(', ')} use their wits and chosen item to cleverly escape the deadly situation, finding an unexpected path to safety. SURVIVED` :
                     `${players.join(', ')} attempt their escape plan, but their chosen approach proves fatal, leading to their dramatic downfall. ELIMINATED`;
             }
             
@@ -260,7 +228,6 @@ Option A - [Names]: [Detailed story of their escape/demise]. SURVIVED/ELIMINATED
         return narr;
     } catch (e) {
         console.error('Narration generation error:', e.message);
-        // Enhanced fallback
         let narr = [];
         for (const [optionId, players] of Object.entries(choiceGroups)) {
             const survived = Math.random() > 0.5;
@@ -268,17 +235,13 @@ Option A - [Names]: [Detailed story of their escape/demise]. SURVIVED/ELIMINATED
                 `${players.join(', ')} demonstrate remarkable ingenuity! They use their chosen item in an unexpected way, creating a brilliant escape route that saves them from certain doom. SURVIVED` :
                 `${players.join(', ')} put their plan into action, but a critical oversight leads to catastrophic failure. Their hopes are crushed as their escape attempt ends in disaster. ELIMINATED`;
             
-            narr.push({
-                optionId, players, survived,
-                narration: detailedStory
-            });
+            narr.push({ optionId, players, survived, narration: detailedStory });
         }
         return narr;
     }
 }
 
 // --- Game State Handling ---
-
 function initializeRoundHistory(room) {
     room.roundHistory = room.players.map(player => ({
         playerName: player.name,
@@ -286,6 +249,7 @@ function initializeRoundHistory(room) {
         rounds: []
     }));
 }
+
 function updateRoundHistory(room, riddleWinner, puzzleResults) {
     room.roundHistory.forEach(playerHistory => {
         const player = room.players.find(p => p.id === playerHistory.playerId);
@@ -301,7 +265,6 @@ function updateRoundHistory(room, riddleWinner, puzzleResults) {
 }
 
 // --- Core Game Flow ---
-
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -321,6 +284,7 @@ function startNewRound(roomCode) {
         message: getRandomOracleMessage('introductions'),
         type: 'introduction'
     });
+    
     setTimeout(() => {
         io.to(roomCode).emit('riddle-presented', {
             riddle: room.currentRiddle,
@@ -370,11 +334,10 @@ function endRiddlePhase(roomCode) {
     io.to(roomCode).emit('riddle-results-reveal', {
         winner: winner,
         correctAnswer: room.currentRiddle.answer,
-        message: winner
-            ? `${winner} solved it first!`
-            : `No one solved my riddle!`,
+        message: winner ? `${winner} solved it first!` : `No one solved my riddle!`,
         allAnswers: answersDisplay
     });
+    
     setTimeout(() => {
         startPuzzlePhase(roomCode);
     }, 4000);
@@ -391,10 +354,12 @@ async function startPuzzlePhase(roomCode) {
     }
     room.gameState = 'puzzle-phase';
     room.currentPuzzle = await generateSurvivalPuzzle();
+    
     io.to(roomCode).emit('oracle-speaks', {
         message: "Non-winners! Face my survival puzzle. Choose wisely...",
         type: 'puzzle-intro'
     });
+    
     setTimeout(() => {
         io.to(roomCode).emit('puzzle-challenge-start', {
             message: "Survival Challenge for Non-Winners:",
@@ -425,6 +390,7 @@ async function evaluatePuzzlePhase(roomCode) {
             choiceGroups[choice].push(player.name);
         }
     }
+    
     io.to(roomCode).emit('oracle-speaks', {
         message: "Now to reveal the consequences of your choices...",
         type: 'evaluation'
@@ -447,7 +413,7 @@ async function evaluatePuzzlePhase(roomCode) {
             survived: narr.survived,
             narration: narr.narration
         });
-        await new Promise(res => setTimeout(res, 5000)); // More time for typing effect
+        await new Promise(res => setTimeout(res, 6000)); // Extra time for typing effect
     }
     updateRoundHistory(room, room.riddleWinner, narrs);
     setTimeout(() => {
@@ -455,9 +421,11 @@ async function evaluatePuzzlePhase(roomCode) {
     }, 2200);
 }
 
+// FIXED: Winner calculation logic
 function endRound(roomCode, puzzleResults) {
     const room = rooms[roomCode];
     if (!room) return;
+    
     io.to(roomCode).emit('round-summary', {
         round: room.currentRound,
         maxRounds: room.maxRounds,
@@ -466,13 +434,31 @@ function endRound(roomCode, puzzleResults) {
         riddleWinner: room.riddleWinner,
         puzzleResults: puzzleResults
     });
+    
     if (room.currentRound >= room.maxRounds) {
         setTimeout(() => {
-            const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+            // FIXED: Proper winner calculation - highest score wins
+            const sortedPlayers = [...room.players].sort((a, b) => {
+                // Sort by score descending (highest first)
+                if (b.score !== a.score) {
+                    return b.score - a.score;
+                }
+                // If tied, sort alphabetically by name for consistency
+                return a.name.localeCompare(b.name);
+            });
+            
+            console.log('🏆 Final scores before winner selection:');
+            sortedPlayers.forEach((player, index) => {
+                console.log(`${index + 1}. ${player.name}: ${player.score} points`);
+            });
+            
+            const winner = sortedPlayers[0];
+            console.log(`🎯 Winner determined: ${winner.name} with ${winner.score} points`);
+            
             io.to(roomCode).emit('game-over', {
                 finalScores: sortedPlayers,
-                winner: sortedPlayers[0],
-                message: sortedPlayers.score > 0
+                winner: winner, // This should now be the highest scorer
+                message: winner.score > 0
                     ? "Some of you have proven worthy adversaries!"
                     : "VICTORY IS MINE! Your feeble minds were no match!",
                 roundHistory: room.roundHistory
@@ -486,7 +472,6 @@ function endRound(roomCode, puzzleResults) {
 }
 
 // --- Socket Events ---
-
 io.on('connection', (socket) => {
     socket.on('create-room', (data) => {
         const roomCode = generateRoomCode();
