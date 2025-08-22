@@ -198,30 +198,41 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// ENHANCED: Typing effect function
+// ENHANCED: Typing effect with click prevention and proper sequencing
 function typeWriter(element, text, speed = 30) {
-    element.textContent = '';
-    let i = 0;
-    
-    function typeNextChar() {
-        if (i < text.length) {
-            element.textContent += text.charAt(i);
-            i++;
-            
-            // Slow down at punctuation for dramatic effect
-            const char = text.charAt(i - 1);
-            let delay = speed;
-            if (char === '.' || char === '!' || char === '?') {
-                delay = speed * 3;
-            } else if (char === ',' || char === ';') {
-                delay = speed * 2;
+    return new Promise((resolve) => {
+        element.textContent = '';
+        let i = 0;
+        let isTyping = true;
+        
+        // Disable page interactions during typing
+        document.body.style.pointerEvents = 'none';
+        
+        function typeNextChar() {
+            if (i < text.length && isTyping) {
+                element.textContent += text.charAt(i);
+                i++;
+                
+                // Slow down at punctuation for dramatic effect
+                const char = text.charAt(i - 1);
+                let delay = speed;
+                if (char === '.' || char === '!' || char === '?') {
+                    delay = speed * 3;
+                } else if (char === ',' || char === ';') {
+                    delay = speed * 2;
+                }
+                
+                setTimeout(typeNextChar, delay);
+            } else {
+                // Typing finished
+                isTyping = false;
+                document.body.style.pointerEvents = 'auto';
+                resolve();
             }
-            
-            setTimeout(typeNextChar, delay);
         }
-    }
-    
-    typeNextChar();
+        
+        typeNextChar();
+    });
 }
 
 // Socket event listeners
@@ -345,7 +356,7 @@ socket.on('puzzle-choice-submitted', (data) => {
         `${data.totalSubmissions}/${data.expectedSubmissions} non-winners chose`;
 });
 
-// ENHANCED: Puzzle results with typing effect
+// FIXED: Puzzle results with proper timing and no premature fate display
 socket.on('puzzle-choice-result', (data) => {
     const resultsContent = document.getElementById('puzzle-results-content');
     
@@ -363,7 +374,7 @@ socket.on('puzzle-choice-result', (data) => {
             <div class="fate-narration" id="fate-narration-text">
                 <!-- Text will be typed here -->
             </div>
-            <div class="result-status">
+            <div class="result-status" id="result-status-block" style="display: none;">
                 ${data.survived ? '✅ SURVIVED' : '💀 ELIMINATED'}
             </div>
         </div>
@@ -371,9 +382,17 @@ socket.on('puzzle-choice-result', (data) => {
     
     resultsContent.innerHTML = resultHtml;
     
-    // ENHANCED: Add typing effect to the narration
+    // FIXED: Type the narration first, THEN show the fate result
     const narrationElement = document.getElementById('fate-narration-text');
-    typeWriter(narrationElement, data.narration, 35); // 35ms per character
+    const statusBlock = document.getElementById('result-status-block');
+    
+    typeWriter(narrationElement, data.narration, 35).then(() => {
+        // Show fate result only after typing completes
+        setTimeout(() => {
+            statusBlock.style.display = 'block';
+            statusBlock.style.animation = 'resultAppear 0.8s ease-out';
+        }, 500);
+    });
     
     showPage('puzzleResults');
 });
@@ -393,7 +412,10 @@ socket.on('round-summary', (data) => {
     showPage('roundSummary');
 });
 
+// FIXED: Enhanced game-over with correct winner display
 socket.on('game-over', (data) => {
+    console.log('🏆 Game over received, winner:', data.winner.name, 'with', data.winner.score, 'points');
+    
     const scoresHtml = data.finalScores.map((player, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
         return `
@@ -404,7 +426,7 @@ socket.on('game-over', (data) => {
         `;
     }).join('');
     
-    // ENHANCED: Big winner announcement
+    // FIXED: Clear winner announcement with correct highest scorer
     const bigWinnerEl = document.getElementById('big-winner-announcement');
     bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>`;
     
@@ -425,4 +447,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v2.2 (Cinematic Edition)');
+console.log('Frontend loaded - Threatened by AI v2.3 (Fixed Edition)');
