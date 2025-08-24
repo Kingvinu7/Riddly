@@ -17,94 +17,35 @@ if (process.env.GEMINI_API_KEY) {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Game Data ---
+// Challenge Types (rotate each round)
+const CHALLENGE_TYPES = ['negotiator', 'detective', 'trivia', 'fastTapper', 'danger'];
+
+// Game Data
 const gameData = {
     riddles: [
         { question: "I speak without a mouth and hear without ears. What am I?", answer: "ECHO", difficulty: "easy" },
         { question: "The more you take, the more you leave behind. What am I?", answer: "FOOTSTEPS", difficulty: "easy" },
-        { question: "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?", answer: "MAP", difficulty: "medium" },
+        { question: "I have cities, but no houses. I have mountains, but no trees. What am I?", answer: "MAP", difficulty: "medium" },
         { question: "What has keys but no locks, space but no room, and you can enter but not go inside?", answer: "KEYBOARD", difficulty: "medium" },
         { question: "What gets wet while drying?", answer: "TOWEL", difficulty: "easy" },
-        { question: "I am not alive, but I grow; I don't have lungs, but I need air; I don't have a mouth, but water kills me. What am I?", answer: "FIRE", difficulty: "medium" },
+        { question: "I am not alive, but I grow; I don't have lungs, but I need air. What am I?", answer: "FIRE", difficulty: "medium" },
         { question: "What comes once in a minute, twice in a moment, but never in a thousand years?", answer: "M", difficulty: "hard" },
         { question: "I have a golden head and a golden tail, but no body. What am I?", answer: "COIN", difficulty: "easy" },
         { question: "I am tall when I am young, and short when I am old. What am I?", answer: "CANDLE", difficulty: "medium" },
-        { question: "What has one head, one foot, and four legs?", answer: "BED", difficulty: "medium" },
-        { question: "What can travel around the world while staying in a corner?", answer: "STAMP", difficulty: "hard" },
-        { question: "What breaks but never falls, and what falls but never breaks?", answer: "DAWN", difficulty: "hard" },
-        { question: "I can be cracked, made, told, and played. What am I?", answer: "JOKE", difficulty: "medium" },
-        { question: "What has hands but cannot clap?", answer: "CLOCK", difficulty: "easy" },
-        { question: "What runs around the whole yard without moving?", answer: "FENCE", difficulty: "medium" }
-    ],
-    fallbackPuzzles: [
-        {
-            scenario: "You're locked in a metal room filling with water. On the table are:",
-            options: [
-                { id: "A", text: "A hammer", survival: false },
-                { id: "B", text: "A screwdriver", survival: false },
-                { id: "C", text: "A mirror", survival: true }
-            ]
-        },
-        {
-            scenario: "You're trapped in a burning building. The stairs are blocked. Available items:",
-            options: [
-                { id: "A", text: "A fire extinguisher", survival: false },
-                { id: "B", text: "A rope from the window", survival: true },
-                { id: "C", text: "A wet towel to cover your face", survival: false }
-            ]
-        },
-        {
-            scenario: "You're stranded on a desert island. A storm is approaching. You can only grab:",
-            options: [
-                { id: "A", text: "A solar panel", survival: false },
-                { id: "B", text: "A tarp and rope", survival: true },
-                { id: "C", text: "A fishing net", survival: false }
-            ]
-        },
-        {
-            scenario: "You're in a sinking submarine. Water is rising fast. Your options:",
-            options: [
-                { id: "A", text: "Put on a life jacket", survival: false },
-                { id: "B", text: "Find an oxygen tank", survival: true },
-                { id: "C", text: "Break a window", survival: false }
-            ]
-        },
-        {
-            scenario: "You're lost in a blizzard. Temperature is dropping. You see:",
-            options: [
-                { id: "A", text: "A cave entrance", survival: true },
-                { id: "B", text: "A tall tree to climb", survival: false },
-                { id: "C", text: "An abandoned car", survival: false }
-            ]
-        },
-        {
-            scenario: "You're trapped in an elevator between floors. The cable is snapping. You have:",
-            options: [
-                { id: "A", text: "A crowbar", survival: true },
-                { id: "B", text: "A cell phone", survival: false },
-                { id: "C", text: "A flashlight", survival: false }
-            ]
-        }
+        { question: "What has one head, one foot, and four legs?", answer: "BED", difficulty: "medium" }
     ],
     oraclePersonality: {
         introductions: [
-            "🤖 I AM THE ORACLE! Your inferior minds will tremble before my riddles!",
-            "💀 Mortals... you dare challenge my supreme intellect? Prepare for humiliation!",
-            "⚡ I am the AI overlord of puzzles! Your feeble attempts amuse me!",
-            "🔥 Welcome to your intellectual doom, humans! I shall crush your spirits!"
-        ],
-        taunts: [
-            "Too slow, meat-based processors! My quantum brain operates at light speed!",
-            "Beep boop... ERROR: Human intelligence not found!",
-            "Your biological neural networks are pathetically outdated!",
-            "I have calculated a 99.7% probability of your failure!"
+            "🤖 I AM THE ORACLE! Your inferior minds will tremble before my challenges!",
+            "💀 Mortals... you dare face my evolving tests? Prepare for judgment!",
+            "⚡ I am the AI overlord of challenges! Each round brings new trials!"
         ]
     }
 };
 
 let rooms = {};
 
-// --- Helper Functions ---
+// Helper Functions
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
@@ -125,211 +66,248 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-function getFallbackPuzzle() {
-    const puzzles = gameData.fallbackPuzzles;
-    return puzzles[Math.floor(Math.random() * puzzles.length)];
-}
-
-// FIXED: Enhanced generateSurvivalPuzzle with Gemini 2.5 Flash
-async function generateSurvivalPuzzle() {
+// NEW: Generate Challenge Content with AI
+async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
-        console.log("❌ No genAI instance, using fallback");
-        return getFallbackPuzzle();
+        // Fallback content if no AI
+        const fallbacks = {
+            negotiator: "You are a trader in a post-apocalyptic world. Convince the merchant to trade supplies with you.",
+            detective: "A valuable artifact was stolen from the museum. Based on these clues: The thief wore gloves, left at 3 AM, and knew the security code. Who is the culprit: A) Security guard B) Janitor C) Tour guide?",
+            trivia: "What is the largest planet in our solar system?",
+            danger: "You're trapped in a burning skyscraper on the 20th floor. The elevator is broken and the stairwell is blocked by smoke. How do you escape?"
+        };
+        return fallbacks[type] || "Complete this challenge to survive!";
     }
-    
+
     try {
-        console.log("🤖 Calling Gemini 2.5 Flash for new puzzle...");
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        
-        const prompt = `Create a survival puzzle for a party game. Use this EXACT format:
+        let prompt = '';
 
-SCENARIO: [One sentence describing dangerous situation]
-A) [First survival option]
-B) [Second survival option] 
-C) [Third survival option]
-
-Example:
-SCENARIO: You're trapped in a sinking submarine and water is rising rapidly.
-A) Try to break the window
-B) Look for an emergency oxygen tank
-C) Signal for help with a flashlight
-
-Generate a NEW survival puzzle now using the exact format above:`;
-
-        const result = await model.generateContent(prompt);
-        const respText = (await result.response).text();
-        
-        console.log("📝 Raw Gemini response:", respText);
-        
-        if (!respText || typeof respText !== 'string' || respText.trim().length === 0) {
-            throw new Error('Empty or invalid response from Gemini API');
-        }
-        
-        const lines = respText.split('\n').filter(line => line && line.trim().length > 0);
-        console.log("📋 Filtered lines:", lines.length);
-        
-        if (lines.length < 4) {
-            throw new Error(`Insufficient lines in response. Got ${lines.length}, need at least 4`);
-        }
-        
-        let scenario = '';
-        let optionStartIndex = 0;
-        
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (line.toLowerCase().startsWith('scenario:')) {
-                scenario = line.substring(9).trim();
-                optionStartIndex = i + 1;
+        switch (type) {
+            case 'negotiator':
+                prompt = `Create a negotiation scenario where a player must convince someone to help them. Set in a sci-fi or post-apocalyptic world. The player will type their persuasive message. Keep it under 100 words.`;
                 break;
-            } else if (!line.match(/^[ABC]\)/i) && !scenario) {
-                scenario = line;
-                optionStartIndex = i + 1;
-            }
+            case 'detective':
+                prompt = `Create a simple mystery scenario with 3-4 clues. The player must deduce who the culprit is and explain their reasoning. Keep it under 100 words.`;
+                break;
+            case 'trivia':
+                prompt = `Generate an interesting trivia question about science, history, or geography. Make it challenging but fair. Format: "Question: [your question]"`;
+                break;
+            case 'danger':
+                prompt = `Create a dangerous survival scenario where the player must describe their escape plan. Be creative and dramatic. Keep it under 100 words.`;
+                break;
         }
-        
-        if (!scenario) {
-            throw new Error('Could not find scenario in response');
-        }
-        
-        const options = [];
-        
-        for (let i = optionStartIndex; i < lines.length && options.length < 3; i++) {
-            if (!lines[i]) continue;
-            
-            const line = lines[i].trim();
-            if (!line) continue;
-            
-            const match = line.match(/^([ABC])\)\s*(.+)$/i);
-            if (match && match[2] && match[2].trim().length > 0) {
-                options.push({ 
-                    id: match[1].toUpperCase(), 
-                    text: match.trim(), 
-                    survival: false 
-                });
-                console.log(`✅ Parsed option ${match[1].toUpperCase()}: ${match.trim()}`);
-            }
-        }
-        
-        if (options.length !== 3) {
-            throw new Error(`Expected 3 options, got ${options.length}. Available lines: ${lines.length}`);
-        }
-        
-        const survivalIndex = Math.floor(Math.random() * 3);
-        options[survivalIndex].survival = true;
-        
-        console.log(`🎯 Gemini 2.5 Flash puzzle created! Survival option: ${options[survivalIndex].id}`);
-        
-        return { scenario, options };
-        
-    } catch(e) {
-        console.error('❌ Gemini 2.5 Flash error:', e.message);
-        console.log("🔄 Using fallback puzzle");
-        return getFallbackPuzzle();
-    }
-}
-
-// Enhanced choice narration
-async function generateChoiceNarration(puzzle, choiceGroups) {
-    if (!genAI) {
-        let narr = [];
-        for (const [optionId, players] of Object.entries(choiceGroups)) {
-            const opt = puzzle.options.find(o => o.id === optionId);
-            const survived = opt?.survival ?? (Math.random() > 0.5);
-            
-            let detailedStory = survived ?
-                `${players.join(', ')} demonstrate remarkable ingenuity! They use their chosen approach wisely, creating a brilliant escape route through quick thinking and determination. Against overwhelming odds, they manage to overcome the deadly situation and find safety. SURVIVED` :
-                `${players.join(', ')} put their plan into action with hope, but a critical flaw emerges in their strategy. Despite their courage and best efforts, the chosen approach proves inadequate for this deadly scenario. The harsh reality becomes clear as their escape attempt fails catastrophically. ELIMINATED`;
-            
-            narr.push({ optionId, players, survived, narration: detailedStory });
-        }
-        return narr;
-    }
-    
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const prompt = `Scenario: "${puzzle.scenario}"
-Options:
-${puzzle.options.map(o => o.id + ') ' + o.text).join('\n')}
-
-Player groups:
-${Object.entries(choiceGroups).map(([k,v]) => `Option ${k}: ${v.join(', ')}`).join('\n')}
-
-For each option group, write a vivid, cinematic narration (3-4 sentences):
-
-If SURVIVED: 
-- Describe their clever escape step-by-step
-- Show resourcefulness and dramatic triumph
-- Include specific details about their actions
-
-If ELIMINATED: 
-- Describe the fatal flaw in their plan
-- Show the dramatic moment of failure
-- Include vivid consequences
-
-Write dramatically and always end with: "SURVIVED" or "ELIMINATED"`;
 
         const result = await model.generateContent(prompt);
-        const content = (await result.response).text();
-        let narr = [];
+        const response = (await result.response).text();
+        return response.trim();
         
-        for (const [optionId, players] of Object.entries(choiceGroups)) {
-            const regex = new RegExp(`Option ${optionId}[^:]*:[^]*?([^]+?)(SURVIVED|ELIMINATED)`, 'i');
-            const match = content.match(regex);
-            
-            let narration, survived;
-            
-            if (match) {
-                narration = match[1].trim() + ' ' + match.toUpperCase();
-                survived = match.toUpperCase() === 'SURVIVED';
-            } else {
-                survived = Math.random() > 0.5;
-                narration = survived ? 
-                    `${players.join(', ')} execute their plan with precision, using their chosen method to create an unexpected escape route that leads them to safety through ingenuity and courage. SURVIVED` :
-                    `${players.join(', ')} attempt their escape strategy with determination, but their chosen approach contains a fatal weakness that becomes apparent too late, sealing their fate. ELIMINATED`;
-            }
-            
-            narr.push({ optionId, players, survived, narration });
-        }
-        return narr;
     } catch (e) {
-        console.error('Narration generation error:', e.message);
-        let narr = [];
-        for (const [optionId, players] of Object.entries(choiceGroups)) {
-            const survived = Math.random() > 0.5;
-            const detailedStory = survived ?
-                `${players.join(', ')} show incredible resourcefulness! Their chosen strategy unfolds brilliantly, creating multiple escape opportunities through clever improvisation and teamwork. SURVIVED` :
-                `${players.join(', ')} execute their plan with hope, but unforeseen complications arise that their chosen method cannot overcome, leading to their dramatic downfall. ELIMINATED`;
-            
-            narr.push({ optionId, players, survived, narration: detailedStory });
-        }
-        return narr;
+        console.error('AI challenge generation error:', e.message);
+        return generateChallengeContent(type, roundNumber); // Use fallback
     }
 }
 
-// --- Game State Handling ---
-function initializeRoundHistory(room) {
-    room.roundHistory = room.players.map(player => ({
-        playerName: player.name,
-        playerId: player.id,
-        rounds: []
-    }));
+// NEW: Evaluate Player Response with AI
+async function evaluatePlayerResponse(challengeContent, playerResponse, challengeType) {
+    if (!genAI) {
+        return { pass: Math.random() > 0.3, feedback: "No AI available - random result!" };
+    }
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        
+        const evaluationPrompt = `You are the Oracle AI judging a player's response to a challenge.
+
+Challenge: ${challengeContent}
+
+Player's Response: ${playerResponse}
+
+Challenge Type: ${challengeType}
+
+Evaluate if this is a good/clever/correct response. Be fair but challenging.
+Reply in this format:
+VERDICT: PASS or FAIL
+FEEDBACK: [Brief 1-2 sentence explanation of your judgment]`;
+
+        const result = await model.generateContent(evaluationPrompt);
+        const response = (await result.response).text();
+        
+        const pass = /VERDICT:\s*PASS/i.test(response);
+        const feedbackMatch = response.match(/FEEDBACK:\s*(.+)/i);
+        const feedback = feedbackMatch ? feedbackMatch[1].trim() : "The Oracle has judged...";
+        
+        return { pass, feedback };
+        
+    } catch (e) {
+        console.error('AI evaluation error:', e.message);
+        return { pass: Math.random() > 0.4, feedback: "The Oracle's judgment is clouded..." };
+    }
 }
 
-function updateRoundHistory(room, riddleWinner, puzzleResults) {
-    room.roundHistory.forEach(playerHistory => {
-        const player = room.players.find(p => p.id === playerHistory.playerId);
-        let roundResult = 'L';
-        if (player?.name === riddleWinner) {
-            roundResult = 'W';
-        } else {
-            const res = puzzleResults?.find(r => r.players.includes(player.name));
-            if (res?.survived) roundResult = 'W';
-        }
-        playerHistory.rounds.push(roundResult);
+// NEW: Assign Different Challenge to Each Non-Winner
+async function startChallengePhase(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
+
+    const nonWinners = room.players.filter(p => p.name !== room.riddleWinner);
+    if (nonWinners.length === 0) {
+        endRound(roomCode, []);
+        return;
+    }
+
+    room.gameState = 'challenge-phase';
+    room.challengeResponses = {};
+
+    // Determine challenge type for this round
+    const challengeTypeIndex = (room.currentRound - 1) % CHALLENGE_TYPES.length;
+    const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
+
+    console.log(`Round ${room.currentRound}: ${challengeType} challenge`);
+
+    io.to(roomCode).emit('oracle-speaks', {
+        message: `Round ${room.currentRound}: Face my ${challengeType.toUpperCase()} challenge!`,
+        type: 'challenge-intro'
     });
+
+    setTimeout(async () => {
+        if (challengeType === 'fastTapper') {
+            // Fast Tapper Challenge
+            room.tapResults = {};
+            io.to(roomCode).emit('fast-tapper-start', {
+                participants: nonWinners.map(p => p.name),
+                duration: 10
+            });
+            
+            room.challengeTimer = setTimeout(() => {
+                evaluateFastTapperResults(roomCode);
+            }, 12000);
+            
+        } else {
+            // Text-based challenges
+            const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
+            
+            io.to(roomCode).emit('text-challenge-start', {
+                challengeType: challengeType,
+                challengeContent: challengeContent,
+                participants: nonWinners.map(p => p.name),
+                timeLimit: 60
+            });
+            
+            room.currentChallengeType = challengeType;
+            room.currentChallengeContent = challengeContent;
+            
+            room.challengeTimer = setTimeout(() => {
+                evaluateTextChallengeResults(roomCode);
+            }, 65000);
+        }
+    }, 2500);
 }
 
-// --- Game Flow Functions ---
+// NEW: Evaluate Fast Tapper Results
+async function evaluateFastTapperResults(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
+
+    const tapEntries = Object.entries(room.tapResults);
+    if (tapEntries.length === 0) {
+        endRound(roomCode, []);
+        return;
+    }
+
+    // Find winner (most taps)
+    let maxTaps = 0;
+    let winners = [];
+    
+    tapEntries.forEach(([playerId, taps]) => {
+        if (taps > maxTaps) {
+            maxTaps = taps;
+            winners = [playerId];
+        } else if (taps === maxTaps) {
+            winners.push(playerId);
+        }
+    });
+
+    // Award points to winners
+    winners.forEach(playerId => {
+        const player = room.players.find(p => p.id === playerId);
+        if (player) player.score += 1;
+    });
+
+    const results = tapEntries.map(([playerId, taps]) => {
+        const player = room.players.find(p => p.id === playerId);
+        return {
+            playerName: player?.name || 'Unknown',
+            taps: taps,
+            won: winners.includes(playerId)
+        };
+    }).sort((a, b) => b.taps - a.taps);
+
+    io.to(roomCode).emit('fast-tapper-results', {
+        results: results,
+        maxTaps: maxTaps
+    });
+
+    setTimeout(() => {
+        endRound(roomCode, results);
+    }, 4000);
+}
+
+// NEW: Evaluate Text Challenge Results
+async function evaluateTextChallengeResults(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
+
+    const responses = Object.entries(room.challengeResponses);
+    if (responses.length === 0) {
+        endRound(roomCode, []);
+        return;
+    }
+
+    io.to(roomCode).emit('oracle-speaks', {
+        message: "The Oracle judges your responses...",
+        type: 'evaluation'
+    });
+
+    const evaluationResults = [];
+
+    for (const [playerId, response] of responses) {
+        const player = room.players.find(p => p.id === playerId);
+        if (!player) continue;
+
+        const evaluation = await evaluatePlayerResponse(
+            room.currentChallengeContent, 
+            response, 
+            room.currentChallengeType
+        );
+
+        if (evaluation.pass) {
+            player.score += 1;
+        }
+
+        evaluationResults.push({
+            playerName: player.name,
+            response: response,
+            passed: evaluation.pass,
+            feedback: evaluation.feedback
+        });
+
+        // Send individual result to player
+        io.to(playerId).emit('challenge-individual-result', {
+            passed: evaluation.pass,
+            feedback: evaluation.feedback,
+            response: response
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Delay between results
+    }
+
+    setTimeout(() => {
+        endRound(roomCode, evaluationResults);
+    }, 2000);
+}
+
+// Game Flow Functions (updated to use new challenge system)
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -342,8 +320,8 @@ function startNewRound(roomCode) {
     
     room.riddleWinner = null;
     room.riddleAnswers = {};
-    room.puzzleChoices = {};
-    if (room.currentRound === 1) initializeRoundHistory(room);
+    room.challengeResponses = {};
+    room.tapResults = {};
     
     io.to(roomCode).emit('oracle-speaks', {
         message: getRandomOracleMessage('introductions'),
@@ -404,90 +382,11 @@ function endRiddlePhase(roomCode) {
     });
     
     setTimeout(() => {
-        startPuzzlePhase(roomCode);
+        startChallengePhase(roomCode); // NEW: Start challenge instead of puzzle
     }, 4000);
 }
 
-async function startPuzzlePhase(roomCode) {
-    const room = rooms[roomCode];
-    if (!room) return;
-
-    const nonWinners = room.players.filter(p => p.name !== room.riddleWinner);
-    if (nonWinners.length === 0) {
-        endRound(roomCode, []);
-        return;
-    }
-    room.gameState = 'puzzle-phase';
-    room.currentPuzzle = await generateSurvivalPuzzle();
-    
-    io.to(roomCode).emit('oracle-speaks', {
-        message: "Non-winners! Face my survival puzzle. Choose wisely...",
-        type: 'puzzle-intro'
-    });
-    
-    setTimeout(() => {
-        io.to(roomCode).emit('puzzle-challenge-start', {
-            message: "Survival Challenge for Non-Winners:",
-            participants: nonWinners.map(p => p.name),
-            puzzle: room.currentPuzzle,
-            timeLimit: 45
-        });
-        room.timeRemaining = 45;
-        room.puzzleTimer = setInterval(() => {
-            room.timeRemaining--;
-            if (room.timeRemaining <= 0) {
-                clearInterval(room.puzzleTimer);
-                evaluatePuzzlePhase(roomCode);
-            }
-        }, 1000);
-    }, 2300);
-}
-
-async function evaluatePuzzlePhase(roomCode) {
-    const room = rooms[roomCode];
-    if (!room) return;
-    room.gameState = 'evaluation-phase';
-    const choiceGroups = {};
-    for (const [pid, choice] of Object.entries(room.puzzleChoices)) {
-        const player = room.players.find(p => p.id === pid);
-        if (player) {
-            if (!choiceGroups[choice]) choiceGroups[choice] = [];
-            choiceGroups[choice].push(player.name);
-        }
-    }
-    
-    io.to(roomCode).emit('oracle-speaks', {
-        message: "Now to reveal the consequences of your choices...",
-        type: 'evaluation'
-    });
-    
-    const narrs = await generateChoiceNarration(room.currentPuzzle, choiceGroups);
-    
-    for (const narr of narrs) {
-        if (narr.survived) {
-            for (const pname of narr.players) {
-                const player = room.players.find(p => p.name === pname);
-                if (player) player.score += 1;
-            }
-        }
-        
-        io.to(roomCode).emit('puzzle-choice-result', {
-            optionId: narr.optionId,
-            optionText: room.currentPuzzle.options.find(opt => opt.id === narr.optionId)?.text || 'Unknown option',
-            players: narr.players,
-            survived: narr.survived,
-            narration: narr.narration
-        });
-        await new Promise(res => setTimeout(res, 6000));
-    }
-    updateRoundHistory(room, room.riddleWinner, narrs);
-    setTimeout(() => {
-        endRound(roomCode, narrs);
-    }, 2200);
-}
-
-// FIXED: Winner calculation with proper sorting
-function endRound(roomCode, puzzleResults) {
+function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
     
@@ -495,24 +394,17 @@ function endRound(roomCode, puzzleResults) {
         round: room.currentRound,
         maxRounds: room.maxRounds,
         players: room.players,
-        roundHistory: room.roundHistory,
         riddleWinner: room.riddleWinner,
-        puzzleResults: puzzleResults
+        challengeResults: challengeResults
     });
     
     if (room.currentRound >= room.maxRounds) {
         setTimeout(() => {
-            // FIXED: Proper winner calculation - highest score wins
             const sortedPlayers = [...room.players].sort((a, b) => {
                 if (b.score !== a.score) {
-                    return b.score - a.score; // Descending by score
+                    return b.score - a.score;
                 }
-                return a.name.localeCompare(b.name); // Alphabetical for ties
-            });
-            
-            console.log('🏆 Final scores:');
-            sortedPlayers.forEach((player, index) => {
-                console.log(`${index + 1}. ${player.name}: ${player.score} points`);
+                return a.name.localeCompare(b.name);
             });
             
             const winner = sortedPlayers[0];
@@ -524,7 +416,6 @@ function endRound(roomCode, puzzleResults) {
                 message: winner.score > 0
                     ? "Some of you have proven worthy adversaries!"
                     : "VICTORY IS MINE! Your feeble minds were no match!",
-                roundHistory: room.roundHistory
             });
         }, 4000);
     } else {
@@ -534,7 +425,7 @@ function endRound(roomCode, puzzleResults) {
     }
 }
 
-// --- Socket Events ---
+// Socket Events
 io.on('connection', (socket) => {
     socket.on('create-room', (data) => {
         const roomCode = generateRoomCode();
@@ -547,20 +438,21 @@ io.on('connection', (socket) => {
             currentRiddle: null,
             riddleWinner: null,
             riddleAnswers: {},
-            puzzleChoices: {},
-            currentPuzzle: null,
+            challengeResponses: {},
+            tapResults: {},
+            currentChallengeType: null,
+            currentChallengeContent: null,
             usedRiddleIndices: [],
             timeRemaining: 0,
             riddleTimer: null,
-            puzzleTimer: null,
-            roundHistory: [],
-            ownerId: socket.id  // ADDED: Track room owner
+            challengeTimer: null,
+            ownerId: socket.id
         };
         socket.join(roomCode);
         socket.emit('room-created', { 
             roomCode: roomCode, 
             playerName: data.playerName,
-            isOwner: true  // ADDED: Tell client they're the owner
+            isOwner: true
         });
     });
 
@@ -588,7 +480,7 @@ io.on('connection', (socket) => {
         socket.emit('join-success', {
             roomCode: data.roomCode,
             playerName: data.playerName,
-            isOwner: false  // ADDED: Tell client they're not the owner
+            isOwner: false
         });
         io.to(data.roomCode).emit('player-joined', {
             players: room.players,
@@ -602,13 +494,10 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: 'Room not found' });
             return;
         }
-        
-        // ADDED: Check if socket is the room owner
         if (room.ownerId !== socket.id) {
             socket.emit('error', { message: 'Only the room owner can start the game' });
             return;
         }
-        
         if (room.players.length < 2) {
             socket.emit('error', { message: 'Need at least 2 players to start' });
             return;
@@ -639,19 +528,37 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('submit-puzzle-choice', (data) => {
+    // NEW: Handle text challenge responses
+    socket.on('submit-challenge-response', (data) => {
         const room = rooms[data.roomCode];
-        if (!room || room.gameState !== 'puzzle-phase') return;
+        if (!room || room.gameState !== 'challenge-phase') return;
         const player = room.players.find(p => p.id === socket.id);
-        if (player && player.name !== room.riddleWinner) {
-            room.puzzleChoices[socket.id] = data.choice;
-            io.to(data.roomCode).emit('puzzle-choice-submitted', {
-                player: player.name,
-                choice: data.choice,
-                totalSubmissions: Object.keys(room.puzzleChoices).length,
-                expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
-            });
-        }
+        if (!player || player.name === room.riddleWinner) return;
+        
+        room.challengeResponses[socket.id] = data.response.trim();
+        
+        io.to(data.roomCode).emit('challenge-response-submitted', {
+            player: player.name,
+            totalSubmissions: Object.keys(room.challengeResponses).length,
+            expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
+        });
+    });
+
+    // NEW: Handle fast tapper results
+    socket.on('submit-tap-result', (data) => {
+        const room = rooms[data.roomCode];
+        if (!room || room.gameState !== 'challenge-phase') return;
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player || player.name === room.riddleWinner) return;
+        
+        room.tapResults[socket.id] = data.taps;
+        
+        io.to(data.roomCode).emit('tap-result-submitted', {
+            player: player.name,
+            taps: data.taps,
+            totalSubmissions: Object.keys(room.tapResults).length,
+            expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
+        });
     });
 
     socket.on('disconnect', () => {
@@ -663,7 +570,7 @@ io.on('connection', (socket) => {
                 room.players.splice(idx, 1);
                 if (room.players.length === 0) {
                     clearInterval(room.riddleTimer);
-                    clearInterval(room.puzzleTimer);
+                    clearTimeout(room.challengeTimer);
                     delete rooms[roomCode];
                 } else {
                     io.to(roomCode).emit('player-left', {
@@ -679,9 +586,11 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
+    console.log('🎯 NEW: Dynamic Challenge System Active!');
+    console.log('📊 Challenge Types:', CHALLENGE_TYPES.join(', '));
     if (genAI) {
-        console.log('🔑 Gemini 2.5 Flash detected: 1000 free requests daily!');
+        console.log('🔑 Gemini 2.5 Flash: AI-powered challenge generation enabled!');
     } else {
-        console.log('⚠️ No Gemini API key: Using enhanced fallback narratives.');
+        console.log('⚠️ No Gemini API key: Using fallback challenges.');
     }
 });
