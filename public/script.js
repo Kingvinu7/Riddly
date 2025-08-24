@@ -1,7 +1,9 @@
 const socket = io();
 let currentRoom = null;
 let playerName = null;
-let isRoomOwner = false;  // ADDED: Track if current player is room owner
+let isRoomOwner = false;
+let tapCount = 0;
+let tapperActive = false;
 
 // DOM elements
 const pages = {
@@ -10,8 +12,9 @@ const pages = {
     oracleIntro: document.getElementById('oracle-intro-screen'),
     riddle: document.getElementById('riddle-screen'),
     riddleResults: document.getElementById('riddle-results-screen'),
-    puzzle: document.getElementById('puzzle-screen'),
-    puzzleResults: document.getElementById('puzzle-results-screen'),
+    textChallenge: document.getElementById('text-challenge-screen'),
+    fastTapper: document.getElementById('fast-tapper-screen'),
+    challengeResults: document.getElementById('challenge-results-screen'),
     waiting: document.getElementById('waiting-screen'),
     roundSummary: document.getElementById('round-summary-screen'),
     gameOver: document.getElementById('game-over-screen')
@@ -25,12 +28,6 @@ const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const startGameBtn = document.getElementById('start-game-btn');
 const submitRiddleBtn = document.getElementById('submit-riddle');
-
-const choiceButtons = {
-    a: document.getElementById('choice-a'),
-    b: document.getElementById('choice-b'),
-    c: document.getElementById('choice-c')
-};
 
 const roomCodeDisplay = document.getElementById('room-code-display');
 const playersListEl = document.getElementById('players-list');
@@ -55,12 +52,14 @@ riddleAnswer.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') submitRiddleAnswer();
 });
 
-Object.values(choiceButtons).forEach(button => {
-    button.addEventListener('click', (e) => {
-        const choice = e.currentTarget.dataset.choice;
-        submitPuzzleChoice(choice);
-    });
+// NEW: Challenge response event listeners
+document.getElementById('submit-challenge-response').addEventListener('click', submitChallengeResponse);
+document.getElementById('challenge-response').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) submitChallengeResponse();
 });
+
+// NEW: Fast tapper event listener
+document.getElementById('tap-button').addEventListener('click', onTap);
 
 // Utility functions
 function showPage(pageName) {
@@ -120,23 +119,67 @@ function submitRiddleAnswer() {
     submitRiddleBtn.textContent = 'Submitted!';
 }
 
-function submitPuzzleChoice(choice) {
+// NEW: Submit challenge response
+function submitChallengeResponse() {
+    const response = document.getElementById('challenge-response').value.trim();
+    if (!response) {
+        alert('Please enter your response');
+        return;
+    }
     if (!currentRoom) return;
     
-    socket.emit('submit-puzzle-choice', { roomCode: currentRoom, choice: choice });
-    
-    Object.values(choiceButtons).forEach(btn => {
-        btn.disabled = true;
-        btn.classList.remove('selected');
-    });
-    
-    const selectedButton = choiceButtons[choice.toLowerCase()];
-    if (selectedButton) {
-        selectedButton.classList.add('selected');
-    }
+    socket.emit('submit-challenge-response', { roomCode: currentRoom, response: response });
+    document.getElementById('challenge-response').disabled = true;
+    document.getElementById('submit-challenge-response').disabled = true;
+    document.getElementById('submit-challenge-response').textContent = 'Submitted!';
 }
 
-// ENHANCED: Update lobby to show room owner status
+// NEW: Fast tapper functionality
+function onTap() {
+    if (!tapperActive) return;
+    tapCount++;
+    document.getElementById('tap-count').textContent = tapCount.toString();
+    
+    // Add visual feedback
+    const button = document.getElementById('tap-button');
+    button.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        button.style.transform = 'scale(1)';
+    }, 50);
+    
+    // Trigger animation
+    document.getElementById('tap-count').style.animation = 'none';
+    setTimeout(() => {
+        document.getElementById('tap-count').style.animation = 'numberPulse 0.1s ease-out';
+    }, 10);
+}
+
+function startFastTapperTimer(duration) {
+    tapperActive = true;
+    let timeLeft = duration;
+    
+    const timer = setInterval(() => {
+        document.getElementById('fast-tapper-timer').textContent = timeLeft;
+        
+        if (timeLeft <= 3) {
+            document.getElementById('fast-tapper-timer').classList.add('urgent');
+        }
+        
+        timeLeft--;
+        
+        if (timeLeft < 0) {
+            clearInterval(timer);
+            tapperActive = false;
+            document.getElementById('tap-button').disabled = true;
+            document.getElementById('fast-tapper-timer').classList.remove('urgent');
+            
+            // Submit result
+            socket.emit('submit-tap-result', { roomCode: currentRoom, taps: tapCount });
+        }
+    }, 1000);
+}
+
+// Enhanced lobby functions
 function updateLobbyOwnerDisplay() {
     const lobbyHeader = document.querySelector('.lobby-header');
     const existingOwnerBadge = document.querySelector('.owner-badge');
@@ -153,7 +196,6 @@ function updateLobbyOwnerDisplay() {
     }
 }
 
-// ENHANCED: Smart start button display
 function updateStartButton() {
     const playerCount = document.querySelectorAll('.player').length;
     const waitingText = document.querySelector('.waiting-text');
@@ -176,10 +218,9 @@ function updateStartButton() {
     }
 }
 
-// ENHANCED: Better player list display
 function updatePlayers(players) {
     playersListEl.innerHTML = players.map((player, index) => {
-        const isOwnerPlayer = index === 0; // First player is usually owner
+        const isOwnerPlayer = index === 0;
         return `
             <div class="player ${isOwnerPlayer ? 'owner-player' : ''}">
                 ${isOwnerPlayer ? '👑 ' : ''}${player.name}: ${player.score}pts
@@ -245,14 +286,12 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// ENHANCED: Typing effect with click prevention and proper sequencing
 function typeWriter(element, text, speed = 30) {
     return new Promise((resolve) => {
         element.textContent = '';
         let i = 0;
         let isTyping = true;
         
-        // Disable page interactions during typing
         document.body.style.pointerEvents = 'none';
         
         function typeNextChar() {
@@ -260,7 +299,6 @@ function typeWriter(element, text, speed = 30) {
                 element.textContent += text.charAt(i);
                 i++;
                 
-                // Slow down at punctuation for dramatic effect
                 const char = text.charAt(i - 1);
                 let delay = speed;
                 if (char === '.' || char === '!' || char === '?') {
@@ -271,7 +309,6 @@ function typeWriter(element, text, speed = 30) {
                 
                 setTimeout(typeNextChar, delay);
             } else {
-                // Typing finished
                 isTyping = false;
                 document.body.style.pointerEvents = 'auto';
                 resolve();
@@ -282,13 +319,38 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
+// NEW: Show individual result overlay
+function showIndividualResult(data) {
+    const overlay = document.getElementById('result-overlay');
+    const content = document.getElementById('individual-result-content');
+    
+    const resultHtml = `
+        <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
+            <h3>${data.passed ? '✅ SUCCESS!' : '❌ FAILED!'}</h3>
+            <div class="result-response">"${data.response}"</div>
+            <div class="result-feedback">${data.feedback}</div>
+            <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
+        </div>
+    `;
+    
+    content.innerHTML = resultHtml;
+    overlay.style.display = 'flex';
+    
+    setTimeout(() => {
+        hideIndividualResult();
+    }, 6000);
+}
+
+function hideIndividualResult() {
+    document.getElementById('result-overlay').style.display = 'none';
+}
+
 // Socket event listeners
 socket.on('room-created', (data) => {
     currentRoom = data.roomCode;
-    isRoomOwner = data.isOwner;  // ADDED: Track ownership
+    isRoomOwner = data.isOwner;
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
     
-    // ENHANCED: Show owner status
     updateLobbyOwnerDisplay();
     updateStartButton();
     showPage('lobby');
@@ -296,10 +358,9 @@ socket.on('room-created', (data) => {
 
 socket.on('join-success', (data) => {
     currentRoom = data.roomCode;
-    isRoomOwner = data.isOwner;  // ADDED: Track ownership
+    isRoomOwner = data.isOwner;
     roomCodeDisplay.textContent = `Room: ${data.roomCode}`;
     
-    // ENHANCED: Show owner status
     updateLobbyOwnerDisplay();
     updateStartButton();
     showPage('lobby');
@@ -371,76 +432,79 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-socket.on('puzzle-challenge-start', (data) => {
+// NEW: Handle text challenges
+socket.on('text-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
-        document.getElementById('puzzle-scenario').textContent = data.puzzle.scenario;
+        document.getElementById('text-challenge-title').textContent = 
+            `${data.challengeType.toUpperCase()} CHALLENGE`;
+        document.getElementById('text-challenge-content').textContent = data.challengeContent;
+        document.getElementById('challenge-response').value = '';
+        document.getElementById('challenge-response').disabled = false;
+        document.getElementById('submit-challenge-response').disabled = false;
+        document.getElementById('submit-challenge-response').textContent = 'Submit Response';
+        document.getElementById('text-challenge-submission-count').textContent = 
+            `0/${data.participants.length} players responded`;
         
-        document.getElementById('choice-a-text').textContent = data.puzzle.options.find(opt => opt.id === 'A')?.text || 'Option A';
-        document.getElementById('choice-b-text').textContent = data.puzzle.options.find(opt => opt.id === 'B')?.text || 'Option B';
-        document.getElementById('choice-c-text').textContent = data.puzzle.options.find(opt => opt.id === 'C')?.text || 'Option C';
-        
-        Object.values(choiceButtons).forEach(btn => {
-            btn.disabled = false;
-            btn.classList.remove('selected');
-        });
-        
-        document.getElementById('puzzle-submission-count').textContent = `0/${data.participants.length} non-winners chose`;
-        
-        showPage('puzzle');
-        startTimer('puzzle-timer', 45);
+        showPage('textChallenge');
+        startTimer('text-challenge-timer', data.timeLimit || 60);
     } else {
         document.getElementById('waiting-title').textContent = 'Others are facing a challenge...';
-        document.getElementById('waiting-message').textContent = 'Non-winners are solving a survival puzzle!';
+        document.getElementById('waiting-message').textContent = 
+            `Non-winners are solving a ${data.challengeType} challenge!`;
         showPage('waiting');
     }
 });
 
-socket.on('puzzle-choice-submitted', (data) => {
-    document.getElementById('puzzle-submission-count').textContent = 
-        `${data.totalSubmissions}/${data.expectedSubmissions} non-winners chose`;
+// NEW: Handle fast tapper challenges
+socket.on('fast-tapper-start', (data) => {
+    const isParticipant = data.participants.includes(playerName);
+    
+    if (isParticipant) {
+        tapCount = 0;
+        document.getElementById('tap-count').textContent = '0';
+        document.getElementById('tap-button').disabled = false;
+        
+        showPage('fastTapper');
+        startFastTapperTimer(data.duration || 10);
+    } else {
+        document.getElementById('waiting-title').textContent = 'Fast Tapper Challenge!';
+        document.getElementById('waiting-message').textContent = 'Others are tapping as fast as they can!';
+        showPage('waiting');
+    }
 });
 
-// FIXED: Puzzle results with proper timing and no premature fate display
-socket.on('puzzle-choice-result', (data) => {
-    const resultsContent = document.getElementById('puzzle-results-content');
+// NEW: Handle individual challenge results
+socket.on('challenge-individual-result', (data) => {
+    showIndividualResult(data);
+});
+
+// NEW: Handle challenge results screens
+socket.on('fast-tapper-results', (data) => {
+    document.getElementById('challenge-results-title').textContent = '⚡ FAST TAPPER RESULTS';
+    document.getElementById('challenge-results-message').textContent = 
+        `Fastest fingers: ${data.maxTaps} taps!`;
     
-    // Clear previous results
-    resultsContent.innerHTML = '';
-    
-    const resultHtml = `
-        <div class="choice-result ${data.survived ? 'survived' : 'eliminated'}">
-            <div class="choice-header">
-                <h3>Option ${data.optionId}: ${data.optionText}</h3>
-                <div class="players-list">
-                    ${data.players.map(name => `<span class="player-tag">${name}</span>`).join('')}
-                </div>
-            </div>
-            <div class="fate-narration" id="fate-narration-text">
-                <!-- Text will be typed here -->
-            </div>
-            <div class="result-status" id="result-status-block" style="display: none;">
-                ${data.survived ? '✅ SURVIVED' : '💀 ELIMINATED'}
-            </div>
+    const resultsHtml = data.results.map(result => `
+        <div class="tap-result-item ${result.won ? 'winner' : ''}">
+            <span class="tap-result-name">${result.won ? '🏆 ' : ''}${result.playerName}</span>
+            <span class="tap-result-count">${result.taps} taps</span>
         </div>
-    `;
+    `).join('');
     
-    resultsContent.innerHTML = resultHtml;
-    
-    // FIXED: Type the narration first, THEN show the fate result
-    const narrationElement = document.getElementById('fate-narration-text');
-    const statusBlock = document.getElementById('result-status-block');
-    
-    typeWriter(narrationElement, data.narration, 35).then(() => {
-        // Show fate result only after typing completes
-        setTimeout(() => {
-            statusBlock.style.display = 'block';
-            statusBlock.style.animation = 'resultAppear 0.8s ease-out';
-        }, 500);
-    });
-    
-    showPage('puzzleResults');
+    document.getElementById('challenge-results-content').innerHTML = resultsHtml;
+    showPage('challengeResults');
+});
+
+// NEW: Handle submission status updates
+socket.on('challenge-response-submitted', (data) => {
+    document.getElementById('text-challenge-submission-count').textContent = 
+        `${data.totalSubmissions}/${data.expectedSubmissions} players responded`;
+});
+
+socket.on('tap-result-submitted', (data) => {
+    console.log(`${data.player} tapped ${data.taps} times`);
 });
 
 socket.on('round-summary', (data) => {
@@ -458,7 +522,6 @@ socket.on('round-summary', (data) => {
     showPage('roundSummary');
 });
 
-// FIXED: Enhanced game-over with correct winner display
 socket.on('game-over', (data) => {
     console.log('🏆 Game over received, winner:', data.winner.name, 'with', data.winner.score, 'points');
     
@@ -472,7 +535,6 @@ socket.on('game-over', (data) => {
         `;
     }).join('');
     
-    // FIXED: Clear winner announcement with correct highest scorer
     const bigWinnerEl = document.getElementById('big-winner-announcement');
     bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>`;
     
@@ -493,4 +555,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v3.0 (Owner Edition)');
+console.log('Frontend loaded - Threatened by AI v4.0 (Dynamic Challenge Edition)');
