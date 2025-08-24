@@ -66,15 +66,15 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-// NEW: Generate Challenge Content with AI
+// UPDATED: Generate simpler, shorter challenge content
 async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
-        // Fallback content if no AI
+        // Simple fallback content
         const fallbacks = {
-            negotiator: "You are a trader in a post-apocalyptic world. Convince the merchant to trade supplies with you.",
-            detective: "A valuable artifact was stolen from the museum. Based on these clues: The thief wore gloves, left at 3 AM, and knew the security code. Who is the culprit: A) Security guard B) Janitor C) Tour guide?",
-            trivia: "What is the largest planet in our solar system?",
-            danger: "You're trapped in a burning skyscraper on the 20th floor. The elevator is broken and the stairwell is blocked by smoke. How do you escape?"
+            negotiator: "You need food. The trader wants money but you have none. Convince them to help you.",
+            detective: "Someone stole the last battery. Clues: muddy footprints, torn fabric, and a broken lock. Who did it?",
+            trivia: "Which planet is closest to the Sun?",
+            danger: "You're in a burning room. The door is locked. You see a window, chair, and fire blanket. What do you do?"
         };
         return fallbacks[type] || "Complete this challenge to survive!";
     }
@@ -85,30 +85,50 @@ async function generateChallengeContent(type, roundNumber) {
 
         switch (type) {
             case 'negotiator':
-                prompt = `Create a negotiation scenario where a player must convince someone to help them. Set in a sci-fi or post-apocalyptic world. The player will type their persuasive message. Keep it under 100 words.`;
+                prompt = `Create a simple negotiation scenario. Use easy words only. Maximum 25 words. The player needs help with something basic. Example: "You need medicine. The shop owner wants $50 but you only have $20. Convince them to help you."`;
                 break;
             case 'detective':
-                prompt = `Create a simple mystery scenario with 3-4 clues. The player must deduce who the culprit is and explain their reasoning. Keep it under 100 words.`;
+                prompt = `Create a simple mystery with 3 easy clues. Use basic words only. Maximum 30 words. Example: "Someone ate your lunch. Clues: crumbs on the table, sauce on fingers, and an empty plate. Who did it?"`;
                 break;
             case 'trivia':
-                prompt = `Generate an interesting trivia question about science, history, or geography. Make it challenging but fair. Format: "Question: [your question]"`;
+                prompt = `Ask one simple trivia question about basic knowledge. Use easy words. One sentence. Example: "What color is grass?" or "How many legs does a cat have?"`;
                 break;
             case 'danger':
-                prompt = `Create a dangerous survival scenario where the player must describe their escape plan. Be creative and dramatic. Keep it under 100 words.`;
+                prompt = `Create a simple survival situation. Use basic words only. Maximum 25 words. Example: "You're trapped in a cave. Your light is dying. You hear water. How do you find the exit?"`;
                 break;
         }
 
         const result = await model.generateContent(prompt);
         const response = (await result.response).text();
-        return response.trim();
+        
+        // Clean up the response
+        let cleaned = response.trim()
+            .replace(/^["']|["']$/g, '')
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ');
+        
+        // Make sure it's not too long
+        if (cleaned.length > 150) {
+            cleaned = cleaned.substring(0, 140) + "...";
+        }
+        
+        console.log(`Generated ${type} challenge: ${cleaned}`);
+        return cleaned;
         
     } catch (e) {
         console.error('AI challenge generation error:', e.message);
-        return generateChallengeContent(type, roundNumber); // Use fallback
+        // Simple fallbacks on error
+        const simpleFallbacks = {
+            negotiator: "You need water. The guard has bottles. Convince them to share.",
+            detective: "Someone broke the radio. There are fingerprints everywhere. Who did it?",
+            trivia: "What is the biggest ocean?",
+            danger: "You're stuck in a sinking boat. How do you escape?"
+        };
+        return simpleFallbacks[type] || "Face this challenge!";
     }
 }
 
-// NEW: Evaluate Player Response with AI
+// UPDATED: Evaluate Player Response with simpler prompts
 async function evaluatePlayerResponse(challengeContent, playerResponse, challengeType) {
     if (!genAI) {
         return { pass: Math.random() > 0.3, feedback: "No AI available - random result!" };
@@ -117,35 +137,48 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         
-        const evaluationPrompt = `You are the Oracle AI judging a player's response to a challenge.
-
-Challenge: ${challengeContent}
-
-Player's Response: ${playerResponse}
-
-Challenge Type: ${challengeType}
-
-Evaluate if this is a good/clever/correct response. Be fair but challenging.
-Reply in this format:
-VERDICT: PASS or FAIL
-FEEDBACK: [Brief 1-2 sentence explanation of your judgment]`;
+        let evaluationPrompt = '';
+        
+        switch (challengeType) {
+            case 'negotiator':
+                evaluationPrompt = `Is this a good negotiation attempt?\n\nSituation: ${challengeContent}\n\nPlayer said: "${playerResponse}"\n\nWas this persuasive and polite? Answer PASS or FAIL with a short reason.`;
+                break;
+            case 'detective':
+                evaluationPrompt = `Is this detective work correct?\n\nMystery: ${challengeContent}\n\nPlayer concluded: "${playerResponse}"\n\nDoes this make sense? Answer PASS or FAIL with a short reason.`;
+                break;
+            case 'trivia':
+                evaluationPrompt = `Is this trivia answer correct?\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${playerResponse}"\n\nIs this right? Answer PASS or FAIL.`;
+                break;
+            case 'danger':
+                evaluationPrompt = `Is this a smart survival plan?\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${playerResponse}"\n\nWould this work? Answer PASS or FAIL with a short reason.`;
+                break;
+            default:
+                evaluationPrompt = `Rate this response:\n\nChallenge: ${challengeContent}\n\nResponse: ${playerResponse}\n\nIs it good? PASS or FAIL with reason.`;
+        }
 
         const result = await model.generateContent(evaluationPrompt);
         const response = (await result.response).text();
         
-        const pass = /VERDICT:\s*PASS/i.test(response);
-        const feedbackMatch = response.match(/FEEDBACK:\s*(.+)/i);
-        const feedback = feedbackMatch ? feedbackMatch[1].trim() : "The Oracle has judged...";
+        const pass = /PASS/i.test(response);
+        let feedback = response.replace(/PASS|FAIL/gi, '').trim();
         
-        return { pass, feedback };
+        // Keep feedback short and simple
+        if (feedback.length > 100) {
+            feedback = feedback.substring(0, 90) + "...";
+        }
+        
+        return { pass, feedback: feedback || "The Oracle has judged." };
         
     } catch (e) {
         console.error('AI evaluation error:', e.message);
-        return { pass: Math.random() > 0.4, feedback: "The Oracle's judgment is clouded..." };
+        return { 
+            pass: Math.random() > 0.4, 
+            feedback: "The Oracle's judgment is unclear..." 
+        };
     }
 }
 
-// NEW: Assign Different Challenge to Each Non-Winner
+// UPDATED: Assign Different Challenge to Each Non-Winner with better timing
 async function startChallengePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -184,27 +217,28 @@ async function startChallengePhase(roomCode) {
             }, 12000);
             
         } else {
-            // Text-based challenges
+            // Text-based challenges with more time
             const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
             
             io.to(roomCode).emit('text-challenge-start', {
                 challengeType: challengeType,
                 challengeContent: challengeContent,
                 participants: nonWinners.map(p => p.name),
-                timeLimit: 60
+                timeLimit: 45  // UPDATED: 45 seconds for reading + thinking
             });
             
             room.currentChallengeType = challengeType;
             room.currentChallengeContent = challengeContent;
             
+            // UPDATED: 50 seconds total (45 + 5 buffer)
             room.challengeTimer = setTimeout(() => {
                 evaluateTextChallengeResults(roomCode);
-            }, 65000);
+            }, 50000);
         }
     }, 2500);
 }
 
-// NEW: Evaluate Fast Tapper Results
+// Evaluate Fast Tapper Results
 async function evaluateFastTapperResults(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -215,7 +249,6 @@ async function evaluateFastTapperResults(roomCode) {
         return;
     }
 
-    // Find winner (most taps)
     let maxTaps = 0;
     let winners = [];
     
@@ -253,7 +286,7 @@ async function evaluateFastTapperResults(roomCode) {
     }, 4000);
 }
 
-// NEW: Evaluate Text Challenge Results
+// Evaluate Text Challenge Results
 async function evaluateTextChallengeResults(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -299,7 +332,7 @@ async function evaluateTextChallengeResults(roomCode) {
             response: response
         });
 
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Delay between results
+        await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
     setTimeout(() => {
@@ -307,7 +340,7 @@ async function evaluateTextChallengeResults(roomCode) {
     }, 2000);
 }
 
-// Game Flow Functions (updated to use new challenge system)
+// Game Flow Functions
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -382,7 +415,7 @@ function endRiddlePhase(roomCode) {
     });
     
     setTimeout(() => {
-        startChallengePhase(roomCode); // NEW: Start challenge instead of puzzle
+        startChallengePhase(roomCode);
     }, 4000);
 }
 
@@ -528,7 +561,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // NEW: Handle text challenge responses
     socket.on('submit-challenge-response', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'challenge-phase') return;
@@ -544,7 +576,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    // NEW: Handle fast tapper results
     socket.on('submit-tap-result', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'challenge-phase') return;
@@ -586,11 +617,11 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log('🎯 NEW: Dynamic Challenge System Active!');
+    console.log('🎯 Dynamic Challenge System: Simple language, better timing!');
     console.log('📊 Challenge Types:', CHALLENGE_TYPES.join(', '));
     if (genAI) {
-        console.log('🔑 Gemini 2.5 Flash: AI-powered challenge generation enabled!');
+        console.log('🔑 Gemini 2.5 Flash: AI-powered simple challenges enabled!');
     } else {
-        console.log('⚠️ No Gemini API key: Using fallback challenges.');
+        console.log('⚠️ No Gemini API key: Using simple fallback challenges.');
     }
 });
