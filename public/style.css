@@ -1521,3 +1521,201 @@ input[type="text"]:focus {
         --text-muted: #aaa;
     }
 }
+
+/* Text Challenge Styles */
+.response-textarea {
+    width: 100%;
+    max-width: 500px;
+    height: 120px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-secondary);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1em;
+    margin: 20px 0;
+    resize: vertical;
+    min-height: 80px;
+    max-height: 200px;
+}
+
+.response-textarea:focus {
+    outline: none;
+    border-color: var(--accent-red);
+    box-shadow: 0 0 20px rgba(255, 8, 68, 0.3);
+    background: var(--bg-tertiary);
+}
+
+.response-textarea::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Fast Tapper Styles */
+.tapper-section {
+    text-align: center;
+    padding: 30px 0;
+}
+
+.tap-counter {
+    margin: 30px 0;
+    text-align: center;
+}
+
+.tap-count-display {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 4em;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    display: block;
+    text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+    animation: numberPulse 0.1s ease-out;
+}
+
+@keyframes numberPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.tap-btn {
+    font-size: 2em !important;
+    padding: 30px 60px !important;
+    border-radius: 50% !important;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+    transition: all 0.1s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tap-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 40px var(--accent-red);
+}
+
+.tap-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Challenge Results */
+.challenge-result-item {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-secondary);
+    border-radius: 8px;
+    margin: 16px 0;
+    padding: 20px;
+    animation: resultReveal 0.6s ease-out;
+}
+
+.challenge-result-item.passed {
+    border-color: #00ff88;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), var(--bg-secondary));
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+}
+
+.challenge-result-item.failed {
+    border-color: var(--accent-red);
+    background: linear-gradient(135deg, rgba(255, 8, 68, 0.1), var(--bg-secondary));
+    box-shadow: 0 0 20px rgba(255, 8, 68, 0.2);
+}
+
+.challenge-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.challenge-player-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.2em;
+}
+
+.challenge-verdict {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.challenge-verdict.passed {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00ff88;
+    border: 1px solid #00ff88;
+}
+
+.challenge-verdict.failed {
+    background: rgba(255, 8, 68, 0.2);
+    color: var(--accent-red);
+    border: 1px solid var(--accent-red);
+}
+
+.challenge-response {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 10px 0;
+    font-style: italic;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.challenge-feedback {
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-top: 8px;
+}
+
+/* Fast Tapper Results */
+.tap-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    margin: 8px 0;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-secondary);
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+}
+
+.tap-result-item.winner {
+    border-color: var(--accent-yellow);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), var(--bg-secondary));
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.tap-result-name {
+    font-size: 1.1em;
+    color: var(--text-primary);
+}
+
+.tap-result-count {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: var(--accent-cyan);
+}
+
+.tap-result-item.winner .tap-result-name {
+    color: var(--accent-yellow);
+}
+
+.tap-result-item.winner .tap-result-count {
+    color: var(--accent-yellow);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
