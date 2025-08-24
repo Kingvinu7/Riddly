@@ -2005,3 +2005,104 @@ input[type="text"]:focus {
         transform: none !important;
     }
 }
+
+/* UPDATED: Better challenge text readability */
+.challenge-description {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-left: 4px solid var(--accent-red);
+    border-radius: 8px;
+    padding: 25px 30px;  /* More padding */
+    margin: 25px 0;
+    line-height: 1.8;    /* Better line height */
+    font-size: 1.2em;    /* Larger font */
+    backdrop-filter: blur(15px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 20px rgba(255, 8, 68, 0.1);
+    position: relative;
+    color: var(--text-primary);  /* Brighter text */
+    font-style: normal;          /* Remove italic */
+    font-weight: 400;            /* Normal weight */
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.3px;       /* Better spacing */
+}
+
+.challenge-description::before {
+    content: '⚠ AI CHALLENGE';
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    background: var(--accent-red);
+    color: var(--bg-primary);
+    padding: 6px 14px;    /* More padding */
+    font-size: 0.75em;
+    font-weight: 700;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Rajdhani', sans-serif;
+    font-style: normal;
+}
+
+/* UPDATED: Better timer colors */
+.timer {
+    display: block;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 4em;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    background: var(--bg-secondary);
+    border: 3px solid var(--accent-cyan);
+    padding: 20px 40px;
+    margin: 0 auto 15px;
+    border-radius: 8px;
+    box-shadow: 
+        0 0 40px rgba(0, 245, 255, 0.3),
+        inset 0 0 20px rgba(0, 245, 255, 0.1);
+    backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.timer.danger {
+    color: #ffa500;  /* Orange for warning */
+    border-color: #ffa500;
+    box-shadow: 
+        0 0 40px rgba(255, 165, 0, 0.4),
+        inset 0 0 20px rgba(255, 165, 0, 0.1);
+}
+
+.timer.urgent {
+    color: var(--accent-red);
+    border-color: var(--accent-red);
+    box-shadow: 
+        0 0 40px rgba(255, 8, 68, 0.4),
+        inset 0 0 20px rgba(255, 8, 68, 0.1);
+    animation: timerCritical 0.5s ease-in-out infinite alternate;
+}
+
+/* UPDATED: Mobile responsive text */
+@media (max-width: 768px) {
+    .challenge-description {
+        font-size: 1.1em;
+        padding: 20px 25px;
+        line-height: 1.7;
+        letter-spacing: 0.2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .challenge-description {
+        font-size: 1em;
+        padding: 18px 20px;
+        line-height: 1.6;
+        letter-spacing: 0.1px;
+    }
+    
+    .timer {
+        font-size: 3em !important;
+        padding: 16px 30px;
+    }
+}
