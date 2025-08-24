@@ -52,13 +52,13 @@ riddleAnswer.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') submitRiddleAnswer();
 });
 
-// NEW: Challenge response event listeners
+// Challenge response event listeners
 document.getElementById('submit-challenge-response').addEventListener('click', submitChallengeResponse);
 document.getElementById('challenge-response').addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && e.ctrlKey) submitChallengeResponse();
 });
 
-// NEW: Fast tapper event listener
+// Fast tapper event listener
 document.getElementById('tap-button').addEventListener('click', onTap);
 
 // Utility functions
@@ -119,7 +119,7 @@ function submitRiddleAnswer() {
     submitRiddleBtn.textContent = 'Submitted!';
 }
 
-// NEW: Submit challenge response
+// Submit challenge response
 function submitChallengeResponse() {
     const response = document.getElementById('challenge-response').value.trim();
     if (!response) {
@@ -134,26 +134,26 @@ function submitChallengeResponse() {
     document.getElementById('submit-challenge-response').textContent = 'Submitted!';
 }
 
-// NEW: Fast tapper functionality
+// UPDATED: Fast tapper functionality
 function onTap() {
     if (!tapperActive) return;
     tapCount++;
     document.getElementById('tap-count').textContent = tapCount.toString();
     
-    // Add visual feedback
+    // Enhanced visual feedback
     const button = document.getElementById('tap-button');
+    const countDisplay = document.getElementById('tap-count');
+    
     button.style.transform = 'scale(0.95)';
+    countDisplay.style.animation = 'none';
+    
     setTimeout(() => {
         button.style.transform = 'scale(1)';
+        countDisplay.style.animation = 'numberPulse 0.1s ease-out';
     }, 50);
-    
-    // Trigger animation
-    document.getElementById('tap-count').style.animation = 'none';
-    setTimeout(() => {
-        document.getElementById('tap-count').style.animation = 'numberPulse 0.1s ease-out';
-    }, 10);
 }
 
+// UPDATED: Enhanced fast tapper timer
 function startFastTapperTimer(duration) {
     tapperActive = true;
     let timeLeft = duration;
@@ -163,6 +163,10 @@ function startFastTapperTimer(duration) {
         
         if (timeLeft <= 3) {
             document.getElementById('fast-tapper-timer').classList.add('urgent');
+            document.getElementById('fast-tapper-timer').classList.remove('danger');
+        } else if (timeLeft <= 5) {
+            document.getElementById('fast-tapper-timer').classList.add('danger');
+            document.getElementById('fast-tapper-timer').classList.remove('urgent');
         }
         
         timeLeft--;
@@ -171,10 +175,15 @@ function startFastTapperTimer(duration) {
             clearInterval(timer);
             tapperActive = false;
             document.getElementById('tap-button').disabled = true;
-            document.getElementById('fast-tapper-timer').classList.remove('urgent');
+            document.getElementById('fast-tapper-timer').classList.remove('urgent', 'danger');
             
             // Submit result
             socket.emit('submit-tap-result', { roomCode: currentRoom, taps: tapCount });
+            
+            // Show completion message
+            setTimeout(() => {
+                alert(`Time's up! You tapped ${tapCount} times!`);
+            }, 500);
         }
     }, 1000);
 }
@@ -262,6 +271,7 @@ function createPointsTable(roundHistory, tableId) {
     table.innerHTML = tableHtml;
 }
 
+// UPDATED: Enhanced timer with better color progression
 function startTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     let timeLeft = seconds;
@@ -269,17 +279,52 @@ function startTimer(elementId, seconds) {
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
+        // UPDATED: Better color progression
         if (timeLeft <= 10) {
             element.classList.add('urgent');
-        } else {
+            element.classList.remove('danger');
+        } else if (timeLeft <= 20) {
+            element.classList.add('danger');
             element.classList.remove('urgent');
+        } else {
+            element.classList.remove('urgent', 'danger');
         }
         
         timeLeft--;
         
         if (timeLeft < 0) {
             clearInterval(timer);
+            element.classList.remove('urgent', 'danger');
+        }
+    }, 1000);
+    
+    return timer;
+}
+
+// UPDATED: Enhanced challenge timer function
+function startChallengeTimer(elementId, seconds) {
+    const element = document.getElementById(elementId);
+    let timeLeft = seconds;
+    
+    const timer = setInterval(() => {
+        element.textContent = timeLeft;
+        
+        // Color coding for better UX
+        if (timeLeft <= 10) {
+            element.classList.add('urgent');
+            element.classList.remove('danger');
+        } else if (timeLeft <= 20) {
+            element.classList.add('danger');
             element.classList.remove('urgent');
+        } else {
+            element.classList.remove('urgent', 'danger');
+        }
+        
+        timeLeft--;
+        
+        if (timeLeft < 0) {
+            clearInterval(timer);
+            element.classList.remove('urgent', 'danger');
         }
     }, 1000);
     
@@ -319,7 +364,7 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
-// NEW: Show individual result overlay
+// UPDATED: Better individual result overlay
 function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
@@ -336,9 +381,10 @@ function showIndividualResult(data) {
     content.innerHTML = resultHtml;
     overlay.style.display = 'flex';
     
+    // Auto-hide after 8 seconds (more time to read feedback)
     setTimeout(() => {
         hideIndividualResult();
-    }, 6000);
+    }, 8000);
 }
 
 function hideIndividualResult() {
@@ -432,7 +478,7 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-// NEW: Handle text challenges
+// UPDATED: Handle text challenges with better timing
 socket.on('text-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -448,7 +494,15 @@ socket.on('text-challenge-start', (data) => {
             `0/${data.participants.length} players responded`;
         
         showPage('textChallenge');
-        startTimer('text-challenge-timer', data.timeLimit || 60);
+        
+        // UPDATED: Use enhanced challenge timer
+        startChallengeTimer('text-challenge-timer', data.timeLimit || 45);
+        
+        // Auto-focus on textarea after a brief delay
+        setTimeout(() => {
+            document.getElementById('challenge-response').focus();
+        }, 500);
+        
     } else {
         document.getElementById('waiting-title').textContent = 'Others are facing a challenge...';
         document.getElementById('waiting-message').textContent = 
@@ -457,7 +511,7 @@ socket.on('text-challenge-start', (data) => {
     }
 });
 
-// NEW: Handle fast tapper challenges
+// Handle fast tapper challenges
 socket.on('fast-tapper-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -475,12 +529,12 @@ socket.on('fast-tapper-start', (data) => {
     }
 });
 
-// NEW: Handle individual challenge results
+// Handle individual challenge results
 socket.on('challenge-individual-result', (data) => {
     showIndividualResult(data);
 });
 
-// NEW: Handle challenge results screens
+// Handle challenge results screens
 socket.on('fast-tapper-results', (data) => {
     document.getElementById('challenge-results-title').textContent = '⚡ FAST TAPPER RESULTS';
     document.getElementById('challenge-results-message').textContent = 
@@ -497,7 +551,7 @@ socket.on('fast-tapper-results', (data) => {
     showPage('challengeResults');
 });
 
-// NEW: Handle submission status updates
+// Handle submission status updates
 socket.on('challenge-response-submitted', (data) => {
     document.getElementById('text-challenge-submission-count').textContent = 
         `${data.totalSubmissions}/${data.expectedSubmissions} players responded`;
@@ -555,4 +609,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v4.0 (Dynamic Challenge Edition)');
+console.log('Frontend loaded - Threatened by AI v4.1 (Simple Language Edition)');
