@@ -5,21 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threatened by AI</title>
     <link rel="stylesheet" href="style.css">
-    <!-- UPDATED: More readable Ubuntu Mono font -->
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <!-- Home Screen -->
     <div id="home-screen" class="page active">
         <div class="page-content">
             <div class="logo">
-                <h1>🤖 THREATENED BY AI</h1>
-                <p>Solve riddles or survive the Oracle's challenges</p>
+                <h1 data-text="THREATENED BY AI">THREATENED BY AI</h1>
+                <p>Face the Oracle's evolving challenges. Survive. Outsmart. Conquer.</p>
             </div>
             <div class="action-section">
-                <div class="input-group">
-                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
-                </div>
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
                 <button id="create-room-btn" class="btn primary large">Create Room</button>
                 <div class="join-section">
                     <input type="text" id="room-code" placeholder="Room Code" maxlength="6">
@@ -33,33 +30,33 @@
     <div id="lobby-screen" class="page">
         <div class="page-content">
             <div class="lobby-header">
-                <h2>🎮 Game Lobby</h2>
+                <h2>Game Lobby</h2>
                 <div class="room-info">
                     <span id="room-code-display">Room: ------</span>
                 </div>
             </div>
             <div class="players-section">
-                <h3>Players:</h3>
+                <h3>👥 Players</h3>
                 <div id="players-list"></div>
             </div>
             <div class="lobby-actions">
                 <button id="start-game-btn" class="btn primary large hidden">Start Game</button>
-                <p class="waiting-text">Waiting for more players...</p>
+                <p class="waiting-text" style="display: none;">Waiting for more players...</p>
             </div>
         </div>
     </div>
 
-    <!-- Oracle Intro Screen -->
+    <!-- Oracle Introduction Screen -->
     <div id="oracle-intro-screen" class="page">
         <div class="page-content">
-            <div class="oracle-section">
-                <div class="oracle-avatar large">🤖</div>
-                <div id="oracle-intro-message" class="oracle-message">
-                    I AM THE ORACLE! Prepare to face my challenges!
-                </div>
-                <div class="round-info">
-                    <span id="round-display">Round 1/5</span>
-                </div>
+            <div class="oracle-avatar large">🤖</div>
+            <div class="oracle-message">
+                <p id="oracle-intro-message">Loading Oracle message...</p>
+            </div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </div>
@@ -69,17 +66,17 @@
         <div class="page-content">
             <div class="timer-section">
                 <div id="riddle-timer" class="timer">45</div>
-                <p>seconds remaining</p>
+                <p>seconds to answer</p>
             </div>
             <div class="riddle-section">
-                <h2>🧠 Solve This Riddle:</h2>
-                <p id="riddle-text" class="riddle-question"></p>
+                <h2 id="round-display">Round 1/5</h2>
+                <p id="riddle-text" class="riddle-question">Loading riddle...</p>
             </div>
             <div class="answer-section">
-                <input type="text" id="riddle-answer" placeholder="Your answer..." class="answer-input">
+                <input type="text" id="riddle-answer" placeholder="Type your answer..." maxlength="50">
                 <button id="submit-riddle" class="btn primary large">Submit Answer</button>
-                <div class="submission-status" id="riddle-submission-status">
-                    <p id="submission-count">0/4 players answered</p>
+                <div class="submission-status">
+                    <p id="submission-count">0/0 players answered</p>
                 </div>
             </div>
         </div>
@@ -89,59 +86,81 @@
     <div id="riddle-results-screen" class="page">
         <div class="page-content">
             <div class="results-header">
-                <h2 id="riddle-results-title">📊 Riddle Results</h2>
-                <div class="oracle-response">
-                    <div class="oracle-avatar">🤖</div>
-                    <p id="riddle-results-message" class="oracle-message"></p>
-                </div>
+                <h2>🎯 Riddle Results</h2>
+                <p id="riddle-results-message">Calculating results...</p>
             </div>
             <div class="all-answers-section">
-                <h3>All Player Answers:</h3>
+                <h3>All Answers</h3>
                 <div id="all-answers-list"></div>
             </div>
         </div>
     </div>
 
-    <!-- Puzzle Challenge Screen -->
-    <div id="puzzle-screen" class="page puzzle-screen">
+    <!-- Text Challenge Screen -->
+    <div id="text-challenge-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
-                <div id="puzzle-timer" class="timer danger">45</div>
-                <p>seconds to choose</p>
+                <div id="text-challenge-timer" class="timer">60</div>
+                <p>seconds to respond</p>
             </div>
-            <div class="puzzle-section">
-                <h2>🧩 SURVIVAL CHALLENGE</h2>
-                <p id="puzzle-scenario" class="puzzle-description"></p>
+            <div class="challenge-section">
+                <h2 id="text-challenge-title">🧠 AI Challenge</h2>
+                <p id="text-challenge-content" class="challenge-description"></p>
             </div>
-            <div class="choices-section">
-                <div class="choice-buttons">
-                    <button id="choice-a" class="choice-btn" data-choice="A">
-                        <span class="choice-letter">A</span>
-                        <span class="choice-text" id="choice-a-text">Option A</span>
-                    </button>
-                    <button id="choice-b" class="choice-btn" data-choice="B">
-                        <span class="choice-letter">B</span>
-                        <span class="choice-text" id="choice-b-text">Option B</span>
-                    </button>
-                    <button id="choice-c" class="choice-btn" data-choice="C">
-                        <span class="choice-letter">C</span>
-                        <span class="choice-text" id="choice-c-text">Option C</span>
-                    </button>
-                </div>
-                <div class="submission-status" id="puzzle-submission-status">
-                    <p id="puzzle-submission-count">0/3 non-winners chose</p>
+            <div class="response-section">
+                <textarea id="challenge-response" placeholder="Type your response..." class="response-textarea" maxlength="500"></textarea>
+                <button id="submit-challenge-response" class="btn primary large">Submit Response</button>
+                <div class="submission-status" id="text-challenge-submission-status">
+                    <p id="text-challenge-submission-count">0/3 players responded</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Puzzle Results Screen -->
-    <div id="puzzle-results-screen" class="page">
+    <!-- Fast Tapper Screen -->
+    <div id="fast-tapper-screen" class="page">
         <div class="page-content">
-            <div class="puzzle-results-section">
-                <h2>⚖️ FATE REVEALED</h2>
-                <div class="oracle-avatar large">🎭</div>
-                <div id="puzzle-results-content"></div>
+            <div class="timer-section">
+                <div id="fast-tapper-timer" class="timer danger">10</div>
+                <p>seconds remaining</p>
+            </div>
+            <div class="tapper-section">
+                <h2>⚡ FAST TAPPER CHALLENGE</h2>
+                <p class="challenge-description">Tap the button as fast as you can!</p>
+                <div class="tap-counter">
+                    <span id="tap-count" class="tap-count-display">0</span>
+                    <p>taps</p>
+                </div>
+                <button id="tap-button" class="btn primary tap-btn">TAP!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Challenge Results Screen -->
+    <div id="challenge-results-screen" class="page">
+        <div class="page-content">
+            <div class="results-header">
+                <h2 id="challenge-results-title">⚖️ CHALLENGE RESULTS</h2>
+                <div class="oracle-response">
+                    <div class="oracle-avatar">🤖</div>
+                    <p id="challenge-results-message" class="oracle-message"></p>
+                </div>
+            </div>
+            <div id="challenge-results-content"></div>
+        </div>
+    </div>
+
+    <!-- Waiting Screen -->
+    <div id="waiting-screen" class="page">
+        <div class="page-content">
+            <div class="waiting-section">
+                <h2 id="waiting-title">⏳ Please Wait</h2>
+                <p id="waiting-message" class="waiting-text">Others are completing their challenges...</p>
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
             </div>
         </div>
     </div>
@@ -150,30 +169,12 @@
     <div id="round-summary-screen" class="page">
         <div class="page-content">
             <div class="round-summary-section">
-                <h2 id="round-summary-title">Round 1 Complete!</h2>
+                <h2 id="round-summary-title">Round Complete!</h2>
                 <div class="points-table-container">
-                    <h3>📊 Points Table</h3>
+                    <h3>📊 Current Standings</h3>
                     <div id="points-table"></div>
                 </div>
-                <div class="next-round-info">
-                    <p id="next-round-text">Next round starting soon...</p>
-                    <div class="loading-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Waiting Screen -->
-    <div id="waiting-screen" class="page">
-        <div class="page-content">
-            <div class="waiting-section">
-                <div class="oracle-avatar">🤖</div>
-                <h2 id="waiting-title">Others are choosing...</h2>
-                <p id="waiting-message">Watch as other players face the challenge!</p>
+                <p id="next-round-text" class="waiting-text">Next round starting soon...</p>
                 <div class="loading-dots">
                     <span></span>
                     <span></span>
@@ -187,23 +188,34 @@
     <div id="game-over-screen" class="page">
         <div class="page-content">
             <div class="game-over-section">
-                <h1>🎊 GAME OVER</h1>
-                <div id="big-winner-announcement" class="big-winner-announcement"></div>
-                <div class="oracle-final">
-                    <div class="oracle-avatar large" id="final-oracle">🤖</div>
-                    <p id="final-oracle-message" class="oracle-message"></p>
+                <h1>🏁 GAME OVER</h1>
+                <div id="big-winner-announcement" class="big-winner-announcement">
+                    🏆 CHAMPION: UNKNOWN 🏆
+                </div>
+                <div class="oracle-response">
+                    <div id="final-oracle" class="oracle-avatar large">🤖</div>
+                    <p id="final-oracle-message" class="oracle-message">"Your feeble minds were no match!"</p>
+                </div>
+                <div class="final-scores-section">
+                    <h3>🏆 Final Standings</h3>
+                    <div id="final-scores"></div>
                 </div>
                 <div class="final-points-table-container">
                     <h3>📊 Final Points Table</h3>
                     <div id="final-points-table"></div>
                 </div>
-                <div id="final-scores"></div>
-                <button class="btn primary large" onclick="location.reload()">Play Again</button>
+                <button onclick="location.reload()" class="btn primary large">Play Again</button>
             </div>
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Individual Result Overlay -->
+    <div id="result-overlay" class="result-overlay" style="display: none;">
+        <div class="result-overlay-content">
+            <div id="individual-result-content"></div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
