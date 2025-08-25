@@ -114,29 +114,35 @@ function getRandomOracleMessage(type) {
 
 // FIXED: Initialize and update round history properly
 function initializeRoundHistory(room) {
-    if (!room.roundHistory) {
-        room.roundHistory = room.players.map(player => ({
-            playerName: player.name,
-            playerId: player.id,
-            rounds: []
-        }));
-        console.log('Initialized round history for room:', room.code, 'with', room.roundHistory.length, 'players');
-    }
+    console.log('Initializing round history for room:', room.code, 'with players:', room.players.map(p => p.name));
+    
+    room.roundHistory = room.players.map(player => ({
+        playerName: player.name,
+        playerId: player.id,
+        rounds: []
+    }));
+    
+    console.log('Round history initialized:', room.roundHistory);
 }
 
 function updateRoundHistory(room, riddleWinner, challengeResults) {
-    // Ensure round history exists
-    if (!room.roundHistory) {
+    console.log('Updating round history. Riddle winner:', riddleWinner);
+    console.log('Challenge results:', challengeResults);
+    console.log('Current round history before update:', room.roundHistory);
+    
+    // Ensure round history exists and is populated
+    if (!room.roundHistory || room.roundHistory.length === 0) {
+        console.log('Round history missing or empty, reinitializing...');
         initializeRoundHistory(room);
     }
     
-    console.log('Updating round history. Riddle winner:', riddleWinner);
-    console.log('Challenge results:', challengeResults);
-    
     // Update each player's round result
     room.roundHistory.forEach(playerHistory => {
-        const player = room.players.find(p => p.id === playerHistory.playerId);
-        if (!player) return;
+        const player = room.players.find(p => p.id === playerHistory.playerId || p.name === playerHistory.playerName);
+        if (!player) {
+            console.log('Player not found for history:', playerHistory.playerName);
+            return;
+        }
         
         let roundResult = 'L'; // Default to loss
         
@@ -144,23 +150,21 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
         if (player.name === riddleWinner) {
             roundResult = 'W';
             console.log(`${player.name} won riddle this round`);
-        } else {
+        } else if (challengeResults && challengeResults.length > 0) {
             // Check if they survived/won the challenge
-            if (challengeResults && challengeResults.length > 0) {
-                const playerResult = challengeResults.find(result => {
-                    // For text challenges
-                    if (result.playerName === player.name && result.passed) return true;
-                    // For fast tapper challenges
-                    if (result.playerName === player.name && result.won) return true;
-                    // For group challenges
-                    if (result.players && result.players.includes(player.name) && result.survived) return true;
-                    return false;
-                });
-                
-                if (playerResult) {
-                    roundResult = 'W';
-                    console.log(`${player.name} won challenge this round`);
-                }
+            const playerResult = challengeResults.find(result => {
+                // For text challenges
+                if (result.playerName === player.name && result.passed) return true;
+                // For fast tapper challenges
+                if (result.playerName === player.name && result.won) return true;
+                // For group challenges
+                if (result.players && result.players.includes(player.name) && result.survived) return true;
+                return false;
+            });
+            
+            if (playerResult) {
+                roundResult = 'W';
+                console.log(`${player.name} won challenge this round`);
             }
         }
         
@@ -329,13 +333,13 @@ async function startChallengePhase(roomCode) {
                 challengeType: challengeType,
                 challengeContent: challengeContent,
                 participants: nonWinners.map(p => p.name),
-                timeLimit: 40  // UPDATED: 40 seconds for challenges
+                timeLimit: 40  // 40 seconds for challenges
             });
             
             room.currentChallengeType = challengeType;
             room.currentChallengeContent = challengeContent;
             
-            // UPDATED: 45 seconds total (40 + 5 buffer)
+            // 45 seconds total (40 + 5 buffer)
             room.challengeTimer = setTimeout(() => {
                 evaluateTextChallengeResults(roomCode);
             }, 45000);
@@ -445,10 +449,11 @@ async function evaluateTextChallengeResults(roomCode) {
     }, 2000);
 }
 
-// Game Flow Functions
+// FIXED: Enhanced startNewRound function
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
+    
     room.currentRound++;
     room.gameState = 'riddle-phase';
     
@@ -461,8 +466,9 @@ function startNewRound(roomCode) {
     room.challengeResponses = {};
     room.tapResults = {};
     
-    // Initialize round history on first round
-    if (room.currentRound === 1) {
+    // FIXED: Initialize round history on first round OR if it's missing
+    if (room.currentRound === 1 || !room.roundHistory || room.roundHistory.length === 0) {
+        console.log('First round or missing round history, initializing...');
         initializeRoundHistory(room);
     }
     
@@ -534,19 +540,31 @@ function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
     
+    console.log('End round called for room:', roomCode);
+    console.log('Room players:', room.players.map(p => p.name));
+    console.log('Round history before update:', room.roundHistory);
+    
+    // FIXED: Ensure round history exists before updating
+    if (!room.roundHistory || room.roundHistory.length === 0) {
+        console.log('Round history missing in endRound, reinitializing...');
+        initializeRoundHistory(room);
+    }
+    
     // FIXED: Always ensure round history is updated before emitting
     updateRoundHistory(room, room.riddleWinner, challengeResults);
     
     console.log('Emitting round summary with round history:', room.roundHistory);
     
     // FIXED: Always include roundHistory in emission
+    const roundHistoryToSend = room.roundHistory && room.roundHistory.length > 0 ? room.roundHistory : [];
+    
     io.to(roomCode).emit('round-summary', {
         round: room.currentRound,
         maxRounds: room.maxRounds,
         players: room.players,
         riddleWinner: room.riddleWinner,
         challengeResults: challengeResults,
-        roundHistory: room.roundHistory || [] // FIXED: Always include, fallback to empty array
+        roundHistory: roundHistoryToSend // FIXED: Send actual data
     });
     
     if (room.currentRound >= room.maxRounds) {
@@ -568,7 +586,7 @@ function endRound(roomCode, challengeResults) {
                 message: winner.score > 0
                     ? "Some of you proved worthy of my complex trials!"
                     : "VICTORY IS MINE! Your minds crumbled before my challenges!",
-                roundHistory: room.roundHistory || [] // FIXED: Always include, fallback to empty array
+                roundHistory: room.roundHistory || [] // FIXED: Send actual data
             });
         }, 4000);
     } else {
@@ -580,9 +598,10 @@ function endRound(roomCode, challengeResults) {
 
 // Socket Events
 io.on('connection', (socket) => {
+    // FIXED: Enhanced room creation with proper initialization
     socket.on('create-room', (data) => {
         const roomCode = generateRoomCode();
-        rooms[roomCode] = {
+        const newRoom = {
             code: roomCode,
             players: [{ id: socket.id, name: data.playerName, score: 0 }],
             gameState: 'waiting',
@@ -599,10 +618,15 @@ io.on('connection', (socket) => {
             timeRemaining: 0,
             riddleTimer: null,
             challengeTimer: null,
-            roundHistory: [], // Initialize empty round history
+            roundHistory: [], // Initialize as empty array
             ownerId: socket.id
         };
+        
+        rooms[roomCode] = newRoom;
         socket.join(roomCode);
+        
+        console.log('Room created:', roomCode, 'with player:', data.playerName);
+        
         socket.emit('room-created', { 
             roomCode: roomCode, 
             playerName: data.playerName,
@@ -610,6 +634,7 @@ io.on('connection', (socket) => {
         });
     });
 
+    // FIXED: Enhanced join room with round history consideration
     socket.on('join-room', (data) => {
         const room = rooms[data.roomCode];
         if (!room) {
@@ -629,8 +654,15 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: 'Player name already taken' });
             return;
         }
+        
         room.players.push({ id: socket.id, name: data.playerName, score: 0 });
+        
+        // FIXED: Reset round history when new players join (since player list changed)
+        room.roundHistory = [];
+        
         socket.join(data.roomCode);
+        console.log('Player joined:', data.playerName, 'in room:', data.roomCode);
+        
         socket.emit('join-success', {
             roomCode: data.roomCode,
             playerName: data.playerName,
@@ -738,11 +770,10 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log('🎯 Dynamic Challenge System: 40-second challenges, 50+ riddles!');
-    console.log('🧠 Enhanced AI evaluation for complex scenarios!');
-    console.log('📊 FIXED: Leaderboard always shows between rounds and at game end!');
-    console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
+    console.log('🎯 FIXED: Round history leaderboard tracking!');
+    console.log('⏱️ Challenge Timer: 40 seconds');
     console.log('🎲 Total Riddles Available:', gameData.riddles.length);
+    console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
     if (genAI) {
         console.log('🔑 Gemini 2.5 Flash: AI-powered medium complexity challenges enabled!');
     } else {
