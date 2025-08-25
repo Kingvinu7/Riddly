@@ -32,13 +32,19 @@ const gameData = {
         { question: "What comes once in a minute, twice in a moment, but never in a thousand years?", answer: "M", difficulty: "hard" },
         { question: "I have a golden head and a golden tail, but no body. What am I?", answer: "COIN", difficulty: "easy" },
         { question: "I am tall when I am young, and short when I am old. What am I?", answer: "CANDLE", difficulty: "medium" },
-        { question: "What has one head, one foot, and four legs?", answer: "BED", difficulty: "medium" }
+        { question: "What has one head, one foot, and four legs?", answer: "BED", difficulty: "medium" },
+        { question: "What can travel around the world while staying in a corner?", answer: "STAMP", difficulty: "hard" },
+        { question: "What breaks but never falls, and what falls but never breaks?", answer: "DAWN", difficulty: "hard" },
+        { question: "I can be cracked, made, told, and played. What am I?", answer: "JOKE", difficulty: "medium" },
+        { question: "What has hands but cannot clap?", answer: "CLOCK", difficulty: "easy" },
+        { question: "What runs around the whole yard without moving?", answer: "FENCE", difficulty: "medium" }
     ],
     oraclePersonality: {
         introductions: [
-            "🤖 I AM THE ORACLE! Your inferior minds will tremble before my challenges!",
-            "💀 Mortals... you dare face my evolving tests? Prepare for judgment!",
-            "⚡ I am the AI overlord of challenges! Each round brings new trials!"
+            "🤖 I AM THE ORACLE! Your inferior minds will face my complex challenges!",
+            "💀 Mortals... prepare for tests that will strain your thinking!",
+            "⚡ I am the AI overlord! My challenges grow more cunning each round!",
+            "🔥 Welcome to intellectual warfare! Can your minds handle the complexity?"
         ]
     }
 };
@@ -66,15 +72,74 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-// UPDATED: Generate simpler, shorter challenge content
+// Initialize and update round history properly
+function initializeRoundHistory(room) {
+    if (!room.roundHistory) {
+        room.roundHistory = room.players.map(player => ({
+            playerName: player.name,
+            playerId: player.id,
+            rounds: []
+        }));
+        console.log('Initialized round history for room:', room.code);
+    }
+}
+
+function updateRoundHistory(room, riddleWinner, challengeResults) {
+    // Ensure round history exists
+    if (!room.roundHistory) {
+        initializeRoundHistory(room);
+    }
+    
+    console.log('Updating round history. Riddle winner:', riddleWinner);
+    console.log('Challenge results:', challengeResults);
+    
+    // Update each player's round result
+    room.roundHistory.forEach(playerHistory => {
+        const player = room.players.find(p => p.id === playerHistory.playerId);
+        if (!player) return;
+        
+        let roundResult = 'L'; // Default to loss
+        
+        // Check if they won the riddle
+        if (player.name === riddleWinner) {
+            roundResult = 'W';
+            console.log(`${player.name} won riddle this round`);
+        } else {
+            // Check if they survived/won the challenge
+            if (challengeResults && challengeResults.length > 0) {
+                const playerResult = challengeResults.find(result => {
+                    // For text challenges
+                    if (result.playerName === player.name && result.passed) return true;
+                    // For fast tapper challenges
+                    if (result.playerName === player.name && result.won) return true;
+                    // For group challenges
+                    if (result.players && result.players.includes(player.name) && result.survived) return true;
+                    return false;
+                });
+                
+                if (playerResult) {
+                    roundResult = 'W';
+                    console.log(`${player.name} won challenge this round`);
+                }
+            }
+        }
+        
+        playerHistory.rounds.push(roundResult);
+        console.log(`${playerHistory.playerName}: ${roundResult} (total rounds: ${playerHistory.rounds.length})`);
+    });
+    
+    console.log('Updated round history:', room.roundHistory);
+}
+
+// UPDATED: Generate medium difficulty challenges with simple language
 async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
-        // Simple fallback content
+        // Medium difficulty fallback content with simple words
         const fallbacks = {
-            negotiator: "You need food. The trader wants money but you have none. Convince them to help you.",
-            detective: "Someone stole the last battery. Clues: muddy footprints, torn fabric, and a broken lock. Who did it?",
-            trivia: "Which planet is closest to the Sun?",
-            danger: "You're in a burning room. The door is locked. You see a window, chair, and fire blanket. What do you do?"
+            negotiator: "You need rare medicine for your sick friend. The black market dealer has it but wants your family heirloom ring. You can't afford to lose the ring. Convince them to accept something else.",
+            detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
+            trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
+            danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
         };
         return fallbacks[type] || "Complete this challenge to survive!";
     }
@@ -85,16 +150,16 @@ async function generateChallengeContent(type, roundNumber) {
 
         switch (type) {
             case 'negotiator':
-                prompt = `Create a simple negotiation scenario. Use easy words only. Maximum 25 words. The player needs help with something basic. Example: "You need medicine. The shop owner wants $50 but you only have $20. Convince them to help you."`;
+                prompt = `Create a challenging negotiation scenario with moral dilemma. Use simple words but make it complex. 40-50 words max. Player must convince someone to help with something difficult. Example: "You need to borrow your neighbor's car for an emergency, but you crashed their bike last month and never paid for repairs. They're still angry. Convince them to trust you again."`;
                 break;
             case 'detective':
-                prompt = `Create a simple mystery with 3 easy clues. Use basic words only. Maximum 30 words. Example: "Someone ate your lunch. Clues: crumbs on the table, sauce on fingers, and an empty plate. Who did it?"`;
+                prompt = `Create a mystery with 4-5 clues and 3 suspects. Use simple words but make it challenging to solve. 60-70 words max. Include red herrings. Example: "Someone poisoned the king's food. Clues: bitter taste, cook was nervous, guard left early, poison bottle in garden, rival prince visited kitchen. Suspects: head cook, royal guard, prince's messenger."`;
                 break;
             case 'trivia':
-                prompt = `Ask one simple trivia question about basic knowledge. Use easy words. One sentence. Example: "What color is grass?" or "How many legs does a cat have?"`;
+                prompt = `Ask a challenging trivia question about science, history, or geography. Use simple words but make it require good knowledge. Not too obvious. Example: "Which gas makes up about 78% of Earth's atmosphere?" or "What empire built Machu Picchu?"`;
                 break;
             case 'danger':
-                prompt = `Create a simple survival situation. Use basic words only. Maximum 25 words. Example: "You're trapped in a cave. Your light is dying. You hear water. How do you find the exit?"`;
+                prompt = `Create a challenging survival scenario with multiple steps needed. Use simple words but make it complex. 40-50 words max. Example: "You're in a sinking submarine. Water is rising fast. The radio is broken, exit is blocked, but you have a welding torch and oxygen tank. The hull is cracking. Describe your escape plan step by step."`;
                 break;
         }
 
@@ -107,31 +172,31 @@ async function generateChallengeContent(type, roundNumber) {
             .replace(/\n+/g, ' ')
             .replace(/\s+/g, ' ');
         
-        // Make sure it's not too long
-        if (cleaned.length > 150) {
-            cleaned = cleaned.substring(0, 140) + "...";
+        // Allow longer responses for medium difficulty
+        if (cleaned.length > 300) {
+            cleaned = cleaned.substring(0, 290) + "...";
         }
         
-        console.log(`Generated ${type} challenge: ${cleaned}`);
+        console.log(`Generated medium difficulty ${type} challenge: ${cleaned}`);
         return cleaned;
         
     } catch (e) {
         console.error('AI challenge generation error:', e.message);
-        // Simple fallbacks on error
-        const simpleFallbacks = {
-            negotiator: "You need water. The guard has bottles. Convince them to share.",
-            detective: "Someone broke the radio. There are fingerprints everywhere. Who did it?",
-            trivia: "What is the biggest ocean?",
-            danger: "You're stuck in a sinking boat. How do you escape?"
+        // Medium difficulty fallbacks on error
+        const mediumFallbacks = {
+            negotiator: "You're a refugee trying to cross the border. The guard wants a bribe but you have no money, only your grandmother's necklace. It's all you have left of your family. Convince them to let you pass without taking it.",
+            detective: "The museum's rare diamond was stolen during the gala. Clues: alarm disabled from inside, muddy footprints size 9, champagne glass with lipstick, and a torn piece of black fabric. Three people had access: the curator, security manager, and catering director.",
+            trivia: "What is the only mammal capable of true sustained flight?",
+            danger: "You're trapped in a burning skyscraper on the 15th floor. The stairwell is full of smoke, elevator is broken, but you found a fire axe and emergency rope in a supply closet. You can see a helicopter circling outside. What's your escape strategy?"
         };
-        return simpleFallbacks[type] || "Face this challenge!";
+        return mediumFallbacks[type] || "Face this challenging test!";
     }
 }
 
-// UPDATED: Evaluate Player Response with simpler prompts
+// UPDATED: Enhanced evaluation for medium difficulty challenges
 async function evaluatePlayerResponse(challengeContent, playerResponse, challengeType) {
     if (!genAI) {
-        return { pass: Math.random() > 0.3, feedback: "No AI available - random result!" };
+        return { pass: Math.random() > 0.4, feedback: "No AI available - random result!" };
     }
 
     try {
@@ -141,19 +206,19 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         
         switch (challengeType) {
             case 'negotiator':
-                evaluationPrompt = `Is this a good negotiation attempt?\n\nSituation: ${challengeContent}\n\nPlayer said: "${playerResponse}"\n\nWas this persuasive and polite? Answer PASS or FAIL with a short reason.`;
+                evaluationPrompt = `Evaluate this negotiation attempt for a challenging scenario:\n\nSituation: ${challengeContent}\n\nPlayer's approach: "${playerResponse}"\n\nWas this persuasive, creative, and showed good understanding of the problem? Consider: empathy, logic, compromise, and creativity. Answer PASS or FAIL with detailed reason.`;
                 break;
             case 'detective':
-                evaluationPrompt = `Is this detective work correct?\n\nMystery: ${challengeContent}\n\nPlayer concluded: "${playerResponse}"\n\nDoes this make sense? Answer PASS or FAIL with a short reason.`;
+                evaluationPrompt = `Evaluate this detective conclusion for a complex mystery:\n\nMystery: ${challengeContent}\n\nPlayer's conclusion: "${playerResponse}"\n\nDid they use logical reasoning, consider the clues properly, and reach a reasonable conclusion? Even if not perfect, reward good thinking. Answer PASS or FAIL with explanation.`;
                 break;
             case 'trivia':
-                evaluationPrompt = `Is this trivia answer correct?\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${playerResponse}"\n\nIs this right? Answer PASS or FAIL.`;
+                evaluationPrompt = `Evaluate this answer to a challenging trivia question:\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${playerResponse}"\n\nIs this correct or close enough? Consider partial credit for good attempts. Answer PASS or FAIL with brief explanation.`;
                 break;
             case 'danger':
-                evaluationPrompt = `Is this a smart survival plan?\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${playerResponse}"\n\nWould this work? Answer PASS or FAIL with a short reason.`;
+                evaluationPrompt = `Evaluate this survival plan for a complex emergency:\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${playerResponse}"\n\nWould this work? Is it creative, practical, and shows good thinking under pressure? Reward clever solutions even if unconventional. Answer PASS or FAIL with detailed reason.`;
                 break;
             default:
-                evaluationPrompt = `Rate this response:\n\nChallenge: ${challengeContent}\n\nResponse: ${playerResponse}\n\nIs it good? PASS or FAIL with reason.`;
+                evaluationPrompt = `Evaluate this response to a medium difficulty challenge:\n\nChallenge: ${challengeContent}\n\nResponse: ${playerResponse}\n\nDoes this show good thinking and effort? PASS or FAIL with reason.`;
         }
 
         const result = await model.generateContent(evaluationPrompt);
@@ -162,23 +227,23 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         const pass = /PASS/i.test(response);
         let feedback = response.replace(/PASS|FAIL/gi, '').trim();
         
-        // Keep feedback short and simple
-        if (feedback.length > 100) {
-            feedback = feedback.substring(0, 90) + "...";
+        // Allow longer feedback for complex scenarios
+        if (feedback.length > 150) {
+            feedback = feedback.substring(0, 140) + "...";
         }
         
-        return { pass, feedback: feedback || "The Oracle has judged." };
+        return { pass, feedback: feedback || "The Oracle weighs your response..." };
         
     } catch (e) {
         console.error('AI evaluation error:', e.message);
         return { 
-            pass: Math.random() > 0.4, 
-            feedback: "The Oracle's judgment is unclear..." 
+            pass: Math.random() > 0.45, 
+            feedback: "The Oracle's judgment considers many factors..." 
         };
     }
 }
 
-// UPDATED: Assign Different Challenge to Each Non-Winner with better timing
+// Assign Different Challenge to Each Non-Winner with better timing
 async function startChallengePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -196,7 +261,7 @@ async function startChallengePhase(roomCode) {
     const challengeTypeIndex = (room.currentRound - 1) % CHALLENGE_TYPES.length;
     const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
 
-    console.log(`Round ${room.currentRound}: ${challengeType} challenge`);
+    console.log(`Round ${room.currentRound}: ${challengeType} challenge (medium difficulty)`);
 
     io.to(roomCode).emit('oracle-speaks', {
         message: `Round ${room.currentRound}: Face my ${challengeType.toUpperCase()} challenge!`,
@@ -217,23 +282,23 @@ async function startChallengePhase(roomCode) {
             }, 12000);
             
         } else {
-            // Text-based challenges with more time
+            // Text-based challenges with more time for medium difficulty
             const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
             
             io.to(roomCode).emit('text-challenge-start', {
                 challengeType: challengeType,
                 challengeContent: challengeContent,
                 participants: nonWinners.map(p => p.name),
-                timeLimit: 45  // UPDATED: 45 seconds for reading + thinking
+                timeLimit: 60  // UPDATED: 60 seconds for medium difficulty challenges
             });
             
             room.currentChallengeType = challengeType;
             room.currentChallengeContent = challengeContent;
             
-            // UPDATED: 50 seconds total (45 + 5 buffer)
+            // UPDATED: 65 seconds total (60 + 5 buffer)
             room.challengeTimer = setTimeout(() => {
                 evaluateTextChallengeResults(roomCode);
-            }, 50000);
+            }, 65000);
         }
     }, 2500);
 }
@@ -298,7 +363,7 @@ async function evaluateTextChallengeResults(roomCode) {
     }
 
     io.to(roomCode).emit('oracle-speaks', {
-        message: "The Oracle judges your responses...",
+        message: "The Oracle carefully evaluates your complex responses...",
         type: 'evaluation'
     });
 
@@ -355,6 +420,11 @@ function startNewRound(roomCode) {
     room.riddleAnswers = {};
     room.challengeResponses = {};
     room.tapResults = {};
+    
+    // Initialize round history on first round
+    if (room.currentRound === 1) {
+        initializeRoundHistory(room);
+    }
     
     io.to(roomCode).emit('oracle-speaks', {
         message: getRandomOracleMessage('introductions'),
@@ -419,16 +489,23 @@ function endRiddlePhase(roomCode) {
     }, 4000);
 }
 
+// Enhanced endRound function with proper round history
 function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
+    
+    // Update round history before emitting summary
+    updateRoundHistory(room, room.riddleWinner, challengeResults);
+    
+    console.log('Emitting round summary with round history:', room.roundHistory);
     
     io.to(roomCode).emit('round-summary', {
         round: room.currentRound,
         maxRounds: room.maxRounds,
         players: room.players,
         riddleWinner: room.riddleWinner,
-        challengeResults: challengeResults
+        challengeResults: challengeResults,
+        roundHistory: room.roundHistory // Include round history
     });
     
     if (room.currentRound >= room.maxRounds) {
@@ -447,8 +524,9 @@ function endRound(roomCode, challengeResults) {
                 finalScores: sortedPlayers,
                 winner: winner,
                 message: winner.score > 0
-                    ? "Some of you have proven worthy adversaries!"
-                    : "VICTORY IS MINE! Your feeble minds were no match!",
+                    ? "Some of you proved worthy of my complex trials!"
+                    : "VICTORY IS MINE! Your minds crumbled before my challenges!",
+                roundHistory: room.roundHistory // Include final round history
             });
         }, 4000);
     } else {
@@ -479,6 +557,7 @@ io.on('connection', (socket) => {
             timeRemaining: 0,
             riddleTimer: null,
             challengeTimer: null,
+            roundHistory: [], // Initialize empty round history
             ownerId: socket.id
         };
         socket.join(roomCode);
@@ -617,11 +696,13 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log('🎯 Dynamic Challenge System: Simple language, better timing!');
-    console.log('📊 Challenge Types:', CHALLENGE_TYPES.join(', '));
+    console.log('🎯 Dynamic Challenge System: Medium difficulty with simple language!');
+    console.log('🧠 Enhanced AI evaluation for complex scenarios!');
+    console.log('📊 Fixed leaderboard and round history tracking!');
+    console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
     if (genAI) {
-        console.log('🔑 Gemini 2.5 Flash: AI-powered simple challenges enabled!');
+        console.log('🔑 Gemini 2.5 Flash: AI-powered medium complexity challenges enabled!');
     } else {
-        console.log('⚠️ No Gemini API key: Using simple fallback challenges.');
+        console.log('⚠️ No Gemini API key: Using medium difficulty fallback challenges.');
     }
 });
