@@ -2106,3 +2106,21 @@ input[type="text"]:focus {
         padding: 16px 30px;
     }
 }
+
+.no-data {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-style: italic;
+    background: var(--glass-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-secondary);
+}
+
+.points-table-header .player-name-header,
+.points-table-header .round-header,
+.points-table-header .total-header {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
