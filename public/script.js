@@ -242,7 +242,7 @@ function updatePlayers(players) {
     }).join('');
 }
 
-// Enhanced points table creation with better error handling
+// FIXED: Enhanced points table creation with bulletproof error handling
 function createPointsTable(roundHistory, tableId) {
     const table = document.getElementById(tableId);
     if (!table) {
@@ -250,13 +250,13 @@ function createPointsTable(roundHistory, tableId) {
         return;
     }
     
-    if (!roundHistory || roundHistory.length === 0) {
-        console.warn('No round history data provided');
-        table.innerHTML = '<div class="no-data">No game data available</div>';
+    console.log('Creating points table for:', tableId, 'with data:', roundHistory);
+    
+    if (!roundHistory || !Array.isArray(roundHistory) || roundHistory.length === 0) {
+        console.warn('No round history data provided for table:', tableId);
+        table.innerHTML = '<div class="no-data">No game data available yet</div>';
         return;
     }
-    
-    console.log('Creating points table with data:', roundHistory);
     
     let tableHtml = '<div class="points-table">';
     
@@ -271,12 +271,14 @@ function createPointsTable(roundHistory, tableId) {
     
     // Player rows
     roundHistory.forEach(playerHistory => {
+        if (!playerHistory.playerName) return; // Skip invalid entries
+        
         tableHtml += '<div class="points-table-row">';
         tableHtml += `<div class="player-name-cell">${playerHistory.playerName}</div>`;
         
         // Round results
         for (let i = 0; i < 5; i++) {
-            const result = playerHistory.rounds && playerHistory.rounds[i] ? playerHistory.rounds[i] : '-';
+            const result = (playerHistory.rounds && playerHistory.rounds[i]) ? playerHistory.rounds[i] : '-';
             const resultClass = result === 'W' ? 'win' : result === 'L' ? 'loss' : '';
             tableHtml += `<div class="round-result ${resultClass}">${result}</div>`;
         }
@@ -290,7 +292,7 @@ function createPointsTable(roundHistory, tableId) {
     tableHtml += '</div>';
     table.innerHTML = tableHtml;
     
-    console.log('Points table created successfully');
+    console.log('Points table created successfully for:', tableId);
 }
 
 // Enhanced timer with better color progression
@@ -323,7 +325,7 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// UPDATED: Enhanced challenge timer function for medium difficulty
+// UPDATED: Enhanced challenge timer function for 40 seconds
 function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     let timeLeft = seconds;
@@ -331,11 +333,11 @@ function startChallengeTimer(elementId, seconds) {
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
-        // Color coding for better UX - adjusted for 60 seconds
-        if (timeLeft <= 15) {
+        // Color coding for better UX - adjusted for 40 seconds
+        if (timeLeft <= 10) {
             element.classList.add('urgent');
             element.classList.remove('danger');
-        } else if (timeLeft <= 30) {
+        } else if (timeLeft <= 20) {
             element.classList.add('danger');
             element.classList.remove('urgent');
         } else {
@@ -386,7 +388,7 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
-// UPDATED: Better individual result overlay for complex challenges
+// Better individual result overlay for complex challenges
 function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
@@ -503,7 +505,7 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-// UPDATED: Handle text challenges with better timing for medium difficulty
+// UPDATED: Handle text challenges with 40 second timing
 socket.on('text-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -520,15 +522,15 @@ socket.on('text-challenge-start', (data) => {
         
         showPage('textChallenge');
         
-        // Use enhanced challenge timer for 60 seconds
-        startChallengeTimer('text-challenge-timer', data.timeLimit || 60);
+        // Use enhanced challenge timer for 40 seconds
+        startChallengeTimer('text-challenge-timer', data.timeLimit || 40);
         
         // Auto-focus on textarea after a brief delay
         setTimeout(() => {
             const textarea = document.getElementById('challenge-response');
             textarea.focus();
             // Add placeholder hint for complex challenges
-            textarea.placeholder = 'Think carefully and provide a detailed response...';
+            textarea.placeholder = 'Think carefully and provide a detailed response... (40 seconds)';
         }, 500);
         
     } else {
@@ -589,20 +591,20 @@ socket.on('tap-result-submitted', (data) => {
     console.log(`${data.player} tapped ${data.taps} times`);
 });
 
-// Enhanced round summary handler
+// FIXED: Enhanced round summary handler - always shows leaderboard
 socket.on('round-summary', (data) => {
     console.log('Received round-summary:', data);
     
     document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
     
-    // Create points table with proper error handling
-    if (data.roundHistory && data.roundHistory.length > 0) {
+    // FIXED: Always create points table, even with minimal data
+    if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
         createPointsTable(data.roundHistory, 'points-table');
     } else {
-        console.warn('No round history data received');
+        console.warn('No round history data received in round-summary');
         const pointsTable = document.getElementById('points-table');
         if (pointsTable) {
-            pointsTable.innerHTML = '<div class="no-data">Round data loading...</div>';
+            pointsTable.innerHTML = '<div class="no-data">Leaderboard data processing...</div>';
         }
     }
     
@@ -618,7 +620,7 @@ socket.on('round-summary', (data) => {
     showPage('roundSummary');
 });
 
-// Enhanced game-over handler
+// FIXED: Enhanced game-over handler - always shows final leaderboard
 socket.on('game-over', (data) => {
     console.log('🏆 Game over received:', data);
     
@@ -652,14 +654,14 @@ socket.on('game-over', (data) => {
         finalScoresEl.innerHTML = scoresHtml;
     }
     
-    // Create final points table
-    if (data.roundHistory && data.roundHistory.length > 0) {
+    // FIXED: Always create final points table
+    if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
         createPointsTable(data.roundHistory, 'final-points-table');
     } else {
-        console.warn('No final round history data received');
+        console.warn('No final round history data received in game-over');
         const finalPointsTable = document.getElementById('final-points-table');
         if (finalPointsTable) {
-            finalPointsTable.innerHTML = '<div class="no-data">Final data not available</div>';
+            finalPointsTable.innerHTML = '<div class="no-data">Final leaderboard data not available</div>';
         }
     }
     
@@ -675,4 +677,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v4.3 (Medium Complexity Edition)');
+console.log('Frontend loaded - Threatened by AI v4.4 (Fixed Leaderboard + 50 Riddles + 40s Challenges)');
