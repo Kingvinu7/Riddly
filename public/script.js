@@ -123,7 +123,11 @@ function submitRiddleAnswer() {
 function submitChallengeResponse() {
     const response = document.getElementById('challenge-response').value.trim();
     if (!response) {
-        alert('Please enter your response');
+        alert('Please enter your response - this is a complex challenge that requires thought!');
+        return;
+    }
+    if (response.length < 5) {
+        alert('Please provide a more detailed response for this complex scenario.');
         return;
     }
     if (!currentRoom) return;
@@ -134,7 +138,7 @@ function submitChallengeResponse() {
     document.getElementById('submit-challenge-response').textContent = 'Submitted!';
 }
 
-// UPDATED: Fast tapper functionality
+// Fast tapper functionality
 function onTap() {
     if (!tapperActive) return;
     tapCount++;
@@ -153,7 +157,7 @@ function onTap() {
     }, 50);
 }
 
-// UPDATED: Enhanced fast tapper timer
+// Enhanced fast tapper timer
 function startFastTapperTimer(duration) {
     tapperActive = true;
     let timeLeft = duration;
@@ -238,40 +242,58 @@ function updatePlayers(players) {
     }).join('');
 }
 
+// Enhanced points table creation with better error handling
 function createPointsTable(roundHistory, tableId) {
     const table = document.getElementById(tableId);
-    if (!table || !roundHistory || roundHistory.length === 0) return;
+    if (!table) {
+        console.error(`Table element with id '${tableId}' not found`);
+        return;
+    }
+    
+    if (!roundHistory || roundHistory.length === 0) {
+        console.warn('No round history data provided');
+        table.innerHTML = '<div class="no-data">No game data available</div>';
+        return;
+    }
+    
+    console.log('Creating points table with data:', roundHistory);
     
     let tableHtml = '<div class="points-table">';
     
+    // Header
     tableHtml += '<div class="points-table-header">';
-    tableHtml += '<div>Player</div>';
+    tableHtml += '<div class="player-name-header">Player</div>';
     for (let i = 1; i <= 5; i++) {
-        tableHtml += `<div>R${i}</div>`;
+        tableHtml += `<div class="round-header">R${i}</div>`;
     }
-    tableHtml += '<div>Total</div>';
+    tableHtml += '<div class="total-header">Total</div>';
     tableHtml += '</div>';
     
+    // Player rows
     roundHistory.forEach(playerHistory => {
         tableHtml += '<div class="points-table-row">';
         tableHtml += `<div class="player-name-cell">${playerHistory.playerName}</div>`;
         
+        // Round results
         for (let i = 0; i < 5; i++) {
-            const result = playerHistory.rounds[i] || '-';
+            const result = playerHistory.rounds && playerHistory.rounds[i] ? playerHistory.rounds[i] : '-';
             const resultClass = result === 'W' ? 'win' : result === 'L' ? 'loss' : '';
             tableHtml += `<div class="round-result ${resultClass}">${result}</div>`;
         }
         
-        const totalWins = playerHistory.rounds.filter(r => r === 'W').length;
+        // Total wins
+        const totalWins = playerHistory.rounds ? playerHistory.rounds.filter(r => r === 'W').length : 0;
         tableHtml += `<div class="total-score">${totalWins}</div>`;
         tableHtml += '</div>';
     });
     
     tableHtml += '</div>';
     table.innerHTML = tableHtml;
+    
+    console.log('Points table created successfully');
 }
 
-// UPDATED: Enhanced timer with better color progression
+// Enhanced timer with better color progression
 function startTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     let timeLeft = seconds;
@@ -279,7 +301,7 @@ function startTimer(elementId, seconds) {
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
-        // UPDATED: Better color progression
+        // Better color progression
         if (timeLeft <= 10) {
             element.classList.add('urgent');
             element.classList.remove('danger');
@@ -301,7 +323,7 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// UPDATED: Enhanced challenge timer function
+// UPDATED: Enhanced challenge timer function for medium difficulty
 function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     let timeLeft = seconds;
@@ -309,11 +331,11 @@ function startChallengeTimer(elementId, seconds) {
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
-        // Color coding for better UX
-        if (timeLeft <= 10) {
+        // Color coding for better UX - adjusted for 60 seconds
+        if (timeLeft <= 15) {
             element.classList.add('urgent');
             element.classList.remove('danger');
-        } else if (timeLeft <= 20) {
+        } else if (timeLeft <= 30) {
             element.classList.add('danger');
             element.classList.remove('urgent');
         } else {
@@ -364,14 +386,14 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
-// UPDATED: Better individual result overlay
+// UPDATED: Better individual result overlay for complex challenges
 function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
     
     const resultHtml = `
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
-            <h3>${data.passed ? '✅ SUCCESS!' : '❌ FAILED!'}</h3>
+            <h3>${data.passed ? '✅ WELL REASONED!' : '❌ INSUFFICIENT!'}</h3>
             <div class="result-response">"${data.response}"</div>
             <div class="result-feedback">${data.feedback}</div>
             <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
@@ -381,14 +403,17 @@ function showIndividualResult(data) {
     content.innerHTML = resultHtml;
     overlay.style.display = 'flex';
     
-    // Auto-hide after 8 seconds (more time to read feedback)
+    // Auto-hide after 10 seconds for complex feedback
     setTimeout(() => {
         hideIndividualResult();
-    }, 8000);
+    }, 10000);
 }
 
 function hideIndividualResult() {
-    document.getElementById('result-overlay').style.display = 'none';
+    const overlay = document.getElementById('result-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
 }
 
 // Socket event listeners
@@ -478,7 +503,7 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-// UPDATED: Handle text challenges with better timing
+// UPDATED: Handle text challenges with better timing for medium difficulty
 socket.on('text-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -495,18 +520,21 @@ socket.on('text-challenge-start', (data) => {
         
         showPage('textChallenge');
         
-        // UPDATED: Use enhanced challenge timer
-        startChallengeTimer('text-challenge-timer', data.timeLimit || 45);
+        // Use enhanced challenge timer for 60 seconds
+        startChallengeTimer('text-challenge-timer', data.timeLimit || 60);
         
         // Auto-focus on textarea after a brief delay
         setTimeout(() => {
-            document.getElementById('challenge-response').focus();
+            const textarea = document.getElementById('challenge-response');
+            textarea.focus();
+            // Add placeholder hint for complex challenges
+            textarea.placeholder = 'Think carefully and provide a detailed response...';
         }, 500);
         
     } else {
-        document.getElementById('waiting-title').textContent = 'Others are facing a challenge...';
+        document.getElementById('waiting-title').textContent = 'Others are facing a complex challenge...';
         document.getElementById('waiting-message').textContent = 
-            `Non-winners are solving a ${data.challengeType} challenge!`;
+            `Non-winners are solving a challenging ${data.challengeType} scenario!`;
         showPage('waiting');
     }
 });
@@ -561,23 +589,38 @@ socket.on('tap-result-submitted', (data) => {
     console.log(`${data.player} tapped ${data.taps} times`);
 });
 
+// Enhanced round summary handler
 socket.on('round-summary', (data) => {
+    console.log('Received round-summary:', data);
+    
     document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
     
-    createPointsTable(data.roundHistory, 'points-table');
+    // Create points table with proper error handling
+    if (data.roundHistory && data.roundHistory.length > 0) {
+        createPointsTable(data.roundHistory, 'points-table');
+    } else {
+        console.warn('No round history data received');
+        const pointsTable = document.getElementById('points-table');
+        if (pointsTable) {
+            pointsTable.innerHTML = '<div class="no-data">Round data loading...</div>';
+        }
+    }
     
     const nextRoundText = document.getElementById('next-round-text');
-    if (data.round >= data.maxRounds) {
-        nextRoundText.textContent = 'Final results coming up...';
-    } else {
-        nextRoundText.textContent = `Round ${data.round + 1} starting soon...`;
+    if (nextRoundText) {
+        if (data.round >= data.maxRounds) {
+            nextRoundText.textContent = 'Final results coming up...';
+        } else {
+            nextRoundText.textContent = `Round ${data.round + 1} starting soon...`;
+        }
     }
     
     showPage('roundSummary');
 });
 
+// Enhanced game-over handler
 socket.on('game-over', (data) => {
-    console.log('🏆 Game over received, winner:', data.winner.name, 'with', data.winner.score, 'points');
+    console.log('🏆 Game over received:', data);
     
     const scoresHtml = data.finalScores.map((player, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
@@ -590,13 +633,36 @@ socket.on('game-over', (data) => {
     }).join('');
     
     const bigWinnerEl = document.getElementById('big-winner-announcement');
-    bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>`;
+    if (bigWinnerEl) {
+        bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>`;
+    }
     
-    document.getElementById('final-oracle').textContent = data.winner.score > 0 ? '💥' : '🤖';
-    document.getElementById('final-oracle-message').textContent = `"${data.message}"`;
-    document.getElementById('final-scores').innerHTML = scoresHtml;
+    const finalOracleEl = document.getElementById('final-oracle');
+    if (finalOracleEl) {
+        finalOracleEl.textContent = data.winner.score > 0 ? '💥' : '🤖';
+    }
     
-    createPointsTable(data.roundHistory, 'final-points-table');
+    const finalOracleMessageEl = document.getElementById('final-oracle-message');
+    if (finalOracleMessageEl) {
+        finalOracleMessageEl.textContent = `"${data.message}"`;
+    }
+    
+    const finalScoresEl = document.getElementById('final-scores');
+    if (finalScoresEl) {
+        finalScoresEl.innerHTML = scoresHtml;
+    }
+    
+    // Create final points table
+    if (data.roundHistory && data.roundHistory.length > 0) {
+        createPointsTable(data.roundHistory, 'final-points-table');
+    } else {
+        console.warn('No final round history data received');
+        const finalPointsTable = document.getElementById('final-points-table');
+        if (finalPointsTable) {
+            finalPointsTable.innerHTML = '<div class="no-data">Final data not available</div>';
+        }
+    }
+    
     showPage('gameOver');
 });
 
@@ -609,4 +675,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v4.1 (Simple Language Edition)');
+console.log('Frontend loaded - Threatened by AI v4.3 (Medium Complexity Edition)');
