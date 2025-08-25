@@ -2124,3 +2124,127 @@ input[type="text"]:focus {
     text-transform: uppercase;
     letter-spacing: 1px;
 }
+
+/* FIXED: Better text display for challenges and feedback */
+.challenge-description {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-left: 4px solid var(--accent-red);
+    border-radius: 8px;
+    padding: 25px 30px;
+    margin: 25px 0;
+    line-height: 1.8;
+    font-size: 1.15em;
+    backdrop-filter: blur(15px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 20px rgba(255, 8, 68, 0.1);
+    position: relative;
+    color: var(--text-primary);
+    font-style: normal;
+    font-weight: 400;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.3px;
+    word-break: break-word; /* FIXED: Prevent text overflow */
+    white-space: pre-wrap;  /* FIXED: Preserve line breaks */
+    overflow-wrap: break-word; /* FIXED: Break long words */
+    max-height: 300px;      /* FIXED: Limit height */
+    overflow-y: auto;       /* FIXED: Add scroll if needed */
+}
+
+/* FIXED: Better feedback display */
+.result-feedback {
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    word-break: break-word;   /* FIXED: Prevent text overflow */
+    white-space: pre-wrap;    /* FIXED: Preserve formatting */
+    overflow-wrap: break-word; /* FIXED: Break long words */
+    max-height: 150px;        /* FIXED: Limit height */
+    overflow-y: auto;         /* FIXED: Add scroll if needed */
+}
+
+.result-response {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 10px 0;
+    font-style: italic;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    border-left: 4px solid var(--accent-cyan);
+    word-break: break-word;   /* FIXED: Prevent text overflow */
+    white-space: pre-wrap;    /* FIXED: Preserve formatting */
+    overflow-wrap: break-word; /* FIXED: Break long words */
+    max-height: 100px;        /* FIXED: Limit height */
+    overflow-y: auto;         /* FIXED: Add scroll if needed */
+}
+
+/* FIXED: Better individual result sizing */
+.individual-result {
+    background: var(--bg-secondary);
+    border: 3px solid;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    max-width: 600px;  /* FIXED: Wider for better text display */
+    max-height: 80vh;  /* FIXED: Limit height to viewport */
+    overflow-y: auto;  /* FIXED: Add scroll if needed */
+    animation: resultPopIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-soft);
+}
+
+/* FIXED: Better challenge response textarea */
+.response-textarea {
+    width: 100%;
+    max-width: 500px;
+    height: 120px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-secondary);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1em;
+    margin: 20px 0;
+    resize: vertical;
+    min-height: 80px;
+    max-height: 200px;
+    backdrop-filter: blur(15px);
+    transition: all 0.3s ease;
+    word-break: break-word;   /* FIXED: Handle long words */
+    overflow-wrap: break-word;
+    white-space: pre-wrap;    /* FIXED: Preserve line breaks */
+}
+
+/* FIXED: Mobile responsive improvements */
+@media (max-width: 768px) {
+    .challenge-description {
+        font-size: 1.05em;
+        padding: 20px 25px;
+        line-height: 1.7;
+        max-height: 250px;
+    }
+    
+    .individual-result {
+        max-width: 90%;
+        padding: 20px;
+        max-height: 70vh;
+    }
+    
+    .result-feedback {
+        max-height: 120px;
+        font-size: 0.95em;
+    }
+    
+    .result-response {
+        max-height: 80px;
+        font-size: 0.95em;
+    }
+}
