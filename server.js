@@ -20,7 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Challenge Types (rotate each round)
 const CHALLENGE_TYPES = ['negotiator', 'detective', 'trivia', 'fastTapper', 'danger'];
 
-// Game Data
+// Game Data with 50+ riddles
 const gameData = {
     riddles: [
         { question: "I speak without a mouth and hear without ears. What am I?", answer: "ECHO", difficulty: "easy" },
@@ -37,7 +37,47 @@ const gameData = {
         { question: "What breaks but never falls, and what falls but never breaks?", answer: "DAWN", difficulty: "hard" },
         { question: "I can be cracked, made, told, and played. What am I?", answer: "JOKE", difficulty: "medium" },
         { question: "What has hands but cannot clap?", answer: "CLOCK", difficulty: "easy" },
-        { question: "What runs around the whole yard without moving?", answer: "FENCE", difficulty: "medium" }
+        { question: "What runs around the whole yard without moving?", answer: "FENCE", difficulty: "medium" },
+        { question: "What has a neck but no head?", answer: "BOTTLE", difficulty: "easy" },
+        { question: "What can fill a room but takes up no space?", answer: "LIGHT", difficulty: "easy" },
+        { question: "What word is spelled incorrectly in every dictionary?", answer: "INCORRECTLY", difficulty: "easy" },
+        { question: "What goes up but never comes down?", answer: "AGE", difficulty: "easy" },
+        { question: "What has teeth but cannot bite?", answer: "ZIPPER", difficulty: "medium" },
+        { question: "What has an eye but cannot see?", answer: "NEEDLE", difficulty: "medium" },
+        { question: "What gets sharper the more you use it?", answer: "BRAIN", difficulty: "medium" },
+        { question: "What is always in front of you but can't be seen?", answer: "FUTURE", difficulty: "medium" },
+        { question: "What is so fragile that saying its name breaks it?", answer: "SILENCE", difficulty: "hard" },
+        { question: "What is black when you buy it, red when you use it, and gray when you throw it away?", answer: "CHARCOAL", difficulty: "hard" },
+        { question: "What has a thumb and four fingers but is not alive?", answer: "GLOVE", difficulty: "easy" },
+        { question: "What gets bigger when more is taken away from it?", answer: "HOLE", difficulty: "medium" },
+        { question: "What is full of holes but still holds water?", answer: "SPONGE", difficulty: "easy" },
+        { question: "What disappears as soon as you say its name?", answer: "SILENCE", difficulty: "hard" },
+        { question: "What has a head and a tail but no body?", answer: "COIN", difficulty: "easy" },
+        { question: "What is always hungry and must always be fed, but if you give it water it will die?", answer: "FIRE", difficulty: "hard" },
+        { question: "What can you catch but not throw?", answer: "COLD", difficulty: "medium" },
+        { question: "What has many keys but can't open any doors?", answer: "PIANO", difficulty: "medium" },
+        { question: "What is heavier: a ton of feathers or a ton of bricks?", answer: "EQUAL", difficulty: "easy" },
+        { question: "What goes through towns and hills but never moves?", answer: "ROAD", difficulty: "medium" },
+        { question: "What has four legs but cannot walk?", answer: "TABLE", difficulty: "easy" },
+        { question: "What can you break without hitting or dropping it?", answer: "PROMISE", difficulty: "hard" },
+        { question: "What is bought by the yard and worn by the foot?", answer: "CARPET", difficulty: "hard" },
+        { question: "What starts with T, ends with T, and has T in it?", answer: "TEAPOT", difficulty: "medium" },
+        { question: "What can you hold without touching it?", answer: "BREATH", difficulty: "hard" },
+        { question: "What has a ring but no finger?", answer: "TELEPHONE", difficulty: "medium" },
+        { question: "What is taken before you can get it?", answer: "PICTURE", difficulty: "medium" },
+        { question: "What has no beginning, end, or middle?", answer: "CIRCLE", difficulty: "medium" },
+        { question: "What gets wetter the more it dries?", answer: "TOWEL", difficulty: "easy" },
+        { question: "What is cut on a table but never eaten?", answer: "CARDS", difficulty: "medium" },
+        { question: "What has cities but no people, forests but no trees, and water but no fish?", answer: "MAP", difficulty: "hard" },
+        { question: "What is so delicate that even saying its name will break it?", answer: "SILENCE", difficulty: "hard" },
+        { question: "What flies without wings?", answer: "TIME", difficulty: "hard" },
+        { question: "What has a face and two hands but no arms or legs?", answer: "CLOCK", difficulty: "easy" },
+        { question: "What is made of water but if you put it into water it will die?", answer: "ICE", difficulty: "medium" },
+        { question: "What belongs to you but others use it more than you do?", answer: "NAME", difficulty: "medium" },
+        { question: "What is always coming but never arrives?", answer: "TOMORROW", difficulty: "medium" },
+        { question: "What can be seen in the middle of March and April that cannot be seen at the beginning or end of either month?", answer: "R", difficulty: "hard" },
+        { question: "What word becomes shorter when you add two letters to it?", answer: "SHORT", difficulty: "hard" },
+        { question: "What occurs once in every minute, twice in every moment, yet never in a thousand years?", answer: "M", difficulty: "hard" }
     ],
     oraclePersonality: {
         introductions: [
@@ -72,7 +112,7 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-// Initialize and update round history properly
+// FIXED: Initialize and update round history properly
 function initializeRoundHistory(room) {
     if (!room.roundHistory) {
         room.roundHistory = room.players.map(player => ({
@@ -80,7 +120,7 @@ function initializeRoundHistory(room) {
             playerId: player.id,
             rounds: []
         }));
-        console.log('Initialized round history for room:', room.code);
+        console.log('Initialized round history for room:', room.code, 'with', room.roundHistory.length, 'players');
     }
 }
 
@@ -131,7 +171,7 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
     console.log('Updated round history:', room.roundHistory);
 }
 
-// UPDATED: Generate medium difficulty challenges with simple language
+// Generate medium difficulty challenges with simple language
 async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
         // Medium difficulty fallback content with simple words
@@ -193,7 +233,7 @@ async function generateChallengeContent(type, roundNumber) {
     }
 }
 
-// UPDATED: Enhanced evaluation for medium difficulty challenges
+// Enhanced evaluation for medium difficulty challenges
 async function evaluatePlayerResponse(challengeContent, playerResponse, challengeType) {
     if (!genAI) {
         return { pass: Math.random() > 0.4, feedback: "No AI available - random result!" };
@@ -243,7 +283,7 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
     }
 }
 
-// Assign Different Challenge to Each Non-Winner with better timing
+// Assign Different Challenge to Each Non-Winner with 40 second timing
 async function startChallengePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -261,7 +301,7 @@ async function startChallengePhase(roomCode) {
     const challengeTypeIndex = (room.currentRound - 1) % CHALLENGE_TYPES.length;
     const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
 
-    console.log(`Round ${room.currentRound}: ${challengeType} challenge (medium difficulty)`);
+    console.log(`Round ${room.currentRound}: ${challengeType} challenge (40 seconds)`);
 
     io.to(roomCode).emit('oracle-speaks', {
         message: `Round ${room.currentRound}: Face my ${challengeType.toUpperCase()} challenge!`,
@@ -282,23 +322,23 @@ async function startChallengePhase(roomCode) {
             }, 12000);
             
         } else {
-            // Text-based challenges with more time for medium difficulty
+            // Text-based challenges with 40 seconds
             const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
             
             io.to(roomCode).emit('text-challenge-start', {
                 challengeType: challengeType,
                 challengeContent: challengeContent,
                 participants: nonWinners.map(p => p.name),
-                timeLimit: 60  // UPDATED: 60 seconds for medium difficulty challenges
+                timeLimit: 40  // UPDATED: 40 seconds for challenges
             });
             
             room.currentChallengeType = challengeType;
             room.currentChallengeContent = challengeContent;
             
-            // UPDATED: 65 seconds total (60 + 5 buffer)
+            // UPDATED: 45 seconds total (40 + 5 buffer)
             room.challengeTimer = setTimeout(() => {
                 evaluateTextChallengeResults(roomCode);
-            }, 65000);
+            }, 45000);
         }
     }, 2500);
 }
@@ -489,23 +529,24 @@ function endRiddlePhase(roomCode) {
     }, 4000);
 }
 
-// Enhanced endRound function with proper round history
+// FIXED: Enhanced endRound function with guaranteed round history
 function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    // Update round history before emitting summary
+    // FIXED: Always ensure round history is updated before emitting
     updateRoundHistory(room, room.riddleWinner, challengeResults);
     
     console.log('Emitting round summary with round history:', room.roundHistory);
     
+    // FIXED: Always include roundHistory in emission
     io.to(roomCode).emit('round-summary', {
         round: room.currentRound,
         maxRounds: room.maxRounds,
         players: room.players,
         riddleWinner: room.riddleWinner,
         challengeResults: challengeResults,
-        roundHistory: room.roundHistory // Include round history
+        roundHistory: room.roundHistory || [] // FIXED: Always include, fallback to empty array
     });
     
     if (room.currentRound >= room.maxRounds) {
@@ -520,13 +561,14 @@ function endRound(roomCode, challengeResults) {
             const winner = sortedPlayers[0];
             console.log(`🎯 Winner: ${winner.name} with ${winner.score} points`);
             
+            // FIXED: Always include roundHistory in game-over
             io.to(roomCode).emit('game-over', {
                 finalScores: sortedPlayers,
                 winner: winner,
                 message: winner.score > 0
                     ? "Some of you proved worthy of my complex trials!"
                     : "VICTORY IS MINE! Your minds crumbled before my challenges!",
-                roundHistory: room.roundHistory // Include final round history
+                roundHistory: room.roundHistory || [] // FIXED: Always include, fallback to empty array
             });
         }, 4000);
     } else {
@@ -696,10 +738,11 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log('🎯 Dynamic Challenge System: Medium difficulty with simple language!');
+    console.log('🎯 Dynamic Challenge System: 40-second challenges, 50+ riddles!');
     console.log('🧠 Enhanced AI evaluation for complex scenarios!');
-    console.log('📊 Fixed leaderboard and round history tracking!');
+    console.log('📊 FIXED: Leaderboard always shows between rounds and at game end!');
     console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
+    console.log('🎲 Total Riddles Available:', gameData.riddles.length);
     if (genAI) {
         console.log('🔑 Gemini 2.5 Flash: AI-powered medium complexity challenges enabled!');
     } else {
