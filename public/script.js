@@ -242,7 +242,7 @@ function updatePlayers(players) {
     }).join('');
 }
 
-// FIXED: Enhanced points table creation with bulletproof error handling
+// Enhanced points table creation with bulletproof error handling
 function createPointsTable(roundHistory, tableId) {
     const table = document.getElementById(tableId);
     if (!table) {
@@ -325,7 +325,7 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// UPDATED: Enhanced challenge timer function for 40 seconds
+// Enhanced challenge timer function for 40 seconds
 function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     let timeLeft = seconds;
@@ -388,16 +388,28 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
-// Better individual result overlay for complex challenges
+// FIXED: Better individual result overlay with proper text handling
 function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
     
+    // FIXED: Sanitize and limit response text
+    let responseText = data.response || "";
+    if (responseText.length > 100) {
+        responseText = responseText.substring(0, 97) + "...";
+    }
+    
+    // FIXED: Ensure feedback is properly displayed
+    let feedbackText = data.feedback || "No feedback available.";
+    if (feedbackText.length > 150) {
+        feedbackText = feedbackText.substring(0, 147) + "...";
+    }
+    
     const resultHtml = `
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
             <h3>${data.passed ? '✅ WELL REASONED!' : '❌ INSUFFICIENT!'}</h3>
-            <div class="result-response">"${data.response}"</div>
-            <div class="result-feedback">${data.feedback}</div>
+            <div class="result-response" title="${data.response}">"${responseText}"</div>
+            <div class="result-feedback" title="${data.feedback}">${feedbackText}</div>
             <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
         </div>
     `;
@@ -405,10 +417,12 @@ function showIndividualResult(data) {
     content.innerHTML = resultHtml;
     overlay.style.display = 'flex';
     
-    // Auto-hide after 10 seconds for complex feedback
+    console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length });
+    
+    // Auto-hide after 12 seconds for complex feedback
     setTimeout(() => {
         hideIndividualResult();
-    }, 10000);
+    }, 12000);
 }
 
 function hideIndividualResult() {
@@ -505,14 +519,26 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-// UPDATED: Handle text challenges with 40 second timing
+// FIXED: Handle text challenges with better content validation
 socket.on('text-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
         document.getElementById('text-challenge-title').textContent = 
             `${data.challengeType.toUpperCase()} CHALLENGE`;
-        document.getElementById('text-challenge-content').textContent = data.challengeContent;
+        
+        // FIXED: Better content handling with validation
+        const challengeContent = data.challengeContent;
+        const contentElement = document.getElementById('text-challenge-content');
+        
+        if (!challengeContent || challengeContent.trim().length === 0) {
+            console.warn('Empty challenge content received, using fallback');
+            contentElement.textContent = "Challenge loading failed. Please describe your approach to the situation.";
+        } else {
+            console.log('Setting challenge content:', challengeContent.substring(0, 50) + '...');
+            contentElement.textContent = challengeContent; // Use textContent, not innerHTML
+        }
+        
         document.getElementById('challenge-response').value = '';
         document.getElementById('challenge-response').disabled = false;
         document.getElementById('submit-challenge-response').disabled = false;
@@ -529,7 +555,6 @@ socket.on('text-challenge-start', (data) => {
         setTimeout(() => {
             const textarea = document.getElementById('challenge-response');
             textarea.focus();
-            // Add placeholder hint for complex challenges
             textarea.placeholder = 'Think carefully and provide a detailed response... (40 seconds)';
         }, 500);
         
@@ -591,13 +616,13 @@ socket.on('tap-result-submitted', (data) => {
     console.log(`${data.player} tapped ${data.taps} times`);
 });
 
-// FIXED: Enhanced round summary handler - always shows leaderboard
+// Enhanced round summary handler - always shows leaderboard
 socket.on('round-summary', (data) => {
     console.log('Received round-summary:', data);
     
     document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
     
-    // FIXED: Always create points table, even with minimal data
+    // Always create points table, even with minimal data
     if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
         createPointsTable(data.roundHistory, 'points-table');
     } else {
@@ -620,7 +645,7 @@ socket.on('round-summary', (data) => {
     showPage('roundSummary');
 });
 
-// FIXED: Enhanced game-over handler - always shows final leaderboard
+// Enhanced game-over handler - always shows final leaderboard
 socket.on('game-over', (data) => {
     console.log('🏆 Game over received:', data);
     
@@ -654,7 +679,7 @@ socket.on('game-over', (data) => {
         finalScoresEl.innerHTML = scoresHtml;
     }
     
-    // FIXED: Always create final points table
+    // Always create final points table
     if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
         createPointsTable(data.roundHistory, 'final-points-table');
     } else {
@@ -677,4 +702,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v4.4 (Fixed Leaderboard + 50 Riddles + 40s Challenges)');
+console.log('Frontend loaded - Threatened by AI v4.5 (Fixed Content & Text Display)');
