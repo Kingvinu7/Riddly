@@ -112,7 +112,7 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
-// FIXED: Initialize and update round history properly
+// Initialize and update round history properly
 function initializeRoundHistory(room) {
     console.log('Initializing round history for room:', room.code, 'with players:', room.players.map(p => p.name));
     
@@ -175,7 +175,7 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
     console.log('Updated round history:', room.roundHistory);
 }
 
-// Generate medium difficulty challenges with simple language
+// FIXED: Better challenge content generation with validation
 async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
         // Medium difficulty fallback content with simple words
@@ -185,6 +185,7 @@ async function generateChallengeContent(type, roundNumber) {
             trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
             danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
         };
+        console.log(`Using fallback for ${type}:`, fallbacks[type]);
         return fallbacks[type] || "Complete this challenge to survive!";
     }
 
@@ -210,18 +211,31 @@ async function generateChallengeContent(type, roundNumber) {
         const result = await model.generateContent(prompt);
         const response = (await result.response).text();
         
-        // Clean up the response
+        // FIXED: Better text cleanup and validation
         let cleaned = response.trim()
             .replace(/^["']|["']$/g, '')
             .replace(/\n+/g, ' ')
-            .replace(/\s+/g, ' ');
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s.,!?;:()\-'"]/g, ''); // Remove special chars that might break UI
         
-        // Allow longer responses for medium difficulty
-        if (cleaned.length > 300) {
-            cleaned = cleaned.substring(0, 290) + "...";
+        // FIXED: Ensure we have content
+        if (!cleaned || cleaned.length < 10) {
+            console.log('AI generated empty or too short content, using fallback');
+            const fallbacks = {
+                negotiator: "You need rare medicine for your sick friend. The black market dealer has it but wants your family heirloom ring. You can't afford to lose the ring. Convince them to accept something else.",
+                detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
+                trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
+                danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
+            };
+            cleaned = fallbacks[type] || "Complete this challenge to survive!";
         }
         
-        console.log(`Generated medium difficulty ${type} challenge: ${cleaned}`);
+        // Allow longer responses for medium difficulty but cap at reasonable length
+        if (cleaned.length > 400) {
+            cleaned = cleaned.substring(0, 390) + "...";
+        }
+        
+        console.log(`Generated medium difficulty ${type} challenge (${cleaned.length} chars): ${cleaned}`);
         return cleaned;
         
     } catch (e) {
@@ -237,7 +251,7 @@ async function generateChallengeContent(type, roundNumber) {
     }
 }
 
-// Enhanced evaluation for medium difficulty challenges
+// FIXED: Enhanced evaluation with better feedback handling
 async function evaluatePlayerResponse(challengeContent, playerResponse, challengeType) {
     if (!genAI) {
         return { pass: Math.random() > 0.4, feedback: "No AI available - random result!" };
@@ -250,19 +264,19 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         
         switch (challengeType) {
             case 'negotiator':
-                evaluationPrompt = `Evaluate this negotiation attempt for a challenging scenario:\n\nSituation: ${challengeContent}\n\nPlayer's approach: "${playerResponse}"\n\nWas this persuasive, creative, and showed good understanding of the problem? Consider: empathy, logic, compromise, and creativity. Answer PASS or FAIL with detailed reason.`;
+                evaluationPrompt = `Evaluate this negotiation attempt for a challenging scenario:\n\nSituation: ${challengeContent}\n\nPlayer's approach: "${playerResponse}"\n\nWas this persuasive, creative, and showed good understanding of the problem? Consider: empathy, logic, compromise, and creativity. Answer PASS or FAIL with detailed reason. Keep feedback under 100 words.`;
                 break;
             case 'detective':
-                evaluationPrompt = `Evaluate this detective conclusion for a complex mystery:\n\nMystery: ${challengeContent}\n\nPlayer's conclusion: "${playerResponse}"\n\nDid they use logical reasoning, consider the clues properly, and reach a reasonable conclusion? Even if not perfect, reward good thinking. Answer PASS or FAIL with explanation.`;
+                evaluationPrompt = `Evaluate this detective conclusion for a complex mystery:\n\nMystery: ${challengeContent}\n\nPlayer's conclusion: "${playerResponse}"\n\nDid they use logical reasoning, consider the clues properly, and reach a reasonable conclusion? Even if not perfect, reward good thinking. Answer PASS or FAIL with explanation. Keep feedback under 100 words.`;
                 break;
             case 'trivia':
-                evaluationPrompt = `Evaluate this answer to a challenging trivia question:\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${playerResponse}"\n\nIs this correct or close enough? Consider partial credit for good attempts. Answer PASS or FAIL with brief explanation.`;
+                evaluationPrompt = `Evaluate this answer to a challenging trivia question:\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${playerResponse}"\n\nIs this correct or close enough? Consider partial credit for good attempts. Answer PASS or FAIL with brief explanation. Keep feedback under 80 words.`;
                 break;
             case 'danger':
-                evaluationPrompt = `Evaluate this survival plan for a complex emergency:\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${playerResponse}"\n\nWould this work? Is it creative, practical, and shows good thinking under pressure? Reward clever solutions even if unconventional. Answer PASS or FAIL with detailed reason.`;
+                evaluationPrompt = `Evaluate this survival plan for a complex emergency:\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${playerResponse}"\n\nWould this work? Is it creative, practical, and shows good thinking under pressure? Reward clever solutions even if unconventional. Answer PASS or FAIL with detailed reason. Keep feedback under 100 words.`;
                 break;
             default:
-                evaluationPrompt = `Evaluate this response to a medium difficulty challenge:\n\nChallenge: ${challengeContent}\n\nResponse: ${playerResponse}\n\nDoes this show good thinking and effort? PASS or FAIL with reason.`;
+                evaluationPrompt = `Evaluate this response to a medium difficulty challenge:\n\nChallenge: ${challengeContent}\n\nResponse: ${playerResponse}\n\nDoes this show good thinking and effort? PASS or FAIL with reason. Keep feedback under 80 words.`;
         }
 
         const result = await model.generateContent(evaluationPrompt);
@@ -271,18 +285,30 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         const pass = /PASS/i.test(response);
         let feedback = response.replace(/PASS|FAIL/gi, '').trim();
         
-        // Allow longer feedback for complex scenarios
-        if (feedback.length > 150) {
-            feedback = feedback.substring(0, 140) + "...";
+        // FIXED: Better feedback cleanup and length control
+        feedback = feedback
+            .replace(/[^\w\s.,!?;:()\-'"]/g, '') // Remove special chars
+            .replace(/\s+/g, ' ')
+            .trim();
+        
+        // FIXED: Ensure feedback fits in UI
+        if (feedback.length > 120) {
+            feedback = feedback.substring(0, 110) + "...";
         }
         
-        return { pass, feedback: feedback || "The Oracle weighs your response..." };
+        // FIXED: Ensure we have some feedback
+        if (!feedback || feedback.length < 5) {
+            feedback = pass ? "Good reasoning shown." : "Needs better approach.";
+        }
+        
+        console.log(`AI Evaluation: ${pass ? 'PASS' : 'FAIL'} - "${feedback}" (${feedback.length} chars)`);
+        return { pass, feedback };
         
     } catch (e) {
         console.error('AI evaluation error:', e.message);
         return { 
             pass: Math.random() > 0.45, 
-            feedback: "The Oracle's judgment considers many factors..." 
+            feedback: "The Oracle's judgment is unclear at this time." 
         };
     }
 }
@@ -328,6 +354,14 @@ async function startChallengePhase(roomCode) {
         } else {
             // Text-based challenges with 40 seconds
             const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
+            
+            // FIXED: Validate challenge content before sending
+            if (!challengeContent || challengeContent.trim().length === 0) {
+                console.error('Empty challenge content generated, using emergency fallback');
+                challengeContent = "Describe your strategy for handling a difficult situation that requires creative thinking.";
+            }
+            
+            console.log(`Sending challenge content (${challengeContent.length} chars): ${challengeContent.substring(0, 50)}...`);
             
             io.to(roomCode).emit('text-challenge-start', {
                 challengeType: challengeType,
@@ -449,7 +483,7 @@ async function evaluateTextChallengeResults(roomCode) {
     }, 2000);
 }
 
-// FIXED: Enhanced startNewRound function
+// Enhanced startNewRound function
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -466,7 +500,7 @@ function startNewRound(roomCode) {
     room.challengeResponses = {};
     room.tapResults = {};
     
-    // FIXED: Initialize round history on first round OR if it's missing
+    // Initialize round history on first round OR if it's missing
     if (room.currentRound === 1 || !room.roundHistory || room.roundHistory.length === 0) {
         console.log('First round or missing round history, initializing...');
         initializeRoundHistory(room);
@@ -535,7 +569,7 @@ function endRiddlePhase(roomCode) {
     }, 4000);
 }
 
-// FIXED: Enhanced endRound function with guaranteed round history
+// Enhanced endRound function with guaranteed round history
 function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -544,18 +578,18 @@ function endRound(roomCode, challengeResults) {
     console.log('Room players:', room.players.map(p => p.name));
     console.log('Round history before update:', room.roundHistory);
     
-    // FIXED: Ensure round history exists before updating
+    // Ensure round history exists before updating
     if (!room.roundHistory || room.roundHistory.length === 0) {
         console.log('Round history missing in endRound, reinitializing...');
         initializeRoundHistory(room);
     }
     
-    // FIXED: Always ensure round history is updated before emitting
+    // Always ensure round history is updated before emitting
     updateRoundHistory(room, room.riddleWinner, challengeResults);
     
     console.log('Emitting round summary with round history:', room.roundHistory);
     
-    // FIXED: Always include roundHistory in emission
+    // Always include roundHistory in emission
     const roundHistoryToSend = room.roundHistory && room.roundHistory.length > 0 ? room.roundHistory : [];
     
     io.to(roomCode).emit('round-summary', {
@@ -564,7 +598,7 @@ function endRound(roomCode, challengeResults) {
         players: room.players,
         riddleWinner: room.riddleWinner,
         challengeResults: challengeResults,
-        roundHistory: roundHistoryToSend // FIXED: Send actual data
+        roundHistory: roundHistoryToSend
     });
     
     if (room.currentRound >= room.maxRounds) {
@@ -579,14 +613,14 @@ function endRound(roomCode, challengeResults) {
             const winner = sortedPlayers[0];
             console.log(`🎯 Winner: ${winner.name} with ${winner.score} points`);
             
-            // FIXED: Always include roundHistory in game-over
+            // Always include roundHistory in game-over
             io.to(roomCode).emit('game-over', {
                 finalScores: sortedPlayers,
                 winner: winner,
                 message: winner.score > 0
                     ? "Some of you proved worthy of my complex trials!"
                     : "VICTORY IS MINE! Your minds crumbled before my challenges!",
-                roundHistory: room.roundHistory || [] // FIXED: Send actual data
+                roundHistory: room.roundHistory || []
             });
         }, 4000);
     } else {
@@ -598,7 +632,6 @@ function endRound(roomCode, challengeResults) {
 
 // Socket Events
 io.on('connection', (socket) => {
-    // FIXED: Enhanced room creation with proper initialization
     socket.on('create-room', (data) => {
         const roomCode = generateRoomCode();
         const newRoom = {
@@ -618,7 +651,7 @@ io.on('connection', (socket) => {
             timeRemaining: 0,
             riddleTimer: null,
             challengeTimer: null,
-            roundHistory: [], // Initialize as empty array
+            roundHistory: [],
             ownerId: socket.id
         };
         
@@ -634,7 +667,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    // FIXED: Enhanced join room with round history consideration
     socket.on('join-room', (data) => {
         const room = rooms[data.roomCode];
         if (!room) {
@@ -656,8 +688,6 @@ io.on('connection', (socket) => {
         }
         
         room.players.push({ id: socket.id, name: data.playerName, score: 0 });
-        
-        // FIXED: Reset round history when new players join (since player list changed)
         room.roundHistory = [];
         
         socket.join(data.roomCode);
@@ -770,13 +800,13 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log('🎯 FIXED: Round history leaderboard tracking!');
+    console.log('🎯 FIXED: Challenge content validation & text truncation!');
     console.log('⏱️ Challenge Timer: 40 seconds');
     console.log('🎲 Total Riddles Available:', gameData.riddles.length);
     console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
     if (genAI) {
-        console.log('🔑 Gemini 2.5 Flash: AI-powered medium complexity challenges enabled!');
+        console.log('🔑 Gemini 2.5 Flash: AI-powered challenges with better content validation!');
     } else {
-        console.log('⚠️ No Gemini API key: Using medium difficulty fallback challenges.');
+        console.log('⚠️ No Gemini API key: Using validated fallback challenges.');
     }
 });
