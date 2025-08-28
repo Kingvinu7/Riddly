@@ -435,7 +435,7 @@ async function showIndividualResult(data) {
             ${autoSubmitIndicator}
             <div class="result-response"></div>
             <div class="result-feedback"></div>
-            <button onclick="hideIndividualResult()" class="btn secondary hidden">Continue</button>
+            <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
         </div>
     `;
     
