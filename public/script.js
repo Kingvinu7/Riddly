@@ -19,7 +19,6 @@ const pages = {
     roundSummary: document.getElementById('round-summary-screen'),
     gameOver: document.getElementById('game-over-screen')
 };
-
 const playerNameInput = document.getElementById('player-name');
 const roomCodeInput = document.getElementById('room-code');
 const riddleAnswer = document.getElementById('riddle-answer');
@@ -39,15 +38,12 @@ createRoomBtn.addEventListener('click', createRoom);
 joinRoomBtn.addEventListener('click', joinRoom);
 startGameBtn.addEventListener('click', startGame);
 submitRiddleBtn.addEventListener('click', submitRiddleAnswer);
-
 playerNameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createRoom();
 });
-
 roomCodeInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') joinRoom();
 });
-
 riddleAnswer.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') submitRiddleAnswer();
 });
@@ -60,7 +56,6 @@ document.getElementById('challenge-response').addEventListener('keypress', (e) =
 
 // Fast tapper event listener
 document.getElementById('tap-button').addEventListener('click', onTap);
-
 // Utility functions
 function showPage(pageName) {
     Object.values(pages).forEach(page => page.classList.remove('active'));
@@ -86,7 +81,6 @@ function createRoom() {
 function joinRoom() {
     const name = playerNameInput.value.trim();
     const roomCode = roomCodeInput.value.trim().toUpperCase();
-    
     if (!name || !roomCode) {
         alert('Please enter your name and room code');
         return;
@@ -112,7 +106,6 @@ function startGame() {
 function submitRiddleAnswer() {
     const answer = riddleAnswer.value.trim();
     if (!answer || !currentRoom) return;
-    
     socket.emit('submit-riddle-answer', { roomCode: currentRoom, answer: answer });
     riddleAnswer.disabled = true;
     submitRiddleBtn.disabled = true;
@@ -137,15 +130,12 @@ function submitChallengeResponse(isAutoSubmit = false) {
     }
     
     if (!currentRoom) return;
-    
     // Add indicator for auto-submitted responses
     const finalResponse = isAutoSubmit ? `[Auto-submitted] ${response}` : response;
-    
     socket.emit('submit-challenge-response', { roomCode: currentRoom, response: finalResponse });
     document.getElementById('challenge-response').disabled = true;
     submitBtn.disabled = true;
     submitBtn.textContent = isAutoSubmit ? 'Auto-Submitted!' : 'Submitted!';
-    
     if (isAutoSubmit) {
         // Show user their response was auto-submitted
         setTimeout(() => {
@@ -160,7 +150,6 @@ function onTap() {
     if (!tapperActive) return;
     tapCount++;
     document.getElementById('tap-count').textContent = tapCount.toString();
-    
     // Enhanced visual feedback
     const button = document.getElementById('tap-button');
     const countDisplay = document.getElementById('tap-count');
@@ -178,7 +167,6 @@ function onTap() {
 function startFastTapperTimer(duration) {
     tapperActive = true;
     let timeLeft = duration;
-    
     const timer = setInterval(() => {
         document.getElementById('fast-tapper-timer').textContent = timeLeft;
         
@@ -188,7 +176,8 @@ function startFastTapperTimer(duration) {
         } else if (timeLeft <= 5) {
             document.getElementById('fast-tapper-timer').classList.add('danger');
             document.getElementById('fast-tapper-timer').classList.remove('urgent');
-        }
+   
+         }
         
         timeLeft--;
         
@@ -197,7 +186,7 @@ function startFastTapperTimer(duration) {
             tapperActive = false;
             document.getElementById('tap-button').disabled = true;
             document.getElementById('fast-tapper-timer').classList.remove('urgent', 'danger');
-            
+      
             // Submit result
             socket.emit('submit-tap-result', { roomCode: currentRoom, taps: tapCount });
             
@@ -213,7 +202,6 @@ function startFastTapperTimer(duration) {
 function updateLobbyOwnerDisplay() {
     const lobbyHeader = document.querySelector('.lobby-header');
     const existingOwnerBadge = document.querySelector('.owner-badge');
-    
     if (existingOwnerBadge) {
         existingOwnerBadge.remove();
     }
@@ -229,7 +217,6 @@ function updateLobbyOwnerDisplay() {
 function updateStartButton() {
     const playerCount = document.querySelectorAll('.player').length;
     const waitingText = document.querySelector('.waiting-text');
-    
     if (isRoomOwner && playerCount >= 2) {
         startGameBtn.classList.remove('hidden');
         startGameBtn.disabled = false;
@@ -268,7 +255,6 @@ function createPointsTable(roundHistory, tableId) {
     }
     
     console.log('Creating points table for:', tableId, 'with data:', roundHistory);
-    
     if (!roundHistory || !Array.isArray(roundHistory) || roundHistory.length === 0) {
         console.warn('No round history data provided for table:', tableId);
         table.innerHTML = '<div class="no-data">No game data available yet</div>';
@@ -276,7 +262,6 @@ function createPointsTable(roundHistory, tableId) {
     }
     
     let tableHtml = '<div class="points-table">';
-    
     // Header
     tableHtml += '<div class="points-table-header">';
     tableHtml += '<div class="player-name-header">Player</div>';
@@ -285,7 +270,6 @@ function createPointsTable(roundHistory, tableId) {
     }
     tableHtml += '<div class="total-header">Total</div>';
     tableHtml += '</div>';
-    
     // Player rows
     roundHistory.forEach(playerHistory => {
         if (!playerHistory.playerName) return; // Skip invalid entries
@@ -302,10 +286,10 @@ function createPointsTable(roundHistory, tableId) {
         
         // Total wins
         const totalWins = playerHistory.rounds ? playerHistory.rounds.filter(r => r === 'W').length : 0;
+    
         tableHtml += `<div class="total-score">${totalWins}</div>`;
         tableHtml += '</div>';
     });
-    
     tableHtml += '</div>';
     table.innerHTML = tableHtml;
     
@@ -348,7 +332,6 @@ function startChallengeTimer(elementId, seconds) {
     const textarea = document.getElementById('challenge-response');
     const submitBtn = document.getElementById('submit-challenge-response');
     let timeLeft = seconds;
-    
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
@@ -390,7 +373,6 @@ function startChallengeTimer(elementId, seconds) {
             }
         }
     }, 1000);
-    
     return timer;
 }
 
@@ -409,6 +391,7 @@ function typeWriter(element, text, speed = 30) {
                 
                 const char = text.charAt(i - 1);
                 let delay = speed;
+        
                 if (char === '.' || char === '!' || char === '?') {
                     delay = speed * 3;
                 } else if (char === ',' || char === ';') {
@@ -440,17 +423,10 @@ function showIndividualResult(data) {
         responseText = responseText.replace('[Auto-submitted] ', '');
     }
     
-    if (responseText.length > 80) {
-        responseText = responseText.substring(0, 77) + "...";
-    }
-    
-    // FIXED: Ensure feedback is properly displayed with better length handling
     let feedbackText = data.feedback || "No feedback available.";
-    if (feedbackText.length > 120) {
-        feedbackText = feedbackText.substring(0, 117) + "...";
-    }
     
-    const autoSubmitIndicator = isAutoSubmitted ? '<div class="auto-submit-indicator">⏰ Auto-submitted when time expired</div>' : '';
+    const autoSubmitIndicator = isAutoSubmitted ?
+        '<div class="auto-submit-indicator">⏰ Auto-submitted when time expired</div>' : '';
     
     const resultHtml = `
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
@@ -461,12 +437,10 @@ function showIndividualResult(data) {
             <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
         </div>
     `;
-    
     content.innerHTML = resultHtml;
     overlay.style.display = 'flex';
     
     console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length, isAutoSubmitted });
-    
     // Auto-hide after 15 seconds for better readability
     setTimeout(() => {
         hideIndividualResult();
@@ -490,7 +464,6 @@ socket.on('room-created', (data) => {
     updateStartButton();
     showPage('lobby');
 });
-
 socket.on('join-success', (data) => {
     currentRoom = data.roomCode;
     isRoomOwner = data.isOwner;
@@ -500,22 +473,18 @@ socket.on('join-success', (data) => {
     updateStartButton();
     showPage('lobby');
 });
-
 socket.on('player-joined', (data) => {
     updatePlayers(data.players);
     updateStartButton();
 });
-
 socket.on('player-left', (data) => {
     updatePlayers(data.players);
     updateStartButton();
 });
-
 socket.on('oracle-speaks', (data) => {
     oracleIntroMessage.textContent = data.message;
     showPage('oracleIntro');
 });
-
 socket.on('riddle-presented', (data) => {
     document.getElementById('round-display').textContent = `Round ${data.round}/${data.maxRounds}`;
     riddleText.textContent = data.riddle.question;
@@ -531,12 +500,10 @@ socket.on('riddle-presented', (data) => {
     showPage('riddle');
     startTimer('riddle-timer', 45);
 });
-
 socket.on('answer-submitted', (data) => {
     document.getElementById('submission-count').textContent = 
         `${data.totalSubmissions}/${data.totalPlayers} players answered`;
 });
-
 socket.on('riddle-results-reveal', (data) => {
     document.getElementById('riddle-results-message').textContent = data.message;
     
@@ -595,17 +562,14 @@ socket.on('text-challenge-start', (data) => {
             `0/${data.participants.length} players responded`;
         
         showPage('textChallenge');
-        
         // FIXED: Use enhanced timer with auto-submit
         startChallengeTimer('text-challenge-timer', data.timeLimit || 40);
-        
         // Auto-focus on textarea after a brief delay
         setTimeout(() => {
             const textarea = document.getElementById('challenge-response');
             textarea.focus();
             textarea.placeholder = 'Think carefully and provide a detailed response... (auto-submits at 0)';
         }, 500);
-        
     } else {
         document.getElementById('waiting-title').textContent = 'Others are facing a complex challenge...';
         document.getElementById('waiting-message').textContent = 
@@ -631,12 +595,10 @@ socket.on('fast-tapper-start', (data) => {
         showPage('waiting');
     }
 });
-
 // Handle individual challenge results
 socket.on('challenge-individual-result', (data) => {
     showIndividualResult(data);
 });
-
 // Handle challenge results screens
 socket.on('fast-tapper-results', (data) => {
     document.getElementById('challenge-results-title').textContent = '⚡ FAST TAPPER RESULTS';
@@ -653,17 +615,14 @@ socket.on('fast-tapper-results', (data) => {
     document.getElementById('challenge-results-content').innerHTML = resultsHtml;
     showPage('challengeResults');
 });
-
 // Handle submission status updates
 socket.on('challenge-response-submitted', (data) => {
     document.getElementById('text-challenge-submission-count').textContent = 
         `${data.totalSubmissions}/${data.expectedSubmissions} players responded`;
 });
-
 socket.on('tap-result-submitted', (data) => {
     console.log(`${data.player} tapped ${data.taps} times`);
 });
-
 // Enhanced round summary handler - always shows leaderboard
 socket.on('round-summary', (data) => {
     console.log('Received round-summary:', data);
@@ -692,12 +651,12 @@ socket.on('round-summary', (data) => {
     
     showPage('roundSummary');
 });
-
 // FIXED: Enhanced game-over handler with tie-breaking display
 socket.on('game-over', (data) => {
     console.log('🏆 Game over received:', data);
     
-    const scoresHtml = data.finalScores.map((player, index) => {
+    // Use data.scores from the server, which is the sorted list of players
+    const scoresHtml = data.scores.map((player, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
         return `
             <div class="final-score ${index === 0 ? 'winner' : ''}">
@@ -709,7 +668,8 @@ socket.on('game-over', (data) => {
     
     const bigWinnerEl = document.getElementById('big-winner-announcement');
     if (bigWinnerEl) {
-        const tieText = data.isTie ? '<br><span style="font-size:0.6em;">🎯 Won by Tie-Breaker</span>' : '';
+        // Use data.tied from the server to check for a tie
+        const tieText = data.tied ? '<br><span style="font-size:0.6em;">🎯 It\'s a Tie!</span>' : '';
         bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>${tieText}`;
     }
     
@@ -741,7 +701,6 @@ socket.on('game-over', (data) => {
     
     showPage('gameOver');
 });
-
 socket.on('error', (data) => {
     console.error('Socket error:', data.message);
     alert(data.message);
@@ -750,5 +709,4 @@ socket.on('error', (data) => {
 // Initialize
 showPage('home');
 playerNameInput.focus();
-
 console.log('Frontend loaded - Threatened by AI v4.6 (Auto-Submit + Enhanced UX)');
