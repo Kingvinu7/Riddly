@@ -2314,3 +2314,33 @@ input[type="text"]:focus {
         padding: 12px;
     }
 }
+
+/* Styling for the Continue button in the judgment overlay */
+.individual-result .btn.secondary {
+    display: block;
+    width: 100%;
+    max-width: 250px;
+    margin: 20px auto 0;
+    padding: 12px 24px;
+    font-size: 1.1em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+    border: 2px solid var(--accent-red);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(255, 8, 68, 0.3);
+}
+
+.individual-result .btn.secondary:hover {
+    background-color: var(--accent-red);
+    color: var(--text-primary);
+    box-shadow: 0 0 20px var(--accent-red);
+    transform: translateY(-2px);
+}
+
+.individual-result .btn.secondary:active {
+    transform: translateY(0);
+}
