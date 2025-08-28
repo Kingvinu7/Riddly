@@ -376,6 +376,7 @@ function startChallengeTimer(elementId, seconds) {
     return timer;
 }
 
+// Typing effect function
 function typeWriter(element, text, speed = 30) {
     return new Promise((resolve) => {
         element.textContent = '';
@@ -411,7 +412,7 @@ function typeWriter(element, text, speed = 30) {
 }
 
 // FIXED: Better individual result overlay with proper text handling
-function showIndividualResult(data) {
+async function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
     
@@ -423,7 +424,7 @@ function showIndividualResult(data) {
         responseText = responseText.replace('[Auto-submitted] ', '');
     }
     
-    let feedbackText = data.feedback || "No feedback available.";
+    const feedbackText = data.feedback || "No feedback available.";
     
     const autoSubmitIndicator = isAutoSubmitted ?
         '<div class="auto-submit-indicator">⏰ Auto-submitted when time expired</div>' : '';
@@ -432,19 +433,27 @@ function showIndividualResult(data) {
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
             <h3>${data.passed ? '✅ WELL REASONED!' : '❌ INSUFFICIENT!'}</h3>
             ${autoSubmitIndicator}
-            <div class="result-response" title="${data.response}">"${responseText}"</div>
-            <div class="result-feedback" title="${data.feedback}">${feedbackText}</div>
-            <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
+            <div class="result-response"></div>
+            <div class="result-feedback"></div>
+            <button onclick="hideIndividualResult()" class="btn secondary hidden">Continue</button>
         </div>
     `;
+    
     content.innerHTML = resultHtml;
     overlay.style.display = 'flex';
     
+    const responseEl = content.querySelector('.result-response');
+    const feedbackEl = content.querySelector('.result-feedback');
+    const continueBtn = content.querySelector('.btn');
+    
+    // Animate the typing effect
+    await typeWriter(responseEl, `"${responseText}"`, 20); // Faster speed for the response
+    await new Promise(resolve => setTimeout(resolve, 500)); // Pause between the two texts
+    await typeWriter(feedbackEl, feedbackText);
+    
+    continueBtn.classList.remove('hidden'); // Show the button after typing is complete
+    
     console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length, isAutoSubmitted });
-    // Auto-hide after 15 seconds for better readability
-    setTimeout(() => {
-        hideIndividualResult();
-    }, 15000);
 }
 
 function hideIndividualResult() {
@@ -709,4 +718,4 @@ socket.on('error', (data) => {
 // Initialize
 showPage('home');
 playerNameInput.focus();
-console.log('Frontend loaded - Threatened by AI v4.6 (Auto-Submit + Enhanced UX)');
+console.log('Frontend loaded - Threatened by AI v4.7 (Judgement Typing Effect)');
