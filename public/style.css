@@ -2293,3 +2293,24 @@ input[type="text"]:focus {
     border-left: 4px solid #ff9800;
     background: rgba(255, 152, 0, 0.1);
 }
+
+/* Add to your CSS file */
+.result-feedback, .result-response {
+    max-height: 180px;           /* Increase height */
+    overflow-y: auto;            /* Add scroll */
+    white-space: pre-wrap;       /* Preserve line breaks */
+    word-break: break-word;      /* Break long words */
+    line-height: 1.5;           /* Better readability */
+    padding: 15px;              /* More padding */
+    font-size: 0.9em;           /* Slightly smaller font */
+    scrollbar-width: thin;       /* Thin scrollbar */
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .result-feedback, .result-response {
+        max-height: 150px;
+        font-size: 0.85em;
+        padding: 12px;
+    }
+}
