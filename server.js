@@ -115,13 +115,11 @@ function getRandomOracleMessage(type) {
 // Initialize and update round history properly
 function initializeRoundHistory(room) {
     console.log('Initializing round history for room:', room.code, 'with players:', room.players.map(p => p.name));
-    
     room.roundHistory = room.players.map(player => ({
         playerName: player.name,
         playerId: player.id,
         rounds: []
     }));
-    
     console.log('Round history initialized:', room.roundHistory);
 }
 
@@ -216,7 +214,8 @@ async function generateChallengeContent(type, roundNumber) {
             .replace(/^["']|["']$/g, '')
             .replace(/\n+/g, ' ')
             .replace(/\s+/g, ' ')
-            .replace(/[^\w\s.,!?;:()\-'"]/g, ''); // Remove special chars that might break UI
+            .replace(/[^\w\s.,!?;:()\-'"]/g, '');
+        // Remove special chars that might break UI
         
         // Ensure we have content
         if (!cleaned || cleaned.length < 10) {
@@ -235,7 +234,7 @@ async function generateChallengeContent(type, roundNumber) {
             cleaned = cleaned.substring(0, 390) + "...";
         }
         
-        console.log(`Generated medium difficulty ${type} challenge (${cleaned.length} chars): ${cleaned}`);
+        console.log(`Generated medium difficulty ${type} challenge (${cleaned.length} chars): ${cleaned.substring(0, 50)}...`);
         return cleaned;
         
     } catch (e) {
@@ -256,7 +255,6 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
     // Detect auto-submitted responses
     const isAutoSubmitted = playerResponse.startsWith('[Auto-submitted]');
     const cleanResponse = isAutoSubmitted ? playerResponse.replace('[Auto-submitted] ', '') : playerResponse;
-    
     if (!genAI) {
         return { 
             pass: Math.random() > 0.4, 
@@ -266,7 +264,6 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
 
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        
         let evaluationPrompt = '';
         
         switch (challengeType) {
@@ -288,7 +285,6 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
 
         const result = await model.generateContent(evaluationPrompt);
         const response = (await result.response).text();
-        
         const pass = /PASS/i.test(response);
         let feedback = response.replace(/PASS|FAIL/gi, '').trim();
         
@@ -338,18 +334,15 @@ async function startChallengePhase(roomCode) {
 
     room.gameState = 'challenge-phase';
     room.challengeResponses = {};
-
     // Determine challenge type for this round
     const challengeTypeIndex = (room.currentRound - 1) % CHALLENGE_TYPES.length;
     const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
 
     console.log(`Round ${room.currentRound}: ${challengeType} challenge (40 seconds)`);
-
     io.to(roomCode).emit('oracle-speaks', {
         message: `Round ${room.currentRound}: Face my ${challengeType.toUpperCase()} challenge!`,
         type: 'challenge-intro'
     });
-
     setTimeout(async () => {
         if (challengeType === 'fastTapper') {
             // Fast Tapper Challenge
@@ -374,14 +367,12 @@ async function startChallengePhase(roomCode) {
             }
             
             console.log(`Sending challenge content (${challengeContent.length} chars): ${challengeContent.substring(0, 50)}...`);
-            
             io.to(roomCode).emit('text-challenge-start', {
                 challengeType: challengeType,
                 challengeContent: challengeContent,
                 participants: nonWinners.map(p => p.name),
                 timeLimit: 40  // 40 seconds for challenges
             });
-            
             room.currentChallengeType = challengeType;
             room.currentChallengeContent = challengeContent;
             
@@ -406,7 +397,6 @@ async function evaluateFastTapperResults(roomCode) {
 
     let maxTaps = 0;
     let winners = [];
-    
     tapEntries.forEach(([playerId, taps]) => {
         if (taps > maxTaps) {
             maxTaps = taps;
@@ -415,13 +405,11 @@ async function evaluateFastTapperResults(roomCode) {
             winners.push(playerId);
         }
     });
-
     // Award points to winners
     winners.forEach(playerId => {
         const player = room.players.find(p => p.id === playerId);
         if (player) player.score += 1;
     });
-
     const results = tapEntries.map(([playerId, taps]) => {
         const player = room.players.find(p => p.id === playerId);
         return {
@@ -430,12 +418,10 @@ async function evaluateFastTapperResults(roomCode) {
             won: winners.includes(playerId)
         };
     }).sort((a, b) => b.taps - a.taps);
-
     io.to(roomCode).emit('fast-tapper-results', {
         results: results,
         maxTaps: maxTaps
     });
-
     setTimeout(() => {
         endRound(roomCode, results);
     }, 4000);
@@ -445,7 +431,6 @@ async function evaluateFastTapperResults(roomCode) {
 async function evaluateTextChallengeResults(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
-
     const responses = Object.entries(room.challengeResponses);
     if (responses.length === 0) {
         endRound(roomCode, []);
@@ -456,7 +441,6 @@ async function evaluateTextChallengeResults(roomCode) {
         message: "The Oracle carefully evaluates your responses...",
         type: 'evaluation'
     });
-
     const evaluationResults = [];
 
     for (const [playerId, response] of responses) {
@@ -468,7 +452,6 @@ async function evaluateTextChallengeResults(roomCode) {
             response, 
             room.currentChallengeType
         );
-
         if (evaluation.pass) {
             player.score += 1;
         }
@@ -479,14 +462,12 @@ async function evaluateTextChallengeResults(roomCode) {
             passed: evaluation.pass,
             feedback: evaluation.feedback
         });
-
         // Send individual result to player
         io.to(playerId).emit('challenge-individual-result', {
             passed: evaluation.pass,
             feedback: evaluation.feedback,
             response: response
         });
-
         await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
@@ -502,7 +483,6 @@ function startNewRound(roomCode) {
     
     room.currentRound++;
     room.gameState = 'riddle-phase';
-    
     const { riddle, index } = getRandomRiddle(room.usedRiddleIndices);
     room.currentRiddle = riddle;
     room.usedRiddleIndices.push(index);
@@ -522,7 +502,6 @@ function startNewRound(roomCode) {
         message: getRandomOracleMessage('introductions'),
         type: 'introduction'
     });
-    
     setTimeout(() => {
         io.to(roomCode).emit('riddle-presented', {
             riddle: room.currentRiddle,
@@ -568,14 +547,12 @@ function endRiddlePhase(roomCode) {
             timestamp: ans.timestamp
         };
     }).sort((a, b) => a.timestamp - b.timestamp);
-
     io.to(roomCode).emit('riddle-results-reveal', {
         winner: winner,
         correctAnswer: room.currentRiddle.answer,
         message: winner ? `${winner} solved it first!` : `No one solved my riddle!`,
         allAnswers: answersDisplay
     });
-    
     setTimeout(() => {
         startChallengePhase(roomCode);
     }, 4000);
@@ -589,7 +566,6 @@ function endRound(roomCode, challengeResults) {
     console.log('End round called for room:', roomCode);
     console.log('Room players:', room.players.map(p => p.name));
     console.log('Round history before update:', room.roundHistory);
-    
     // Ensure round history exists before updating
     if (!room.roundHistory || room.roundHistory.length === 0) {
         console.log('Round history missing in endRound, reinitializing...');
@@ -598,7 +574,6 @@ function endRound(roomCode, challengeResults) {
     
     // Always ensure round history is updated before emitting
     updateRoundHistory(room, room.riddleWinner, challengeResults);
-    
     console.log('Emitting round summary with round history:', room.roundHistory);
     
     // Always include roundHistory in emission
@@ -612,53 +587,28 @@ function endRound(roomCode, challengeResults) {
         challengeResults: challengeResults,
         roundHistory: roundHistoryToSend
     });
-    
     if (room.currentRound >= room.maxRounds) {
         setTimeout(() => {
-            // FIXED: Enhanced tie-breaking system
-            const sortedPlayers = [...room.players].sort((a, b) => {
-                if (b.score !== a.score) {
-                    return b.score - a.score;
-                }
-                
-                // Tie-break 1: Player with more round wins
-                const aHistory = room.roundHistory.find(r => r.playerName === a.name);
-                const bHistory = room.roundHistory.find(r => r.playerName === b.name);
-                const aWins = aHistory?.rounds.filter(r => r === 'W').length || 0;
-                const bWins = bHistory?.rounds.filter(r => r === 'W').length || 0;
-                
-                if (bWins !== aWins) {
-                    return bWins - aWins;
-                }
-                
-                // Tie-break 2: Player who won earliest rounds
-                for (let i = 0; i < 5; i++) {
-                    const aRound = aHistory?.rounds[i];
-                    const bRound = bHistory?.rounds[i];
-                    if (aRound === 'W' && bRound !== 'W') return -1;
-                    if (bRound === 'W' && aRound !== 'W') return 1;
-                }
-                
-                // Final tie-break: Alphabetical
-                return a.name.localeCompare(b.name);
-            });
+            // FIXED: Enhanced winner selection for the final game-over
+            const finalScores = Object.values(rooms[roomCode].players).sort((a, b) => b.score - a.score);
+            const winner = finalScores[0];
             
-            const winner = sortedPlayers[0];
-            const isTie = sortedPlayers.length > 1 && sortedPlayers[0].score === sortedPlayers[1].score;
+            // Check for ties
+            const tiedPlayers = finalScores.filter(player => player.score === winner.score);
             
-            console.log(`🎯 Winner: ${winner.name} with ${winner.score} points${isTie ? ' (tie-broken by round wins)' : ''}`);
-            
-            // Always include roundHistory in game-over
+            let winnerMessage = `The Oracle has chosen!`;
+            if (tiedPlayers.length > 1) {
+                winnerMessage = `It's a tie! The Oracle declares a shared victory!`;
+            } else if (winner.score === 0) {
+                winnerMessage = `No one pleased the Oracle. Humanity is doomed.`;
+            }
+
             io.to(roomCode).emit('game-over', {
-                finalScores: sortedPlayers,
                 winner: winner,
-                isTie: isTie,
-                message: isTie 
-                    ? `Close battle! ${winner.name} wins by tie-breaker!`
-                    : winner.score > 0
-                        ? "Some of you proved worthy of my complex trials!"
-                        : "VICTORY IS MINE! Your minds crumbled before my challenges!",
-                roundHistory: room.roundHistory || []
+                tied: tiedPlayers.length > 1,
+                message: winnerMessage,
+                scores: finalScores,
+                roundHistory: room.roundHistory
             });
         }, 4000);
     } else {
@@ -762,7 +712,6 @@ io.on('connection', (socket) => {
         }
         startNewRound(data.roomCode);
     });
-
     socket.on('submit-riddle-answer', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'riddle-phase') return;
@@ -781,7 +730,6 @@ io.on('connection', (socket) => {
             });
         }
     });
-
     socket.on('submit-challenge-response', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'challenge-phase') return;
@@ -796,7 +744,6 @@ io.on('connection', (socket) => {
             expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
         });
     });
-
     socket.on('submit-tap-result', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'challenge-phase') return;
@@ -812,7 +759,6 @@ io.on('connection', (socket) => {
             expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
         });
     });
-
     socket.on('disconnect', () => {
         Object.keys(rooms).forEach(roomCode => {
             const room = rooms[roomCode];
