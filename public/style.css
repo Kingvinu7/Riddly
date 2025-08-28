@@ -2248,3 +2248,48 @@ input[type="text"]:focus {
         font-size: 0.95em;
     }
 }
+
+/* Add to your CSS file */
+.result-feedback, .result-response {
+    max-height: 180px;           /* Increase height */
+    overflow-y: auto;            /* Add scroll */
+    white-space: pre-wrap;       /* Preserve line breaks */
+    word-break: break-word;      /* Break long words */
+    line-height: 1.5;           /* Better readability */
+    padding: 15px;              /* More padding */
+    font-size: 0.9em;           /* Slightly smaller font */
+    scrollbar-width: thin;       /* Thin scrollbar */
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .result-feedback, .result-response {
+        max-height: 150px;
+        font-size: 0.85em;
+        padding: 12px;
+    }
+}
+
+/* Auto-submit timer indicator */
+.timer {
+    transition: all 0.3s ease;
+}
+
+.timer.auto-submit {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    animation: autoSubmitPulse 0.5s ease-in-out;
+    color: white;
+    font-weight: bold;
+}
+
+@keyframes autoSubmitPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Auto-submitted response indicator */
+.auto-submitted {
+    border-left: 4px solid #ff9800;
+    background: rgba(255, 152, 0, 0.1);
+}

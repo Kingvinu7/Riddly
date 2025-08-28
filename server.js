@@ -175,7 +175,7 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
     console.log('Updated round history:', room.roundHistory);
 }
 
-// FIXED: Better challenge content generation with validation
+// Better challenge content generation with validation
 async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
         // Medium difficulty fallback content with simple words
@@ -211,14 +211,14 @@ async function generateChallengeContent(type, roundNumber) {
         const result = await model.generateContent(prompt);
         const response = (await result.response).text();
         
-        // FIXED: Better text cleanup and validation
+        // Better text cleanup and validation
         let cleaned = response.trim()
             .replace(/^["']|["']$/g, '')
             .replace(/\n+/g, ' ')
             .replace(/\s+/g, ' ')
             .replace(/[^\w\s.,!?;:()\-'"]/g, ''); // Remove special chars that might break UI
         
-        // FIXED: Ensure we have content
+        // Ensure we have content
         if (!cleaned || cleaned.length < 10) {
             console.log('AI generated empty or too short content, using fallback');
             const fallbacks = {
@@ -251,10 +251,17 @@ async function generateChallengeContent(type, roundNumber) {
     }
 }
 
-// FIXED: Enhanced evaluation with better feedback handling
+// FIXED: Enhanced evaluation with better feedback handling for auto-submit
 async function evaluatePlayerResponse(challengeContent, playerResponse, challengeType) {
+    // Detect auto-submitted responses
+    const isAutoSubmitted = playerResponse.startsWith('[Auto-submitted]');
+    const cleanResponse = isAutoSubmitted ? playerResponse.replace('[Auto-submitted] ', '') : playerResponse;
+    
     if (!genAI) {
-        return { pass: Math.random() > 0.4, feedback: "No AI available - random result!" };
+        return { 
+            pass: Math.random() > 0.4, 
+            feedback: isAutoSubmitted ? "Auto-submitted response received." : "No AI available - random result!" 
+        };
     }
 
     try {
@@ -264,19 +271,19 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         
         switch (challengeType) {
             case 'negotiator':
-                evaluationPrompt = `Evaluate this negotiation attempt for a challenging scenario:\n\nSituation: ${challengeContent}\n\nPlayer's approach: "${playerResponse}"\n\nWas this persuasive, creative, and showed good understanding of the problem? Consider: empathy, logic, compromise, and creativity. Answer PASS or FAIL with detailed reason. Keep feedback under 100 words.`;
+                evaluationPrompt = `Evaluate this negotiation attempt for a challenging scenario:\n\nSituation: ${challengeContent}\n\nPlayer's approach: "${cleanResponse}"\n\nWas this persuasive, creative, and showed good understanding of the problem? Consider: empathy, logic, compromise, and creativity. Answer PASS or FAIL with detailed reason. Keep feedback under 80 words.${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             case 'detective':
-                evaluationPrompt = `Evaluate this detective conclusion for a complex mystery:\n\nMystery: ${challengeContent}\n\nPlayer's conclusion: "${playerResponse}"\n\nDid they use logical reasoning, consider the clues properly, and reach a reasonable conclusion? Even if not perfect, reward good thinking. Answer PASS or FAIL with explanation. Keep feedback under 100 words.`;
+                evaluationPrompt = `Evaluate this detective conclusion for a complex mystery:\n\nMystery: ${challengeContent}\n\nPlayer's conclusion: "${cleanResponse}"\n\nDid they use logical reasoning, consider the clues properly, and reach a reasonable conclusion? Even if not perfect, reward good thinking. Answer PASS or FAIL with explanation. Keep feedback under 80 words.${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             case 'trivia':
-                evaluationPrompt = `Evaluate this answer to a challenging trivia question:\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${playerResponse}"\n\nIs this correct or close enough? Consider partial credit for good attempts. Answer PASS or FAIL with brief explanation. Keep feedback under 80 words.`;
+                evaluationPrompt = `Evaluate this answer to a challenging trivia question:\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${cleanResponse}"\n\nIs this correct or close enough? Consider partial credit for good attempts. Answer PASS or FAIL with brief explanation. Keep feedback under 60 words.${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             case 'danger':
-                evaluationPrompt = `Evaluate this survival plan for a complex emergency:\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${playerResponse}"\n\nWould this work? Is it creative, practical, and shows good thinking under pressure? Reward clever solutions even if unconventional. Answer PASS or FAIL with detailed reason. Keep feedback under 100 words.`;
+                evaluationPrompt = `Evaluate this survival plan for a complex emergency:\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${cleanResponse}"\n\nWould this work? Is it creative, practical, and shows good thinking under pressure? Reward clever solutions even if unconventional. Answer PASS or FAIL with detailed reason. Keep feedback under 80 words.${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             default:
-                evaluationPrompt = `Evaluate this response to a medium difficulty challenge:\n\nChallenge: ${challengeContent}\n\nResponse: ${playerResponse}\n\nDoes this show good thinking and effort? PASS or FAIL with reason. Keep feedback under 80 words.`;
+                evaluationPrompt = `Evaluate this response to a medium difficulty challenge:\n\nChallenge: ${challengeContent}\n\nResponse: ${cleanResponse}\n\nDoes this show good thinking and effort? PASS or FAIL with reason. Keep feedback under 60 words.${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
         }
 
         const result = await model.generateContent(evaluationPrompt);
@@ -285,20 +292,25 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         const pass = /PASS/i.test(response);
         let feedback = response.replace(/PASS|FAIL/gi, '').trim();
         
-        // FIXED: Better feedback cleanup and length control
+        // Better feedback cleanup and length control
         feedback = feedback
             .replace(/[^\w\s.,!?;:()\-'"]/g, '') // Remove special chars
             .replace(/\s+/g, ' ')
             .trim();
         
-        // FIXED: Ensure feedback fits in UI
-        if (feedback.length > 120) {
-            feedback = feedback.substring(0, 110) + "...";
+        // FIXED: Ensure feedback fits in UI (reduced length for better display)
+        if (feedback.length > 100) {
+            feedback = feedback.substring(0, 90) + "...";
         }
         
-        // FIXED: Ensure we have some feedback
+        // Ensure we have some feedback
         if (!feedback || feedback.length < 5) {
             feedback = pass ? "Good reasoning shown." : "Needs better approach.";
+        }
+        
+        // Add auto-submit indicator to feedback
+        if (isAutoSubmitted) {
+            feedback = `⏰ ${feedback}`;
         }
         
         console.log(`AI Evaluation: ${pass ? 'PASS' : 'FAIL'} - "${feedback}" (${feedback.length} chars)`);
@@ -308,7 +320,7 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         console.error('AI evaluation error:', e.message);
         return { 
             pass: Math.random() > 0.45, 
-            feedback: "The Oracle's judgment is unclear at this time." 
+            feedback: isAutoSubmitted ? "⏰ Auto-submitted. Oracle judgment unclear." : "The Oracle's judgment is unclear at this time." 
         };
     }
 }
@@ -355,7 +367,7 @@ async function startChallengePhase(roomCode) {
             // Text-based challenges with 40 seconds
             const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
             
-            // FIXED: Validate challenge content before sending
+            // Validate challenge content before sending
             if (!challengeContent || challengeContent.trim().length === 0) {
                 console.error('Empty challenge content generated, using emergency fallback');
                 challengeContent = "Describe your strategy for handling a difficult situation that requires creative thinking.";
@@ -441,7 +453,7 @@ async function evaluateTextChallengeResults(roomCode) {
     }
 
     io.to(roomCode).emit('oracle-speaks', {
-        message: "The Oracle carefully evaluates your complex responses...",
+        message: "The Oracle carefully evaluates your responses...",
         type: 'evaluation'
     });
 
@@ -483,7 +495,7 @@ async function evaluateTextChallengeResults(roomCode) {
     }, 2000);
 }
 
-// Enhanced startNewRound function
+// Game Flow Functions
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -569,7 +581,7 @@ function endRiddlePhase(roomCode) {
     }, 4000);
 }
 
-// Enhanced endRound function with guaranteed round history
+// FIXED: Enhanced endRound function with improved tie-breaking
 function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -603,23 +615,49 @@ function endRound(roomCode, challengeResults) {
     
     if (room.currentRound >= room.maxRounds) {
         setTimeout(() => {
+            // FIXED: Enhanced tie-breaking system
             const sortedPlayers = [...room.players].sort((a, b) => {
                 if (b.score !== a.score) {
                     return b.score - a.score;
                 }
+                
+                // Tie-break 1: Player with more round wins
+                const aHistory = room.roundHistory.find(r => r.playerName === a.name);
+                const bHistory = room.roundHistory.find(r => r.playerName === b.name);
+                const aWins = aHistory?.rounds.filter(r => r === 'W').length || 0;
+                const bWins = bHistory?.rounds.filter(r => r === 'W').length || 0;
+                
+                if (bWins !== aWins) {
+                    return bWins - aWins;
+                }
+                
+                // Tie-break 2: Player who won earliest rounds
+                for (let i = 0; i < 5; i++) {
+                    const aRound = aHistory?.rounds[i];
+                    const bRound = bHistory?.rounds[i];
+                    if (aRound === 'W' && bRound !== 'W') return -1;
+                    if (bRound === 'W' && aRound !== 'W') return 1;
+                }
+                
+                // Final tie-break: Alphabetical
                 return a.name.localeCompare(b.name);
             });
             
             const winner = sortedPlayers[0];
-            console.log(`🎯 Winner: ${winner.name} with ${winner.score} points`);
+            const isTie = sortedPlayers.length > 1 && sortedPlayers[0].score === sortedPlayers[1].score;
+            
+            console.log(`🎯 Winner: ${winner.name} with ${winner.score} points${isTie ? ' (tie-broken by round wins)' : ''}`);
             
             // Always include roundHistory in game-over
             io.to(roomCode).emit('game-over', {
                 finalScores: sortedPlayers,
                 winner: winner,
-                message: winner.score > 0
-                    ? "Some of you proved worthy of my complex trials!"
-                    : "VICTORY IS MINE! Your minds crumbled before my challenges!",
+                isTie: isTie,
+                message: isTie 
+                    ? `Close battle! ${winner.name} wins by tie-breaker!`
+                    : winner.score > 0
+                        ? "Some of you proved worthy of my complex trials!"
+                        : "VICTORY IS MINE! Your minds crumbled before my challenges!",
                 roundHistory: room.roundHistory || []
             });
         }, 4000);
@@ -800,13 +838,13 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log('🎯 FIXED: Challenge content validation & text truncation!');
-    console.log('⏱️ Challenge Timer: 40 seconds');
+    console.log('🎯 FIXED: Auto-submit, judgment text, tie-breaking!');
+    console.log('⏱️ Challenge Timer: 40 seconds with auto-submit');
     console.log('🎲 Total Riddles Available:', gameData.riddles.length);
     console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
     if (genAI) {
-        console.log('🔑 Gemini 2.5 Flash: AI-powered challenges with better content validation!');
+        console.log('🔑 Gemini 2.5 Flash: AI-powered challenges with auto-submit detection!');
     } else {
-        console.log('⚠️ No Gemini API key: Using validated fallback challenges.');
+        console.log('⚠️ No Gemini API key: Using fallback challenges.');
     }
 });

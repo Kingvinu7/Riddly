@@ -53,9 +53,9 @@ riddleAnswer.addEventListener('keypress', (e) => {
 });
 
 // Challenge response event listeners
-document.getElementById('submit-challenge-response').addEventListener('click', submitChallengeResponse);
+document.getElementById('submit-challenge-response').addEventListener('click', () => submitChallengeResponse(false));
 document.getElementById('challenge-response').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && e.ctrlKey) submitChallengeResponse();
+    if (e.key === 'Enter' && e.ctrlKey) submitChallengeResponse(false);
 });
 
 // Fast tapper event listener
@@ -119,23 +119,40 @@ function submitRiddleAnswer() {
     submitRiddleBtn.textContent = 'Submitted!';
 }
 
-// Submit challenge response
-function submitChallengeResponse() {
+// FIXED: Enhanced submit challenge response with auto-submit support
+function submitChallengeResponse(isAutoSubmit = false) {
     const response = document.getElementById('challenge-response').value.trim();
-    if (!response) {
-        alert('Please enter your response - this is a complex challenge that requires thought!');
-        return;
+    const submitBtn = document.getElementById('submit-challenge-response');
+    
+    // Skip validation for auto-submit
+    if (!isAutoSubmit) {
+        if (!response) {
+            alert('Please enter your response - this is a complex challenge that requires thought!');
+            return;
+        }
+        if (response.length < 5) {
+            alert('Please provide a more detailed response for this complex scenario.');
+            return;
+        }
     }
-    if (response.length < 5) {
-        alert('Please provide a more detailed response for this complex scenario.');
-        return;
-    }
+    
     if (!currentRoom) return;
     
-    socket.emit('submit-challenge-response', { roomCode: currentRoom, response: response });
+    // Add indicator for auto-submitted responses
+    const finalResponse = isAutoSubmit ? `[Auto-submitted] ${response}` : response;
+    
+    socket.emit('submit-challenge-response', { roomCode: currentRoom, response: finalResponse });
     document.getElementById('challenge-response').disabled = true;
-    document.getElementById('submit-challenge-response').disabled = true;
-    document.getElementById('submit-challenge-response').textContent = 'Submitted!';
+    submitBtn.disabled = true;
+    submitBtn.textContent = isAutoSubmit ? 'Auto-Submitted!' : 'Submitted!';
+    
+    if (isAutoSubmit) {
+        // Show user their response was auto-submitted
+        setTimeout(() => {
+            const shortResponse = response.length > 50 ? response.substring(0, 50) + '...' : response;
+            alert(`⏰ Your response was auto-submitted: "${shortResponse}"`);
+        }, 1000);
+    }
 }
 
 // Fast tapper functionality
@@ -325,9 +342,11 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// Enhanced challenge timer function for 40 seconds
+// FIXED: Enhanced challenge timer with auto-submit functionality
 function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
+    const textarea = document.getElementById('challenge-response');
+    const submitBtn = document.getElementById('submit-challenge-response');
     let timeLeft = seconds;
     
     const timer = setInterval(() => {
@@ -349,6 +368,26 @@ function startChallengeTimer(elementId, seconds) {
         if (timeLeft < 0) {
             clearInterval(timer);
             element.classList.remove('urgent', 'danger');
+            
+            // FIXED: Auto-submit if user has typed something
+            if (textarea && !textarea.disabled && !submitBtn.disabled) {
+                const currentText = textarea.value.trim();
+                if (currentText.length > 0) {
+                    console.log('⏰ Auto-submitting response:', currentText.substring(0, 30) + '...');
+                    
+                    // Add visual indicator
+                    element.textContent = 'AUTO-SUBMIT';
+                    element.classList.add('auto-submit');
+                    
+                    // Auto-submit the current text
+                    setTimeout(() => {
+                        submitChallengeResponse(true);
+                    }, 500);
+                } else {
+                    console.log('⏰ Timer ended with no input');
+                    element.textContent = 'TIME UP';
+                }
+            }
         }
     }, 1000);
     
@@ -393,21 +432,30 @@ function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
     
-    // FIXED: Sanitize and limit response text
+    // FIXED: Better text handling for display
     let responseText = data.response || "";
-    if (responseText.length > 100) {
-        responseText = responseText.substring(0, 97) + "...";
+    const isAutoSubmitted = responseText.startsWith('[Auto-submitted]');
+    
+    if (isAutoSubmitted) {
+        responseText = responseText.replace('[Auto-submitted] ', '');
     }
     
-    // FIXED: Ensure feedback is properly displayed
-    let feedbackText = data.feedback || "No feedback available.";
-    if (feedbackText.length > 150) {
-        feedbackText = feedbackText.substring(0, 147) + "...";
+    if (responseText.length > 80) {
+        responseText = responseText.substring(0, 77) + "...";
     }
+    
+    // FIXED: Ensure feedback is properly displayed with better length handling
+    let feedbackText = data.feedback || "No feedback available.";
+    if (feedbackText.length > 120) {
+        feedbackText = feedbackText.substring(0, 117) + "...";
+    }
+    
+    const autoSubmitIndicator = isAutoSubmitted ? '<div class="auto-submit-indicator">⏰ Auto-submitted when time expired</div>' : '';
     
     const resultHtml = `
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
             <h3>${data.passed ? '✅ WELL REASONED!' : '❌ INSUFFICIENT!'}</h3>
+            ${autoSubmitIndicator}
             <div class="result-response" title="${data.response}">"${responseText}"</div>
             <div class="result-feedback" title="${data.feedback}">${feedbackText}</div>
             <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
@@ -417,12 +465,12 @@ function showIndividualResult(data) {
     content.innerHTML = resultHtml;
     overlay.style.display = 'flex';
     
-    console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length });
+    console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length, isAutoSubmitted });
     
-    // Auto-hide after 12 seconds for complex feedback
+    // Auto-hide after 15 seconds for better readability
     setTimeout(() => {
         hideIndividualResult();
-    }, 12000);
+    }, 15000);
 }
 
 function hideIndividualResult() {
@@ -519,7 +567,7 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-// FIXED: Handle text challenges with better content validation
+// FIXED: Handle text challenges with auto-submit functionality
 socket.on('text-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -527,7 +575,7 @@ socket.on('text-challenge-start', (data) => {
         document.getElementById('text-challenge-title').textContent = 
             `${data.challengeType.toUpperCase()} CHALLENGE`;
         
-        // FIXED: Better content handling with validation
+        // Better content handling with validation
         const challengeContent = data.challengeContent;
         const contentElement = document.getElementById('text-challenge-content');
         
@@ -536,7 +584,7 @@ socket.on('text-challenge-start', (data) => {
             contentElement.textContent = "Challenge loading failed. Please describe your approach to the situation.";
         } else {
             console.log('Setting challenge content:', challengeContent.substring(0, 50) + '...');
-            contentElement.textContent = challengeContent; // Use textContent, not innerHTML
+            contentElement.textContent = challengeContent;
         }
         
         document.getElementById('challenge-response').value = '';
@@ -548,14 +596,14 @@ socket.on('text-challenge-start', (data) => {
         
         showPage('textChallenge');
         
-        // Use enhanced challenge timer for 40 seconds
+        // FIXED: Use enhanced timer with auto-submit
         startChallengeTimer('text-challenge-timer', data.timeLimit || 40);
         
         // Auto-focus on textarea after a brief delay
         setTimeout(() => {
             const textarea = document.getElementById('challenge-response');
             textarea.focus();
-            textarea.placeholder = 'Think carefully and provide a detailed response... (40 seconds)';
+            textarea.placeholder = 'Think carefully and provide a detailed response... (auto-submits at 0)';
         }, 500);
         
     } else {
@@ -645,7 +693,7 @@ socket.on('round-summary', (data) => {
     showPage('roundSummary');
 });
 
-// Enhanced game-over handler - always shows final leaderboard
+// FIXED: Enhanced game-over handler with tie-breaking display
 socket.on('game-over', (data) => {
     console.log('🏆 Game over received:', data);
     
@@ -661,7 +709,8 @@ socket.on('game-over', (data) => {
     
     const bigWinnerEl = document.getElementById('big-winner-announcement');
     if (bigWinnerEl) {
-        bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>`;
+        const tieText = data.isTie ? '<br><span style="font-size:0.6em;">🎯 Won by Tie-Breaker</span>' : '';
+        bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>${tieText}`;
     }
     
     const finalOracleEl = document.getElementById('final-oracle');
@@ -702,4 +751,4 @@ socket.on('error', (data) => {
 showPage('home');
 playerNameInput.focus();
 
-console.log('Frontend loaded - Threatened by AI v4.5 (Fixed Content & Text Display)');
+console.log('Frontend loaded - Threatened by AI v4.6 (Auto-Submit + Enhanced UX)');
