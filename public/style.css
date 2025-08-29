@@ -2344,3 +2344,17 @@ input[type="text"]:focus {
 .individual-result .btn.secondary:active {
     transform: translateY(0);
 }
+
+/* NEW Judgement Box Styles */
+.result-feedback, .result-response {
+    overflow-y: hidden; /* Remove scrolling now that text is short */
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+    padding: 10px 0; /* Add top/bottom padding */
+    font-size: 0.9em;
+    min-height: 50px; /* Ensure a consistent minimum height */
+    text-align: center;
+    max-width: 90%;
+    margin: 0 auto;
+}
