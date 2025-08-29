@@ -2358,3 +2358,28 @@ input[type="text"]:focus {
     max-width: 90%;
     margin: 0 auto;
 }
+
+/* UPDATED Judgement Box Styles to fit more text */
+.individual-result {
+    max-width: 90%;
+    padding: 20px;
+}
+
+.result-feedback, .result-response {
+    overflow-y: hidden; 
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+    padding: 10px 0;
+    font-size: 0.9em;
+    min-height: 50px; 
+    text-align: center;
+    max-width: 90%;
+    margin: 0 auto;
+}
+
+.individual-result .result-feedback, .individual-result .result-response {
+    /* Main adjustment for text height */
+    max-height: 250px;
+    min-height: 100px;
+}
