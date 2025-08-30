@@ -57,6 +57,7 @@ document.getElementById('challenge-response').addEventListener('keypress', (e) =
 
 // Fast tapper event listener
 document.getElementById('tap-button').addEventListener('click', onTap);
+
 // Utility functions
 function showPage(pageName) {
     Object.values(pages).forEach(page => page.classList.remove('active'));
@@ -113,7 +114,7 @@ function submitRiddleAnswer() {
     submitRiddleBtn.textContent = 'Submitted!';
 }
 
-// FIXED: Enhanced submit challenge response with auto-submit support
+// Enhanced submit challenge response with auto-submit support
 function submitChallengeResponse(isAutoSubmit = false) {
     const responseField = document.getElementById('challenge-response');
     const triviaOptions = document.getElementById('trivia-options-container');
@@ -198,9 +199,8 @@ function startFastTapperTimer(duration) {
         } else if (timeLeft <= 5) {
             document.getElementById('fast-tapper-timer').classList.add('danger');
             document.getElementById('fast-tapper-timer').classList.remove('urgent');
-   
-         }
-        
+        }
+    
         timeLeft--;
         
         if (timeLeft < 0) {
@@ -208,7 +208,7 @@ function startFastTapperTimer(duration) {
             tapperActive = false;
             document.getElementById('tap-button').disabled = true;
             document.getElementById('fast-tapper-timer').classList.remove('urgent', 'danger');
-      
+            
             // Submit result
             socket.emit('submit-tap-result', { roomCode: currentRoom, taps: tapCount });
             
@@ -239,21 +239,26 @@ function updateLobbyOwnerDisplay() {
 function updateStartButton() {
     const playerCount = document.querySelectorAll('.player').length;
     const waitingText = document.querySelector('.waiting-text');
+    const startGameBtn = document.getElementById('start-game-btn');
     if (isRoomOwner && playerCount >= 2) {
         startGameBtn.classList.remove('hidden');
         startGameBtn.disabled = false;
         startGameBtn.textContent = 'Start Game';
-        waitingText.style.display = 'none';
+        if (waitingText) waitingText.style.display = 'none';
     } else if (isRoomOwner && playerCount < 2) {
         startGameBtn.classList.remove('hidden');
         startGameBtn.disabled = true;
         startGameBtn.textContent = 'Need More Players';
-        waitingText.textContent = 'Waiting for more players...';
-        waitingText.style.display = 'block';
+        if (waitingText) {
+            waitingText.textContent = 'Waiting for more players...';
+            waitingText.style.display = 'block';
+        }
     } else {
         startGameBtn.classList.add('hidden');
-        waitingText.textContent = 'Waiting for room owner to start...';
-        waitingText.style.display = 'block';
+        if (waitingText) {
+            waitingText.textContent = 'Waiting for room owner to start...';
+            waitingText.style.display = 'block';
+        }
     }
 }
 
@@ -319,9 +324,12 @@ function createPointsTable(roundHistory, tableId) {
 }
 
 // Enhanced timer with better color progression
-function startTimer(elementId, seconds) {
+let currentTimer;
+function startTimer(elementId, seconds, onComplete = () => {}) {
     const element = document.getElementById(elementId);
     let timeLeft = seconds;
+    
+    clearInterval(currentTimer);
     
     const timer = setInterval(() => {
         element.textContent = timeLeft;
@@ -342,13 +350,14 @@ function startTimer(elementId, seconds) {
         if (timeLeft < 0) {
             clearInterval(timer);
             element.classList.remove('urgent', 'danger');
+            onComplete();
         }
     }, 1000);
     
-    return timer;
+    currentTimer = timer;
 }
 
-// FIXED: Enhanced challenge timer with auto-submit functionality
+// Enhanced challenge timer with auto-submit functionality
 function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     const textarea = document.getElementById('challenge-response');
@@ -381,7 +390,7 @@ function startChallengeTimer(elementId, seconds) {
             clearInterval(challengeTimer);
             element.classList.remove('urgent', 'danger');
             
-            // FIXED: Auto-submit if user has typed something (text or selected option)
+            // Auto-submit if user has typed something (text or selected option)
             const hasInput = (textarea.style.display !== 'none' && textarea.value.trim().length > 0) ||
                              (triviaOptions.style.display !== 'none' && document.querySelector('.trivia-option.selected'));
 
@@ -440,7 +449,7 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
-// FIXED: Better individual result overlay with proper text handling
+// Better individual result overlay with proper text handling
 async function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
@@ -545,13 +554,14 @@ socket.on('riddle-presented', (data) => {
     submitRiddleBtn.disabled = false;
     submitRiddleBtn.textContent = 'Submit Answer';
     
-    document.getElementById('submission-count').textContent = '0/0 players answered';
+    document.getElementById('submission-count').textContent =
+        `0/0 players answered`;
     
     showPage('riddle');
     startTimer('riddle-timer', 45);
 });
 socket.on('answer-submitted', (data) => {
-    document.getElementById('submission-count').textContent = 
+    document.getElementById('submission-count').textContent =
         `${data.totalSubmissions}/${data.totalPlayers} players answered`;
 });
 socket.on('riddle-results-reveal', (data) => {
@@ -584,13 +594,13 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-// FIXED: Handle text challenges with auto-submit functionality
+// Handle text challenges with auto-submit functionality
 socket.on('text-challenge-start', (data) => {
     console.log('Received text-challenge-start event:', data);
     const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
-        document.getElementById('text-challenge-title').textContent = 
+        document.getElementById('text-challenge-title').textContent =
             `${data.challengeType.toUpperCase()} CHALLENGE`;
         
         const contentElement = document.getElementById('text-challenge-content');
@@ -642,11 +652,11 @@ socket.on('text-challenge-start', (data) => {
         document.getElementById('challenge-response').value = '';
         document.getElementById('challenge-response').disabled = false;
         document.getElementById('submit-challenge-response').disabled = false;
-        document.getElementById('text-challenge-submission-count').textContent = 
+        document.getElementById('text-challenge-submission-count').textContent =
             `0/${data.participants.length} players responded`;
         
         showPage('textChallenge');
-        // FIXED: Use enhanced timer with auto-submit
+        // Use enhanced timer with auto-submit
         startChallengeTimer('text-challenge-timer', data.timeLimit || 40);
         // Auto-focus on textarea after a brief delay
         setTimeout(() => {
@@ -657,7 +667,7 @@ socket.on('text-challenge-start', (data) => {
         }, 500);
     } else {
         document.getElementById('waiting-title').textContent = 'Others are facing a complex challenge...';
-        document.getElementById('waiting-message').textContent = 
+        document.getElementById('waiting-message').textContent =
             `Non-winners are solving a challenging ${data.challengeType} scenario!`;
         showPage('waiting');
     }
@@ -687,7 +697,7 @@ socket.on('challenge-individual-result', (data) => {
 // Handle challenge results screens
 socket.on('fast-tapper-results', (data) => {
     document.getElementById('challenge-results-title').textContent = '⚡ FAST TAPPER RESULTS';
-    document.getElementById('challenge-results-message').textContent = 
+    document.getElementById('challenge-results-message').textContent =
         `Fastest fingers: ${data.maxTaps} taps!`;
     
     const resultsHtml = data.results.map(result => `
@@ -702,7 +712,7 @@ socket.on('fast-tapper-results', (data) => {
 });
 // Handle submission status updates
 socket.on('challenge-response-submitted', (data) => {
-    document.getElementById('text-challenge-submission-count').textContent = 
+    document.getElementById('text-challenge-submission-count').textContent =
         `${data.totalSubmissions}/${data.expectedSubmissions} players responded`;
 });
 socket.on('tap-result-submitted', (data) => {
@@ -736,7 +746,7 @@ socket.on('round-summary', (data) => {
     
     showPage('roundSummary');
 });
-// FIXED: Enhanced game-over handler with tie-breaking display
+// Enhanced game-over handler with tie-breaking display
 socket.on('game-over', (data) => {
     console.log('🏆 Game over received:', data);
     
