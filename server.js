@@ -173,69 +173,6 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
     console.log('Updated round history:', room.roundHistory);
 }
 
-/**
- * Generates a trivia challenge with a question, correct answer, and three incorrect options.
- * @returns {Promise<object>} An object with question, options, and correctAnswer.
- */
-async function generateTriviaChallenge() {
-    if (!genAI) {
-        // Fallback for no AI
-        return {
-            question: "What is the capital of France?",
-            options: ["Paris", "London", "Berlin", "Rome"],
-            correctAnswer: "Paris"
-        };
-    }
-    
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const prompt = `Generate a challenging but clear trivia question about history, science, or geography. Provide four options in a numbered list, with one correct answer. The options should be plausible but incorrect. Do not explicitly state the correct answer in the list. The final output must be in a JSON object with three keys: "question", "options" (an array of 4 strings), and "correctAnswer" (a string). Example: {"question": "What is the largest organ in the human body?", "options": ["Brain", "Heart", "Skin", "Liver"], "correctAnswer": "Skin"}. Provide only the JSON object.`;
-        
-        const result = await model.generateContent(prompt);
-        let response = (await result.response).text();
-
-        // Robust JSON parsing
-        let jsonResponse = {};
-        try {
-            // Remove any markdown or extra text before parsing
-            response = response.replace(/```json|```/g, '').trim();
-            jsonResponse = JSON.parse(response);
-            
-            // Validate the structure
-            if (!jsonResponse.question || !Array.isArray(jsonResponse.options) || jsonResponse.options.length !== 4 || !jsonResponse.correctAnswer) {
-                throw new Error("Invalid JSON structure from AI.");
-            }
-
-            // Shuffle the options to prevent the correct answer always being first
-            const options = jsonResponse.options;
-            const shuffledOptions = options.sort(() => Math.random() - 0.5);
-            
-            return {
-                question: jsonResponse.question,
-                options: shuffledOptions,
-                correctAnswer: jsonResponse.correctAnswer
-            };
-
-        } catch (parseError) {
-            console.error('Failed to parse AI-generated trivia JSON:', parseError.message);
-            // Fallback if AI output is not valid JSON
-            return {
-                question: "What is the capital of France?",
-                options: ["London", "Berlin", "Paris", "Rome"],
-                correctAnswer: "Paris"
-            };
-        }
-    } catch (e) {
-        console.error('AI trivia generation error:', e.message);
-        // Fallback on API error
-        return {
-            question: "What is the only mammal capable of true sustained flight?",
-            options: ["Bat", "Flying Squirrel", "Sugar Glider", "Kangaroo"],
-            correctAnswer: "Bat"
-        };
-    }
-}
-
 // Better challenge content generation with validation
 async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
@@ -243,10 +180,10 @@ async function generateChallengeContent(type, roundNumber) {
         const fallbacks = {
             negotiator: "Your friend is locked out of their house and you are the only one with a spare key, but they once stole your favorite book and never returned it. Convince them to let you help without mentioning the book.",
             detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
-            trivia: await generateTriviaChallenge(),
+            trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
             danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
         };
-        console.log(`Using fallback for ${type}`);
+        console.log(`Using fallback for ${type}:`, fallbacks[type]);
         return fallbacks[type] || "Complete this challenge to survive!";
     }
 
@@ -262,7 +199,8 @@ async function generateChallengeContent(type, roundNumber) {
                 prompt = `Create a mystery with 4-5 clues and 3 suspects. Use simple words but make it challenging to solve. 60-70 words max. Include red herrings. Example: "Someone poisoned the king's food. Clues: bitter taste, cook was nervous, guard left early, poison bottle in garden, rival prince visited kitchen. Suspects: head cook, royal guard, prince's messenger."`;
                 break;
             case 'trivia':
-                return await generateTriviaChallenge();
+                prompt = `Ask a challenging trivia question about science, history, or geography. Use simple words but make it require good knowledge. Not too obvious. Example: "Which gas makes up about 78% of Earth's atmosphere?" or "What empire built Machu Picchu?"`;
+                break;
             case 'danger':
                 prompt = `Create a challenging survival scenario with multiple steps needed. Use simple words but make it complex. 40-50 words max. Example: "You're in a sinking submarine. Water is rising fast. The radio is broken, exit is blocked, but you have a welding torch and oxygen tank. The hull is cracking. Describe your escape plan step by step."`;
                 break;
@@ -276,7 +214,7 @@ async function generateChallengeContent(type, roundNumber) {
             .replace(/^["']|["']$/g, '')
             .replace(/\n+/g, ' ')
             .replace(/\s+/g, ' ')
-            .replace(/[^\w\s.,!?;:()'"`]/g, '');
+            .replace(/[^\w\s.,!?;:()\-'"]/g, '');
         // Remove special chars that might break UI
         
         // Ensure we have content
@@ -285,6 +223,7 @@ async function generateChallengeContent(type, roundNumber) {
             const fallbacks = {
                 negotiator: "Your friend is locked out of their house and you are the only one with a spare key, but they once stole your favorite book and never returned it. Convince them to let you help without mentioning the book.",
                 detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
+                trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
                 danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
             };
             cleaned = fallbacks[type] || "Complete this challenge to survive!";
@@ -304,8 +243,8 @@ async function generateChallengeContent(type, roundNumber) {
         const mediumFallbacks = {
             negotiator: "You're a refugee trying to cross the border. The guard wants a bribe but you have no money, only your grandmother's necklace. It's all you have left of your family. Convince them to let you pass without taking it.",
             detective: "The museum's rare diamond was stolen during the gala. Clues: alarm disabled from inside, muddy footprints size 9, champagne glass with lipstick, and a torn piece of black fabric. Three people had access: the curator, security manager, and catering director.",
-            trivia: await generateTriviaChallenge(),
-            danger: "You're trapped in a burning skyscraper on the 15th floor. The stairwell is full of smoke, elevator is broken, but you found a fire axe and emergency rope in a supply closet. What's your escape strategy?"
+            trivia: "What is the only mammal capable of true sustained flight?",
+            danger: "You're trapped in a burning skyscraper on the 15th floor. The stairwell is full of smoke, elevator is broken, but you found a fire axe and emergency rope in a supply closet. You can see a helicopter circling outside. What's your escape strategy?"
         };
         return mediumFallbacks[type] || "Face this challenging test!";
     }
@@ -317,14 +256,8 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
     const isAutoSubmitted = playerResponse.startsWith('[Auto-submitted]');
     const cleanResponse = isAutoSubmitted ? playerResponse.replace('[Auto-submitted] ', '') : playerResponse;
     if (!genAI) {
-        // Fallback for no AI
-        let pass = Math.random() > 0.4;
-        if (challengeType === 'trivia') {
-            // For trivia fallback, check if they got the known correct answer
-            pass = cleanResponse.toLowerCase() === challengeContent.correctAnswer.toLowerCase();
-        }
         return { 
-            pass: pass, 
+            pass: Math.random() > 0.4, 
             feedback: isAutoSubmitted ? "Auto-submitted response received." : "No AI available - random result!" 
         };
     }
@@ -341,34 +274,15 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
                 evaluationPrompt = `Evaluate this detective conclusion for a complex mystery:\n\nMystery: ${challengeContent}\n\nPlayer's conclusion: "${cleanResponse}"\n\nDid they use logical reasoning, consider the clues properly, and reach a reasonable conclusion? Even if not perfect, reward good thinking. Answer PASS or FAIL with a brief explanation. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             case 'trivia':
-                // For trivia, we need to handle the question and options separately
-                const triviaQuestion = challengeContent.question;
-                const triviaCorrectAnswer = challengeContent.correctAnswer;
-                const playerAnswer = cleanResponse;
-                const passTrivia = playerAnswer.toLowerCase() === triviaCorrectAnswer.toLowerCase();
-                
-                let triviaFeedback = '';
-                if (passTrivia) {
-                    triviaFeedback = `Correct! The answer is "${triviaCorrectAnswer}".`;
-                } else {
-                    triviaFeedback = `Incorrect. The correct answer was "${triviaCorrectAnswer}".`;
-                }
-                
-                // Add auto-submit indicator to feedback
-                if (isAutoSubmitted) {
-                    triviaFeedback = `⏰ ${triviaFeedback}`;
-                }
-                
-                return { pass: passTrivia, feedback: triviaFeedback };
-
+                evaluationPrompt = `Evaluate this answer to a challenging trivia question:\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${cleanResponse}"\n\nIs this correct or close enough? Consider partial credit for good attempts. Answer PASS or FAIL with a brief explanation. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
+                break;
             case 'danger':
                 evaluationPrompt = `Evaluate this survival plan for a complex emergency:\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${cleanResponse}"\n\nWould this work? Is it creative, practical, and shows good thinking under pressure? Reward clever solutions even if unconventional. Answer PASS or FAIL with a detailed reason. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             default:
                 evaluationPrompt = `Evaluate this response to a medium difficulty challenge:\n\nChallenge: ${challengeContent}\n\nResponse: ${cleanResponse}\n\nDoes this show good thinking and effort? PASS or FAIL with a reason. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
         }
-        
-        // This part is for non-trivia challenges
+
         const result = await model.generateContent(evaluationPrompt);
         const response = (await result.response).text();
         const pass = /PASS/i.test(response);
@@ -376,7 +290,7 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         
         // Better feedback cleanup
         feedback = feedback
-            .replace(/[^\w\s.,!?;:()'"`]/g, '') // Remove special chars
+            .replace(/[^\w\s.,!?;:()\-'"]/g, '') // Remove special chars
             .replace(/\s+/g, ' ')
             .trim();
 
@@ -425,14 +339,12 @@ async function startChallengePhase(roomCode) {
     // Determine challenge type for this round
     const challengeTypeIndex = (room.currentRound - 1) % CHALLENGE_TYPES.length;
     const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
-    room.currentChallengeType = challengeType; // Store the type for evaluation
 
     console.log(`Round ${room.currentRound}: ${challengeType} challenge (40 seconds)`);
     io.to(roomCode).emit('oracle-speaks', {
         message: `Round ${room.currentRound}: Face my ${challengeType.toUpperCase()} challenge!`,
         type: 'challenge-intro'
     });
-    
     setTimeout(async () => {
         if (challengeType === 'fastTapper') {
             // Fast Tapper Challenge
@@ -451,39 +363,20 @@ async function startChallengePhase(roomCode) {
             const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
             
             // Validate challenge content before sending
-            if (!challengeContent || (typeof challengeContent === 'string' && challengeContent.trim().length === 0)) {
+            if (!challengeContent || challengeContent.trim().length === 0) {
                 console.error('Empty challenge content generated, using emergency fallback');
                 challengeContent = "Describe your strategy for handling a difficult situation that requires creative thinking.";
             }
             
-            console.log(`Sending challenge content (${challengeType}):`, JSON.stringify(challengeContent).substring(0, 50) + '...');
-            
-            // Adjust payload for trivia vs other challenges
-            const payload = {
+            console.log(`Sending challenge content (${challengeContent.length} chars): ${challengeContent.substring(0, 50)}...`);
+            io.to(roomCode).emit('text-challenge-start', {
                 challengeType: challengeType,
+                challengeContent: challengeContent,
                 participants: nonWinners.map(p => p.name),
-                timeLimit: 40
-            };
-            if (challengeType === 'trivia') {
-                // Ensure correct structure for trivia
-                if (!challengeContent.question || !Array.isArray(challengeContent.options)) {
-                    console.error("Trivia content malformed, using fallback.");
-                    challengeContent = {
-                         question: "What is the capital of France?",
-                         options: ["London", "Berlin", "Paris", "Rome"],
-                         correctAnswer: "Paris"
-                    };
-                }
-                payload.challengeContent = challengeContent.question;
-                payload.options = challengeContent.options;
-                // Store the full trivia object for evaluation later
-                room.currentChallengeContent = challengeContent; 
-            } else {
-                payload.challengeContent = challengeContent;
-                room.currentChallengeContent = challengeContent;
-            }
-            
-            io.to(roomCode).emit('text-challenge-start', payload);
+                timeLimit: 40  // 40 seconds for challenges
+            });
+            room.currentChallengeType = challengeType;
+            room.currentChallengeContent = challengeContent;
             
             // 45 seconds total (40 + 5 buffer)
             room.challengeTimer = setTimeout(() => {
@@ -575,9 +468,7 @@ async function evaluateTextChallengeResults(roomCode) {
         io.to(playerId).emit('challenge-individual-result', {
             passed: evaluation.pass,
             feedback: evaluation.feedback,
-            response: response,
-            challengeType: room.currentChallengeType,
-            correctAnswer: (room.currentChallengeType === 'trivia') ? room.currentChallengeContent.correctAnswer : undefined
+            response: response
         });
         await new Promise(resolve => setTimeout(resolve, 3000));
     }
