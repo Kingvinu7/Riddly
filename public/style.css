@@ -2383,3 +2383,128 @@ input[type="text"]:focus {
     max-height: 250px;
     min-height: 100px;
 }
+
+/* Individual Result Overlay */
+#result-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: none; /* Initially hidden, controlled by JS */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.individual-result {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    border: 2px solid var(--accent-red);
+    box-shadow: 0 0 20px var(--accent-red);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: zoomIn 0.3s ease-out;
+}
+
+.individual-result.passed {
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px #4CAF50;
+}
+
+.individual-result.failed {
+    border-color: var(--accent-red);
+    box-shadow: 0 0 20px var(--accent-red);
+}
+
+.result-response, .result-feedback, .correct-answer {
+    width: 100%;
+    text-align: center;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 1em;
+    line-height: 1.4;
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--glass-bg);
+}
+
+.result-response {
+    border-left: 3px solid var(--accent-cyan);
+    color: var(--text-secondary);
+}
+
+.result-feedback {
+    border-left: 3px solid var(--accent-yellow);
+    color: var(--text-primary);
+}
+
+.correct-answer {
+    color: #4CAF50;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* Typing cursor effect */
+.result-response::after, .result-feedback::after {
+    content: '|';
+    animation: blink-cursor 1s infinite;
+}
+
+/* New Trivia Buttons */
+.trivia-options-container {
+    width: 100%;
+    display: flex; /* Controlled by JS */
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.trivia-option {
+    width: 100%;
+    text-align: center;
+}
+
+.trivia-option.selected {
+    background: var(--accent-red) !important;
+    border-color: var(--accent-red);
+    box-shadow: 0 0 10px var(--accent-red);
+    color: var(--text-primary) !important;
+}
+
+/* Enhanced Timer Colors and Auto-Submit Style */
+.timer.danger {
+    color: var(--accent-yellow);
+}
+
+.timer.urgent {
+    color: var(--accent-red);
+    animation: blink 1s steps(1, end) infinite;
+}
+
+.timer.auto-submit {
+    color: var(--accent-purple);
+    animation: none;
+    font-size: 2em;
+}
+
+/* New Animations */
+@keyframes zoomIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes blink-cursor {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
