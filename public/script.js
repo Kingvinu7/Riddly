@@ -114,18 +114,32 @@ function submitRiddleAnswer() {
 
 // FIXED: Enhanced submit challenge response with auto-submit support
 function submitChallengeResponse(isAutoSubmit = false) {
-    const response = document.getElementById('challenge-response').value.trim();
+    const responseField = document.getElementById('challenge-response');
+    const triviaOptions = document.getElementById('trivia-options-container');
     const submitBtn = document.getElementById('submit-challenge-response');
-    
-    // Skip validation for auto-submit
-    if (!isAutoSubmit) {
-        if (!response) {
-            alert('Please enter your response - this is a complex challenge that requires thought!');
+    let response = '';
+
+    // Handle trivia vs. other challenges
+    if (triviaOptions.style.display !== 'none') {
+        const selectedOption = document.querySelector('.trivia-option.selected');
+        if (selectedOption) {
+            response = selectedOption.textContent;
+        } else if (!isAutoSubmit) {
+            alert('Please select an option!');
             return;
         }
-        if (response.length < 5) {
-            alert('Please provide a more detailed response for this complex scenario.');
-            return;
+    } else {
+        response = responseField.value.trim();
+        // Skip validation for auto-submit
+        if (!isAutoSubmit) {
+            if (!response) {
+                alert('Please enter your response - this is a complex challenge that requires thought!');
+                return;
+            }
+            if (response.length < 5) {
+                alert('Please provide a more detailed response for this complex scenario.');
+                return;
+            }
         }
     }
     
@@ -133,7 +147,14 @@ function submitChallengeResponse(isAutoSubmit = false) {
     // Add indicator for auto-submitted responses
     const finalResponse = isAutoSubmit ? `[Auto-submitted] ${response}` : response;
     socket.emit('submit-challenge-response', { roomCode: currentRoom, response: finalResponse });
-    document.getElementById('challenge-response').disabled = true;
+
+    // Disable relevant controls
+    if (triviaOptions.style.display !== 'none') {
+        document.querySelectorAll('.trivia-option').forEach(btn => btn.disabled = true);
+    } else {
+        responseField.disabled = true;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = isAutoSubmit ? 'Auto-Submitted!' : 'Submitted!';
     if (isAutoSubmit) {
@@ -331,7 +352,9 @@ function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     const textarea = document.getElementById('challenge-response');
     const submitBtn = document.getElementById('submit-challenge-response');
+    const triviaOptions = document.getElementById('trivia-options-container');
     let timeLeft = seconds;
+    
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
@@ -352,24 +375,24 @@ function startChallengeTimer(elementId, seconds) {
             clearInterval(timer);
             element.classList.remove('urgent', 'danger');
             
-            // FIXED: Auto-submit if user has typed something
-            if (textarea && !textarea.disabled && !submitBtn.disabled) {
-                const currentText = textarea.value.trim();
-                if (currentText.length > 0) {
-                    console.log('⏰ Auto-submitting response:', currentText.substring(0, 30) + '...');
-                    
-                    // Add visual indicator
-                    element.textContent = 'AUTO-SUBMIT';
-                    element.classList.add('auto-submit');
-                    
-                    // Auto-submit the current text
-                    setTimeout(() => {
-                        submitChallengeResponse(true);
-                    }, 500);
-                } else {
-                    console.log('⏰ Timer ended with no input');
-                    element.textContent = 'TIME UP';
-                }
+            // FIXED: Auto-submit if user has typed something (text or selected option)
+            const hasInput = (textarea.style.display !== 'none' && textarea.value.trim().length > 0) ||
+                             (triviaOptions.style.display !== 'none' && document.querySelector('.trivia-option.selected'));
+
+            if (hasInput && !submitBtn.disabled) {
+                console.log('⏰ Auto-submitting response...');
+                
+                // Add visual indicator
+                element.textContent = 'AUTO-SUBMIT';
+                element.classList.add('auto-submit');
+                
+                // Auto-submit the current text
+                setTimeout(() => {
+                    submitChallengeResponse(true);
+                }, 500);
+            } else {
+                console.log('⏰ Timer ended with no input');
+                element.textContent = 'TIME UP';
             }
         }
     }, 1000);
@@ -416,9 +439,9 @@ async function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
     
-    // FIXED: Better text handling for display
     let responseText = data.response || "";
     const isAutoSubmitted = responseText.startsWith('[Auto-submitted]');
+    const isTrivia = data.challengeType === 'trivia';
     
     if (isAutoSubmitted) {
         responseText = responseText.replace('[Auto-submitted] ', '');
@@ -429,11 +452,14 @@ async function showIndividualResult(data) {
     const autoSubmitIndicator = isAutoSubmitted ?
         '<div class="auto-submit-indicator">⏰ Auto-submitted when time expired</div>' : '';
     
+    const triviaCorrectAnswer = isTrivia ? `<div class="correct-answer">Correct Answer: <strong>${data.correctAnswer}</strong></div>` : '';
+
     const resultHtml = `
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
             <h3>${data.passed ? '✅ WELL REASONED!' : '❌ INSUFFICIENT!'}</h3>
             ${autoSubmitIndicator}
             <div class="result-response"></div>
+            ${triviaCorrectAnswer}
             <div class="result-feedback"></div>
             <div class="continue-instruction">Click 'Continue' to proceed.</div>
             <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
@@ -560,22 +586,49 @@ socket.on('text-challenge-start', (data) => {
         document.getElementById('text-challenge-title').textContent = 
             `${data.challengeType.toUpperCase()} CHALLENGE`;
         
-        // Better content handling with validation
-        const challengeContent = data.challengeContent;
         const contentElement = document.getElementById('text-challenge-content');
-        
-        if (!challengeContent || challengeContent.trim().length === 0) {
-            console.warn('Empty challenge content received, using fallback');
-            contentElement.textContent = "Challenge loading failed. Please describe your approach to the situation.";
+        const textarea = document.getElementById('challenge-response');
+        const triviaOptionsContainer = document.getElementById('trivia-options-container');
+
+        // Reset display states
+        textarea.style.display = 'block';
+        triviaOptionsContainer.style.display = 'none';
+
+        if (data.challengeType === 'trivia') {
+            // Handle trivia-specific UI
+            contentElement.textContent = data.challengeContent;
+            textarea.style.display = 'none';
+            triviaOptionsContainer.style.display = 'flex';
+            
+            // Clear and populate options
+            triviaOptionsContainer.innerHTML = '';
+            data.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'btn secondary trivia-option';
+                btn.textContent = option;
+                btn.onclick = () => {
+                    document.querySelectorAll('.trivia-option').forEach(el => el.classList.remove('selected'));
+                    btn.classList.add('selected');
+                };
+                triviaOptionsContainer.appendChild(btn);
+            });
+            document.getElementById('submit-challenge-response').textContent = 'Lock in Answer';
+
         } else {
-            console.log('Setting challenge content:', challengeContent.substring(0, 50) + '...');
-            contentElement.textContent = challengeContent;
+            // Handle other challenges
+            if (!data.challengeContent || data.challengeContent.trim().length === 0) {
+                console.warn('Empty challenge content received, using fallback');
+                contentElement.textContent = "Challenge loading failed. Please describe your approach to the situation.";
+            } else {
+                console.log('Setting challenge content:', data.challengeContent.substring(0, 50) + '...');
+                contentElement.textContent = data.challengeContent;
+            }
+            document.getElementById('submit-challenge-response').textContent = 'Submit Response';
         }
         
         document.getElementById('challenge-response').value = '';
         document.getElementById('challenge-response').disabled = false;
         document.getElementById('submit-challenge-response').disabled = false;
-        document.getElementById('submit-challenge-response').textContent = 'Submit Response';
         document.getElementById('text-challenge-submission-count').textContent = 
             `0/${data.participants.length} players responded`;
         
@@ -584,9 +637,10 @@ socket.on('text-challenge-start', (data) => {
         startChallengeTimer('text-challenge-timer', data.timeLimit || 40);
         // Auto-focus on textarea after a brief delay
         setTimeout(() => {
-            const textarea = document.getElementById('challenge-response');
-            textarea.focus();
-            textarea.placeholder = 'Think carefully and provide a detailed response... (auto-submits at 0)';
+            if (textarea.style.display !== 'none') {
+                textarea.focus();
+                textarea.placeholder = 'Think carefully and provide a detailed response... (auto-submits at 0)';
+            }
         }, 500);
     } else {
         document.getElementById('waiting-title').textContent = 'Others are facing a complex challenge...';
