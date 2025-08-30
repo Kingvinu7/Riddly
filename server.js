@@ -178,7 +178,7 @@ async function generateChallengeContent(type, roundNumber) {
     if (!genAI) {
         // Medium difficulty fallback content with simple words
         const fallbacks = {
-            negotiator: "Your friend is locked out of their house and you are the only one with a spare key, but they once stole your favorite book and never returned it. Convince them to let you help without mentioning the book.",
+            negotiator: "You need rare medicine for your sick friend. The black market dealer has it but wants your family heirloom ring. You can't afford to lose the ring. Convince them to accept something else.",
             detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
             trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
             danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
@@ -193,7 +193,7 @@ async function generateChallengeContent(type, roundNumber) {
 
         switch (type) {
             case 'negotiator':
-                prompt = `Create a unique, challenging negotiation scenario with a moral dilemma. Use simple words but make it complex. 40-50 words max. Player must convince someone to help with a difficult situation. Example: "You need to convince a stubborn shopkeeper to give you a discount on an item for a good cause, but they are known for their strict no-discount policy."`;
+                prompt = `Create a challenging negotiation scenario with moral dilemma. Use simple words but make it complex. 40-50 words max. Player must convince someone to help with something difficult. Example: "You need to borrow your neighbor's car for an emergency, but you crashed their bike last month and never paid for repairs. They're still angry. Convince them to trust you again."`;
                 break;
             case 'detective':
                 prompt = `Create a mystery with 4-5 clues and 3 suspects. Use simple words but make it challenging to solve. 60-70 words max. Include red herrings. Example: "Someone poisoned the king's food. Clues: bitter taste, cook was nervous, guard left early, poison bottle in garden, rival prince visited kitchen. Suspects: head cook, royal guard, prince's messenger."`;
@@ -221,7 +221,7 @@ async function generateChallengeContent(type, roundNumber) {
         if (!cleaned || cleaned.length < 10) {
             console.log('AI generated empty or too short content, using fallback');
             const fallbacks = {
-                negotiator: "Your friend is locked out of their house and you are the only one with a spare key, but they once stole your favorite book and never returned it. Convince them to let you help without mentioning the book.",
+                negotiator: "You need rare medicine for your sick friend. The black market dealer has it but wants your family heirloom ring. You can't afford to lose the ring. Convince them to accept something else.",
                 detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
                 trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
                 danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
@@ -798,7 +798,7 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 Threatened by AI server running on port ${PORT}`);
-    console.log('🎯 FIXED: Auto-submit, judgment text, tie-breaking!');
+    console.log('🎯 FIXED: Auto-submit, judgment text, tie-breaking, and auto-progression!');
     console.log('⏱️ Challenge Timer: 40 seconds with auto-submit');
     console.log('🎲 Total Riddles Available:', gameData.riddles.length);
     console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
