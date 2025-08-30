@@ -425,12 +425,14 @@ async function startChallengePhase(roomCode) {
     // Determine challenge type for this round
     const challengeTypeIndex = (room.currentRound - 1) % CHALLENGE_TYPES.length;
     const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
+    room.currentChallengeType = challengeType; // Store the type for evaluation
 
     console.log(`Round ${room.currentRound}: ${challengeType} challenge (40 seconds)`);
     io.to(roomCode).emit('oracle-speaks', {
         message: `Round ${room.currentRound}: Face my ${challengeType.toUpperCase()} challenge!`,
         type: 'challenge-intro'
     });
+    
     setTimeout(async () => {
         if (challengeType === 'fastTapper') {
             // Fast Tapper Challenge
@@ -463,6 +465,15 @@ async function startChallengePhase(roomCode) {
                 timeLimit: 40
             };
             if (challengeType === 'trivia') {
+                // Ensure correct structure for trivia
+                if (!challengeContent.question || !Array.isArray(challengeContent.options)) {
+                    console.error("Trivia content malformed, using fallback.");
+                    challengeContent = {
+                         question: "What is the capital of France?",
+                         options: ["London", "Berlin", "Paris", "Rome"],
+                         correctAnswer: "Paris"
+                    };
+                }
                 payload.challengeContent = challengeContent.question;
                 payload.options = challengeContent.options;
                 // Store the full trivia object for evaluation later
