@@ -4,6 +4,7 @@ let playerName = null;
 let isRoomOwner = false;
 let tapCount = 0;
 let tapperActive = false;
+let challengeTimer = null; // Store timer ID
 
 // DOM elements
 const pages = {
@@ -355,7 +356,12 @@ function startChallengeTimer(elementId, seconds) {
     const triviaOptions = document.getElementById('trivia-options-container');
     let timeLeft = seconds;
     
-    const timer = setInterval(() => {
+    // Clear any existing timer
+    if (challengeTimer) {
+        clearInterval(challengeTimer);
+    }
+    
+    challengeTimer = setInterval(() => {
         element.textContent = timeLeft;
         
         // Color coding for better UX - adjusted for 40 seconds
@@ -372,7 +378,7 @@ function startChallengeTimer(elementId, seconds) {
         timeLeft--;
         
         if (timeLeft < 0) {
-            clearInterval(timer);
+            clearInterval(challengeTimer);
             element.classList.remove('urgent', 'danger');
             
             // FIXED: Auto-submit if user has typed something (text or selected option)
@@ -396,7 +402,7 @@ function startChallengeTimer(elementId, seconds) {
             }
         }
     }, 1000);
-    return timer;
+    return challengeTimer;
 }
 
 // Typing effect function
@@ -580,6 +586,7 @@ socket.on('riddle-results-reveal', (data) => {
 
 // FIXED: Handle text challenges with auto-submit functionality
 socket.on('text-challenge-start', (data) => {
+    console.log('Received text-challenge-start event:', data);
     const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
@@ -602,16 +609,22 @@ socket.on('text-challenge-start', (data) => {
             
             // Clear and populate options
             triviaOptionsContainer.innerHTML = '';
-            data.options.forEach(option => {
-                const btn = document.createElement('button');
-                btn.className = 'btn secondary trivia-option';
-                btn.textContent = option;
-                btn.onclick = () => {
-                    document.querySelectorAll('.trivia-option').forEach(el => el.classList.remove('selected'));
-                    btn.classList.add('selected');
-                };
-                triviaOptionsContainer.appendChild(btn);
-            });
+            // Ensure data.options exists and is an array before iterating
+            if (data.options && Array.isArray(data.options)) {
+                data.options.forEach(option => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn secondary trivia-option';
+                    btn.textContent = option;
+                    btn.onclick = () => {
+                        document.querySelectorAll('.trivia-option').forEach(el => el.classList.remove('selected'));
+                        btn.classList.add('selected');
+                    };
+                    triviaOptionsContainer.appendChild(btn);
+                });
+            } else {
+                console.error("Trivia options missing or malformed in event data:", data);
+                triviaOptionsContainer.innerHTML = '<p>Error: Challenge options failed to load. Please wait for the next round.</p>';
+            }
             document.getElementById('submit-challenge-response').textContent = 'Lock in Answer';
 
         } else {
