@@ -435,6 +435,7 @@ async function showIndividualResult(data) {
             ${autoSubmitIndicator}
             <div class="result-response"></div>
             <div class="result-feedback"></div>
+            <div class="continue-instruction">Click 'Continue' to proceed.</div>
             <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
         </div>
     `;
@@ -454,6 +455,14 @@ async function showIndividualResult(data) {
     continueBtn.classList.remove('hidden'); // Show the button after typing is complete
     
     console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length, isAutoSubmitted });
+    
+    // Auto-hide the overlay after a delay if the user hasn't clicked
+    setTimeout(() => {
+        if (overlay.style.display === 'flex') {
+            console.log("Auto-hiding judgment overlay after timeout.");
+            hideIndividualResult();
+        }
+    }, 8000); // 8-second delay
 }
 
 function hideIndividualResult() {
