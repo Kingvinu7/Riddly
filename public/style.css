@@ -1239,7 +1239,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     width: 90%;
     /* Allow unlimited height during typing */
     height: auto;
-    min-height: 40px;
+    min-height: 80px;
     overflow: visible;
 }
 
@@ -1260,6 +1260,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     /* Allow unlimited height during typing */
     height: auto;
     min-height: 80px;
+    max-height: none; 
     overflow: visible;
 }
 
