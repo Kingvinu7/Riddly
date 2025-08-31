@@ -4,7 +4,6 @@ let playerName = null;
 let isRoomOwner = false;
 let tapCount = 0;
 let tapperActive = false;
-let challengeTimer = null;
 
 // DOM elements
 const pages = {
@@ -20,14 +19,15 @@ const pages = {
     roundSummary: document.getElementById('round-summary-screen'),
     gameOver: document.getElementById('game-over-screen')
 };
-
 const playerNameInput = document.getElementById('player-name');
 const roomCodeInput = document.getElementById('room-code');
 const riddleAnswer = document.getElementById('riddle-answer');
+
 const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const startGameBtn = document.getElementById('start-game-btn');
 const submitRiddleBtn = document.getElementById('submit-riddle');
+
 const roomCodeDisplay = document.getElementById('room-code-display');
 const playersListEl = document.getElementById('players-list');
 const oracleIntroMessage = document.getElementById('oracle-intro-message');
@@ -38,7 +38,6 @@ createRoomBtn.addEventListener('click', createRoom);
 joinRoomBtn.addEventListener('click', joinRoom);
 startGameBtn.addEventListener('click', startGame);
 submitRiddleBtn.addEventListener('click', submitRiddleAnswer);
-
 playerNameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') createRoom();
 });
@@ -57,15 +56,11 @@ document.getElementById('challenge-response').addEventListener('keypress', (e) =
 
 // Fast tapper event listener
 document.getElementById('tap-button').addEventListener('click', onTap);
-
 // Utility functions
 function showPage(pageName) {
-    console.log('Showing page:', pageName);
     Object.values(pages).forEach(page => page.classList.remove('active'));
     if (pages[pageName]) {
         pages[pageName].classList.add('active');
-    } else {
-        console.error('Page not found:', pageName);
     }
 }
 
@@ -117,85 +112,45 @@ function submitRiddleAnswer() {
     submitRiddleBtn.textContent = 'Submitted!';
 }
 
+// FIXED: Enhanced submit challenge response with auto-submit support
 function submitChallengeResponse(isAutoSubmit = false) {
-    console.log('Submitting challenge response, auto:', isAutoSubmit);
-    
-    const responseField = document.getElementById('challenge-response');
-    const triviaOptions = document.getElementById('trivia-options-container');
+    const response = document.getElementById('challenge-response').value.trim();
     const submitBtn = document.getElementById('submit-challenge-response');
     
-    if (!responseField || !triviaOptions || !submitBtn) {
-        console.error('Missing UI elements for submission');
-        return;
-    }
-    
-    let response = '';
-
-    if (triviaOptions.style.display !== 'none') {
-        const selectedOption = document.querySelector('.trivia-option.selected');
-        if (selectedOption) {
-            response = selectedOption.textContent.trim();
-        } else if (!isAutoSubmit) {
-            alert('Please select an option!');
+    // Skip validation for auto-submit
+    if (!isAutoSubmit) {
+        if (!response) {
+            alert('Please enter your response - this is a complex challenge that requires thought!');
             return;
         }
-    } else {
-        response = responseField.value.trim();
-        if (!isAutoSubmit) {
-            if (!response) {
-                alert('Please enter your response - this challenge requires thought!');
-                return;
-            }
-            if (response.length < 5) {
-                alert('Please provide a more detailed response for this complex scenario.');
-                return;
-            }
+        if (response.length < 5) {
+            alert('Please provide a more detailed response for this complex scenario.');
+            return;
         }
     }
     
-    if (!currentRoom) {
-        console.error('No current room for submission');
-        return;
-    }
-
+    if (!currentRoom) return;
+    // Add indicator for auto-submitted responses
     const finalResponse = isAutoSubmit ? `[Auto-submitted] ${response}` : response;
-    
-    console.log('Sending response:', finalResponse.substring(0, 50) + '...');
-    socket.emit('submit-challenge-response', { 
-        roomCode: currentRoom, 
-        response: finalResponse 
-    });
-
-    if (triviaOptions.style.display !== 'none') {
-        document.querySelectorAll('.trivia-option').forEach(btn => {
-            btn.disabled = true;
-            btn.classList.add('disabled');
-        });
-    } else {
-        responseField.disabled = true;
-    }
-
+    socket.emit('submit-challenge-response', { roomCode: currentRoom, response: finalResponse });
+    document.getElementById('challenge-response').disabled = true;
     submitBtn.disabled = true;
     submitBtn.textContent = isAutoSubmit ? 'Auto-Submitted!' : 'Submitted!';
-    
-    if (challengeTimer) {
-        clearInterval(challengeTimer);
-        challengeTimer = null;
-    }
-    
     if (isAutoSubmit) {
+        // Show user their response was auto-submitted
         setTimeout(() => {
             const shortResponse = response.length > 50 ? response.substring(0, 50) + '...' : response;
-            alert(`Time ran out - response auto-submitted: "${shortResponse}"`);
+            alert(`⏰ Your response was auto-submitted: "${shortResponse}"`);
         }, 1000);
     }
 }
 
+// Fast tapper functionality
 function onTap() {
     if (!tapperActive) return;
     tapCount++;
     document.getElementById('tap-count').textContent = tapCount.toString();
-    
+    // Enhanced visual feedback
     const button = document.getElementById('tap-button');
     const countDisplay = document.getElementById('tap-count');
     
@@ -208,6 +163,7 @@ function onTap() {
     }, 50);
 }
 
+// Enhanced fast tapper timer
 function startFastTapperTimer(duration) {
     tapperActive = true;
     let timeLeft = duration;
@@ -220,8 +176,9 @@ function startFastTapperTimer(duration) {
         } else if (timeLeft <= 5) {
             document.getElementById('fast-tapper-timer').classList.add('danger');
             document.getElementById('fast-tapper-timer').classList.remove('urgent');
-        }
-    
+   
+         }
+        
         timeLeft--;
         
         if (timeLeft < 0) {
@@ -229,9 +186,11 @@ function startFastTapperTimer(duration) {
             tapperActive = false;
             document.getElementById('tap-button').disabled = true;
             document.getElementById('fast-tapper-timer').classList.remove('urgent', 'danger');
-            
+      
+            // Submit result
             socket.emit('submit-tap-result', { roomCode: currentRoom, taps: tapCount });
             
+            // Show completion message
             setTimeout(() => {
                 alert(`Time's up! You tapped ${tapCount} times!`);
             }, 500);
@@ -239,6 +198,7 @@ function startFastTapperTimer(duration) {
     }, 1000);
 }
 
+// Enhanced lobby functions
 function updateLobbyOwnerDisplay() {
     const lobbyHeader = document.querySelector('.lobby-header');
     const existingOwnerBadge = document.querySelector('.owner-badge');
@@ -249,7 +209,7 @@ function updateLobbyOwnerDisplay() {
     if (isRoomOwner) {
         const ownerBadge = document.createElement('div');
         ownerBadge.className = 'owner-badge';
-        ownerBadge.innerHTML = 'You are the Room Owner';
+        ownerBadge.innerHTML = '👑 You are the Room Owner';
         lobbyHeader.appendChild(ownerBadge);
     }
 }
@@ -257,27 +217,21 @@ function updateLobbyOwnerDisplay() {
 function updateStartButton() {
     const playerCount = document.querySelectorAll('.player').length;
     const waitingText = document.querySelector('.waiting-text');
-    const startGameBtn = document.getElementById('start-game-btn');
-    
     if (isRoomOwner && playerCount >= 2) {
         startGameBtn.classList.remove('hidden');
         startGameBtn.disabled = false;
         startGameBtn.textContent = 'Start Game';
-        if (waitingText) waitingText.style.display = 'none';
+        waitingText.style.display = 'none';
     } else if (isRoomOwner && playerCount < 2) {
         startGameBtn.classList.remove('hidden');
         startGameBtn.disabled = true;
         startGameBtn.textContent = 'Need More Players';
-        if (waitingText) {
-            waitingText.textContent = 'Waiting for more players...';
-            waitingText.style.display = 'block';
-        }
+        waitingText.textContent = 'Waiting for more players...';
+        waitingText.style.display = 'block';
     } else {
         startGameBtn.classList.add('hidden');
-        if (waitingText) {
-            waitingText.textContent = 'Waiting for room owner to start...';
-            waitingText.style.display = 'block';
-        }
+        waitingText.textContent = 'Waiting for room owner to start...';
+        waitingText.style.display = 'block';
     }
 }
 
@@ -286,12 +240,13 @@ function updatePlayers(players) {
         const isOwnerPlayer = index === 0;
         return `
             <div class="player ${isOwnerPlayer ? 'owner-player' : ''}">
-                ${isOwnerPlayer ? 'Owner: ' : ''}${player.name}: ${player.score}pts
+                ${isOwnerPlayer ? '👑 ' : ''}${player.name}: ${player.score}pts
             </div>
         `;
     }).join('');
 }
 
+// Enhanced points table creation with bulletproof error handling
 function createPointsTable(roundHistory, tableId) {
     const table = document.getElementById(tableId);
     if (!table) {
@@ -307,6 +262,7 @@ function createPointsTable(roundHistory, tableId) {
     }
     
     let tableHtml = '<div class="points-table">';
+    // Header
     tableHtml += '<div class="points-table-header">';
     tableHtml += '<div class="player-name-header">Player</div>';
     for (let i = 1; i <= 5; i++) {
@@ -314,20 +270,23 @@ function createPointsTable(roundHistory, tableId) {
     }
     tableHtml += '<div class="total-header">Total</div>';
     tableHtml += '</div>';
-    
+    // Player rows
     roundHistory.forEach(playerHistory => {
-        if (!playerHistory.playerName) return;
+        if (!playerHistory.playerName) return; // Skip invalid entries
         
         tableHtml += '<div class="points-table-row">';
         tableHtml += `<div class="player-name-cell">${playerHistory.playerName}</div>`;
         
+        // Round results
         for (let i = 0; i < 5; i++) {
             const result = (playerHistory.rounds && playerHistory.rounds[i]) ? playerHistory.rounds[i] : '-';
             const resultClass = result === 'W' ? 'win' : result === 'L' ? 'loss' : '';
             tableHtml += `<div class="round-result ${resultClass}">${result}</div>`;
         }
         
+        // Total wins
         const totalWins = playerHistory.rounds ? playerHistory.rounds.filter(r => r === 'W').length : 0;
+    
         tableHtml += `<div class="total-score">${totalWins}</div>`;
         tableHtml += '</div>';
     });
@@ -337,20 +296,15 @@ function createPointsTable(roundHistory, tableId) {
     console.log('Points table created successfully for:', tableId);
 }
 
-let currentTimer;
-function startTimer(elementId, seconds, onComplete = () => {}) {
+// Enhanced timer with better color progression
+function startTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
-    if (!element) {
-        console.error('Timer element not found:', elementId);
-        return;
-    }
-    
     let timeLeft = seconds;
-    clearInterval(currentTimer);
     
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
+        // Better color progression
         if (timeLeft <= 10) {
             element.classList.add('urgent');
             element.classList.remove('danger');
@@ -366,35 +320,22 @@ function startTimer(elementId, seconds, onComplete = () => {}) {
         if (timeLeft < 0) {
             clearInterval(timer);
             element.classList.remove('urgent', 'danger');
-            onComplete();
         }
     }, 1000);
     
-    currentTimer = timer;
+    return timer;
 }
 
+// FIXED: Enhanced challenge timer with auto-submit functionality
 function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
-    if (!element) {
-        console.error('Timer element not found:', elementId);
-        return null;
-    }
-    
     const textarea = document.getElementById('challenge-response');
     const submitBtn = document.getElementById('submit-challenge-response');
-    const triviaOptions = document.getElementById('trivia-options-container');
-    
     let timeLeft = seconds;
-    
-    if (challengeTimer) {
-        clearInterval(challengeTimer);
-    }
-    
-    console.log('Timer started:', seconds, 'seconds');
-    
-    challengeTimer = setInterval(() => {
+    const timer = setInterval(() => {
         element.textContent = timeLeft;
         
+        // Color coding for better UX - adjusted for 40 seconds
         if (timeLeft <= 10) {
             element.classList.add('urgent');
             element.classList.remove('danger');
@@ -408,36 +349,34 @@ function startChallengeTimer(elementId, seconds) {
         timeLeft--;
         
         if (timeLeft < 0) {
-            console.log('Timer expired!');
-            clearInterval(challengeTimer);
-            challengeTimer = null;
+            clearInterval(timer);
             element.classList.remove('urgent', 'danger');
             
-            const hasTextInput = textarea && textarea.style.display !== 'none' && textarea.value.trim().length > 0;
-            const hasTriviaSelection = triviaOptions && 
-                                    triviaOptions.style.display !== 'none' && 
-                                    document.querySelector('.trivia-option.selected');
-            
-            const hasInput = hasTextInput || hasTriviaSelection;
-
-            if (hasInput && submitBtn && !submitBtn.disabled) {
-                console.log('Auto-submitting response due to timeout...');
-                element.textContent = 'AUTO-SUBMIT';
-                element.classList.add('auto-submit');
-                
-                setTimeout(() => {
-                    submitChallengeResponse(true);
-                }, 500);
-            } else {
-                console.log('Timer ended with no input to submit');
-                element.textContent = 'TIME UP';
+            // FIXED: Auto-submit if user has typed something
+            if (textarea && !textarea.disabled && !submitBtn.disabled) {
+                const currentText = textarea.value.trim();
+                if (currentText.length > 0) {
+                    console.log('⏰ Auto-submitting response:', currentText.substring(0, 30) + '...');
+                    
+                    // Add visual indicator
+                    element.textContent = 'AUTO-SUBMIT';
+                    element.classList.add('auto-submit');
+                    
+                    // Auto-submit the current text
+                    setTimeout(() => {
+                        submitChallengeResponse(true);
+                    }, 500);
+                } else {
+                    console.log('⏰ Timer ended with no input');
+                    element.textContent = 'TIME UP';
+                }
             }
         }
     }, 1000);
-    
-    return challengeTimer;
+    return timer;
 }
 
+// Typing effect function
 function typeWriter(element, text, speed = 30) {
     return new Promise((resolve) => {
         element.textContent = '';
@@ -472,18 +411,14 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
+// FIXED: Better individual result overlay with proper text handling
 async function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
     
-    if (!overlay || !content) {
-        console.error('Result overlay elements not found');
-        return;
-    }
-    
+    // FIXED: Better text handling for display
     let responseText = data.response || "";
     const isAutoSubmitted = responseText.startsWith('[Auto-submitted]');
-    const isTrivia = data.challengeType === 'trivia';
     
     if (isAutoSubmitted) {
         responseText = responseText.replace('[Auto-submitted] ', '');
@@ -492,16 +427,13 @@ async function showIndividualResult(data) {
     const feedbackText = data.feedback || "No feedback available.";
     
     const autoSubmitIndicator = isAutoSubmitted ?
-        '<div class="auto-submit-indicator">Time expired - response auto-submitted</div>' : '';
+        '<div class="auto-submit-indicator">⏰ Auto-submitted when time expired</div>' : '';
     
-    const triviaCorrectAnswer = isTrivia ? `<div class="correct-answer">Correct Answer: <strong>${data.correctAnswer}</strong></div>` : '';
-
     const resultHtml = `
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
-            <h3>${data.passed ? 'WELL REASONED!' : 'INSUFFICIENT!'}</h3>
+            <h3>${data.passed ? '✅ WELL REASONED!' : '❌ INSUFFICIENT!'}</h3>
             ${autoSubmitIndicator}
             <div class="result-response"></div>
-            ${triviaCorrectAnswer}
             <div class="result-feedback"></div>
             <div class="continue-instruction">Click 'Continue' to proceed.</div>
             <button onclick="hideIndividualResult()" class="btn secondary">Continue</button>
@@ -515,20 +447,22 @@ async function showIndividualResult(data) {
     const feedbackEl = content.querySelector('.result-feedback');
     const continueBtn = content.querySelector('.btn');
     
-    await typeWriter(responseEl, `"${responseText}"`, 20);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Animate the typing effect
+    await typeWriter(responseEl, `"${responseText}"`, 20); // Faster speed for the response
+    await new Promise(resolve => setTimeout(resolve, 500)); // Pause between the two texts
     await typeWriter(feedbackEl, feedbackText);
     
-    continueBtn.classList.remove('hidden');
+    continueBtn.classList.remove('hidden'); // Show the button after typing is complete
     
     console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length, isAutoSubmitted });
     
+    // Auto-hide the overlay after a delay if the user hasn't clicked
     setTimeout(() => {
         if (overlay.style.display === 'flex') {
             console.log("Auto-hiding judgment overlay after timeout.");
             hideIndividualResult();
         }
-    }, 8000);
+    }, 8000); // 8-second delay
 }
 
 function hideIndividualResult() {
@@ -548,7 +482,6 @@ socket.on('room-created', (data) => {
     updateStartButton();
     showPage('lobby');
 });
-
 socket.on('join-success', (data) => {
     currentRoom = data.roomCode;
     isRoomOwner = data.isOwner;
@@ -558,22 +491,18 @@ socket.on('join-success', (data) => {
     updateStartButton();
     showPage('lobby');
 });
-
 socket.on('player-joined', (data) => {
     updatePlayers(data.players);
     updateStartButton();
 });
-
 socket.on('player-left', (data) => {
     updatePlayers(data.players);
     updateStartButton();
 });
-
 socket.on('oracle-speaks', (data) => {
     oracleIntroMessage.textContent = data.message;
     showPage('oracleIntro');
 });
-
 socket.on('riddle-presented', (data) => {
     document.getElementById('round-display').textContent = `Round ${data.round}/${data.maxRounds}`;
     riddleText.textContent = data.riddle.question;
@@ -584,17 +513,15 @@ socket.on('riddle-presented', (data) => {
     submitRiddleBtn.disabled = false;
     submitRiddleBtn.textContent = 'Submit Answer';
     
-    document.getElementById('submission-count').textContent = `0/0 players answered`;
+    document.getElementById('submission-count').textContent = '0/0 players answered';
     
     showPage('riddle');
     startTimer('riddle-timer', 45);
 });
-
 socket.on('answer-submitted', (data) => {
-    document.getElementById('submission-count').textContent =
+    document.getElementById('submission-count').textContent = 
         `${data.totalSubmissions}/${data.totalPlayers} players answered`;
 });
-
 socket.on('riddle-results-reveal', (data) => {
     document.getElementById('riddle-results-message').textContent = data.message;
     
@@ -611,11 +538,11 @@ socket.on('riddle-results-reveal', (data) => {
                 <div class="answer-header">
                     <span class="player-name">${answerData.playerName}</span>
                     <span class="answer-order">${orderText}</span>
-                    ${isWinner ? '<span class="winner-badge">WINNER</span>' : ''}
+                    ${isWinner ? '<span class="winner-badge">🏆 WINNER</span>' : ''}
                 </div>
                 <div class="answer-text">"${answerData.answer}"</div>
                 <div class="answer-status">
-                    ${isCorrect ? 'Correct' : 'Incorrect'}
+                    ${isCorrect ? '✅ Correct' : '❌ Incorrect'}
                 </div>
             </div>
         `;
@@ -625,113 +552,51 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
+// FIXED: Handle text challenges with auto-submit functionality
 socket.on('text-challenge-start', (data) => {
-    console.log('Received text-challenge-start event:', data);
-    console.log('Challenge data properties:', Object.keys(data));
-    console.log('Full challenge data:', JSON.stringify(data, null, 2));
-    
-    const isParticipant = data.participants && data.participants.includes(playerName);
+    const isParticipant = data.participants.includes(playerName);
     
     if (isParticipant) {
-        const challengeTitle = document.getElementById('text-challenge-title');
-        if (challengeTitle) {
-            challengeTitle.textContent = `${(data.challengeType || 'CHALLENGE').toUpperCase()} CHALLENGE`;
-        }
+        document.getElementById('text-challenge-title').textContent = 
+            `${data.challengeType.toUpperCase()} CHALLENGE`;
         
+        // Better content handling with validation
+        const challengeContent = data.challengeContent;
         const contentElement = document.getElementById('text-challenge-content');
-        const textarea = document.getElementById('challenge-response');
-        const triviaOptionsContainer = document.getElementById('trivia-options-container');
-        const submitBtn = document.getElementById('submit-challenge-response');
-
-        if (!contentElement || !textarea || !triviaOptionsContainer || !submitBtn) {
-            console.error('Missing challenge UI elements!');
-            return;
-        }
-
-        textarea.style.display = 'none';
-        triviaOptionsContainer.style.display = 'none';
-        textarea.value = '';
-        textarea.disabled = false;
-        submitBtn.disabled = false;
-        contentElement.textContent = '';
-
-        if (data.challengeType === 'trivia') {
-            console.log('Setting up trivia challenge');
-            
-            const questionText = data.challengeContent || data.question || data.content || data.text || 'Trivia question loading...';
-            contentElement.textContent = questionText;
-            
-            triviaOptionsContainer.style.display = 'flex';
-            triviaOptionsContainer.innerHTML = '';
-            
-            const options = data.options || data.choices || data.answers || [];
-            
-            if (Array.isArray(options) && options.length > 0) {
-                console.log('Creating trivia options:', options);
-                options.forEach((option, index) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn secondary trivia-option';
-                    btn.textContent = option;
-                    btn.onclick = () => {
-                        document.querySelectorAll('.trivia-option').forEach(el => el.classList.remove('selected'));
-                        btn.classList.add('selected');
-                    };
-                    triviaOptionsContainer.appendChild(btn);
-                });
-            } else {
-                console.error('No valid trivia options found!');
-                triviaOptionsContainer.innerHTML = '<p class="error-message">Trivia options failed to load. Please refresh and try again.</p>';
-            }
-            
-            submitBtn.textContent = 'Lock in Answer';
-
+        
+        if (!challengeContent || challengeContent.trim().length === 0) {
+            console.warn('Empty challenge content received, using fallback');
+            contentElement.textContent = "Challenge loading failed. Please describe your approach to the situation.";
         } else {
-            console.log('Setting up text challenge');
-            
-            textarea.style.display = 'block';
-            
-            const challengeText = data.challengeContent || 
-                                 data.scenario || 
-                                 data.content || 
-                                 data.text || 
-                                 data.description ||
-                                 'Challenge scenario loading...';
-            
-            console.log('Challenge content length:', challengeText.length);
-            contentElement.textContent = challengeText;
-            
-            submitBtn.textContent = 'Submit Response';
-            
-            textarea.placeholder = 'Think carefully and provide a detailed response... (auto-submits when timer reaches 0)';
-            setTimeout(() => textarea.focus(), 500);
+            console.log('Setting challenge content:', challengeContent.substring(0, 50) + '...');
+            contentElement.textContent = challengeContent;
         }
         
-        const submissionCounter = document.getElementById('text-challenge-submission-count');
-        if (submissionCounter) {
-            submissionCounter.textContent = `0/${data.participants.length} players responded`;
-        }
+        document.getElementById('challenge-response').value = '';
+        document.getElementById('challenge-response').disabled = false;
+        document.getElementById('submit-challenge-response').disabled = false;
+        document.getElementById('submit-challenge-response').textContent = 'Submit Response';
+        document.getElementById('text-challenge-submission-count').textContent = 
+            `0/${data.participants.length} players responded`;
         
-        console.log('Showing text challenge page');
         showPage('textChallenge');
-        
-        if (challengeTimer) {
-            clearInterval(challengeTimer);
-            challengeTimer = null;
-        }
-        
-        const timeLimit = data.timeLimit || data.duration || 40;
-        console.log('Starting timer for', timeLimit, 'seconds');
-        startChallengeTimer('text-challenge-timer', timeLimit);
-        
+        // FIXED: Use enhanced timer with auto-submit
+        startChallengeTimer('text-challenge-timer', data.timeLimit || 40);
+        // Auto-focus on textarea after a brief delay
+        setTimeout(() => {
+            const textarea = document.getElementById('challenge-response');
+            textarea.focus();
+            textarea.placeholder = 'Think carefully and provide a detailed response... (auto-submits at 0)';
+        }, 500);
     } else {
-        console.log('Player is spectating this challenge');
         document.getElementById('waiting-title').textContent = 'Others are facing a complex challenge...';
         document.getElementById('waiting-message').textContent = 
-            `Non-winners are solving a challenging ${data.challengeType || 'challenge'} scenario!`;
+            `Non-winners are solving a challenging ${data.challengeType} scenario!`;
         showPage('waiting');
     }
 });
 
+// Handle fast tapper challenges
 socket.on('fast-tapper-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -748,19 +613,19 @@ socket.on('fast-tapper-start', (data) => {
         showPage('waiting');
     }
 });
-
+// Handle individual challenge results
 socket.on('challenge-individual-result', (data) => {
     showIndividualResult(data);
 });
-
+// Handle challenge results screens
 socket.on('fast-tapper-results', (data) => {
-    document.getElementById('challenge-results-title').textContent = 'FAST TAPPER RESULTS';
-    document.getElementById('challenge-results-message').textContent =
+    document.getElementById('challenge-results-title').textContent = '⚡ FAST TAPPER RESULTS';
+    document.getElementById('challenge-results-message').textContent = 
         `Fastest fingers: ${data.maxTaps} taps!`;
     
     const resultsHtml = data.results.map(result => `
         <div class="tap-result-item ${result.won ? 'winner' : ''}">
-            <span class="tap-result-name">${result.won ? 'Winner: ' : ''}${result.playerName}</span>
+            <span class="tap-result-name">${result.won ? '🏆 ' : ''}${result.playerName}</span>
             <span class="tap-result-count">${result.taps} taps</span>
         </div>
     `).join('');
@@ -768,21 +633,21 @@ socket.on('fast-tapper-results', (data) => {
     document.getElementById('challenge-results-content').innerHTML = resultsHtml;
     showPage('challengeResults');
 });
-
+// Handle submission status updates
 socket.on('challenge-response-submitted', (data) => {
-    document.getElementById('text-challenge-submission-count').textContent =
+    document.getElementById('text-challenge-submission-count').textContent = 
         `${data.totalSubmissions}/${data.expectedSubmissions} players responded`;
 });
-
 socket.on('tap-result-submitted', (data) => {
     console.log(`${data.player} tapped ${data.taps} times`);
 });
-
+// Enhanced round summary handler - always shows leaderboard
 socket.on('round-summary', (data) => {
     console.log('Received round-summary:', data);
     
     document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
     
+    // Always create points table, even with minimal data
     if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
         createPointsTable(data.roundHistory, 'points-table');
     } else {
@@ -804,15 +669,16 @@ socket.on('round-summary', (data) => {
     
     showPage('roundSummary');
 });
-
+// FIXED: Enhanced game-over handler with tie-breaking display
 socket.on('game-over', (data) => {
-    console.log('Game over received:', data);
+    console.log('🏆 Game over received:', data);
     
+    // Use data.scores from the server, which is the sorted list of players
     const scoresHtml = data.scores.map((player, index) => {
-        const medal = index === 0 ? 'Winner' : index === 1 ? '2nd' : index === 2 ? '3rd' : `${index + 1}th`;
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
         return `
             <div class="final-score ${index === 0 ? 'winner' : ''}">
-                <span>${medal}: ${player.name}</span>
+                <span>${medal} ${player.name}</span>
                 <span>${player.score} pts</span>
             </div>
         `;
@@ -820,13 +686,14 @@ socket.on('game-over', (data) => {
     
     const bigWinnerEl = document.getElementById('big-winner-announcement');
     if (bigWinnerEl) {
-        const tieText = data.tied ? '<br><span style="font-size:0.6em;">It\'s a Tie!</span>' : '';
-        bigWinnerEl.innerHTML = `CHAMPION: ${data.winner.name}<br><span style="font-size:0.7em;">${data.winner.score} Points</span>${tieText}`;
+        // Use data.tied from the server to check for a tie
+        const tieText = data.tied ? '<br><span style="font-size:0.6em;">🎯 It\'s a Tie!</span>' : '';
+        bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>${tieText}`;
     }
     
     const finalOracleEl = document.getElementById('final-oracle');
     if (finalOracleEl) {
-        finalOracleEl.textContent = data.winner.score > 0 ? 'Oracle' : 'Oracle';
+        finalOracleEl.textContent = data.winner.score > 0 ? '💥' : '🤖';
     }
     
     const finalOracleMessageEl = document.getElementById('final-oracle-message');
@@ -839,6 +706,7 @@ socket.on('game-over', (data) => {
         finalScoresEl.innerHTML = scoresHtml;
     }
     
+    // Always create final points table
     if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
         createPointsTable(data.roundHistory, 'final-points-table');
     } else {
@@ -851,13 +719,12 @@ socket.on('game-over', (data) => {
     
     showPage('gameOver');
 });
-
 socket.on('error', (data) => {
-    console.error('Socket error:', data);
-    alert('Game error: ' + data.message);
+    console.error('Socket error:', data.message);
+    alert(data.message);
 });
 
 // Initialize
 showPage('home');
 playerNameInput.focus();
-console.log('Frontend loaded - Threatened by AI v4.8 (Complete Fixed Version)');
+console.log('Frontend loaded - Threatened by AI v4.7 (Judgement Typing Effect)');
