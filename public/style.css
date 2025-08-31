@@ -1224,8 +1224,8 @@ input[type="text"]::placeholder, textarea::placeholder {
     background: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 6px;
-    padding: 12px;
-    margin: 10px 0;
+    padding: 15px;
+    margin: 15px auto;
     font-style: italic;
     color: var(--text-secondary);
     font-family: 'JetBrains Mono', monospace;
@@ -1233,31 +1233,34 @@ input[type="text"]::placeholder, textarea::placeholder {
     word-break: break-word;
     white-space: pre-wrap;
     overflow-wrap: break-word;
-    max-height: 180px;
-    overflow-y: auto;
-    min-height: 50px;
-    text-align: center;
+    line-height: 1.6;
+    text-align: left;
     max-width: 90%;
-    margin: 0 auto 10px auto;
+    width: 90%;
+    /* Allow unlimited height during typing */
+    height: auto;
+    min-height: 40px;
+    overflow: visible;
 }
 
 .result-feedback {
     color: var(--text-primary);
-    line-height: 1.5;
-    margin: 16px 0;
+    line-height: 1.6;
+    margin: 15px auto;
     font-family: 'JetBrains Mono', monospace;
-    padding: 12px;
+    padding: 15px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 6px;
     word-break: break-word;
     white-space: pre-wrap;
     overflow-wrap: break-word;
-    max-height: 180px;
-    overflow-y: auto;
-    min-height: 50px;
-    text-align: center;
+    text-align: left;
     max-width: 90%;
-    margin: 16px auto;
+    width: 90%;
+    /* Allow unlimited height during typing */
+    height: auto;
+    min-height: 40px;
+    overflow: visible;
 }
 
 .continue-instruction {
