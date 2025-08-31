@@ -1259,7 +1259,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     width: 90%;
     /* Allow unlimited height during typing */
     height: auto;
-    min-height: 120px;
+    min-height: 20px;
     overflow: visible;
 }
 
