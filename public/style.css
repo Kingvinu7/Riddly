@@ -1720,3 +1720,137 @@ textarea:focus {
 .result-overlay { z-index: 10000; }
 body::after { z-index: 1000; }
 body::before { z-index: -1; }
+
+/* ===== INDIVIDUAL RESULT OVERLAY ===== */
+.result-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+    animation: overlayFadeIn 0.3s ease-out;
+}
+
+.result-overlay-content {
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.individual-result {
+    background: var(--bg-secondary);
+    border: 3px solid;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    max-width: 1000px;
+    height: auto;
+    max-height: none; /* Corrected: Explicitly set to none */
+    overflow: visible; /* Corrected: Set to visible to prevent scrollbars */
+    animation: resultPopIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-soft);
+}
+
+.individual-result.passed {
+    border-color: #00ff88;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), var(--bg-secondary));
+    box-shadow: 0 0 40px rgba(0, 255, 136, 0.3);
+}
+
+.individual-result.failed {
+    border-color: var(--accent-red);
+    background: linear-gradient(135deg, rgba(255, 8, 68, 0.1), var(--bg-secondary));
+    box-shadow: 0 0 40px rgba(255, 8, 68, 0.3);
+}
+
+.individual-result h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2em;
+    font-weight: 800;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.individual-result.passed h3 {
+    color: #00ff88;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.individual-result.failed h3 {
+    color: var(--accent-red);
+    text-shadow: 0 0 20px rgba(255, 8, 68, 0.5);
+}
+
+.auto-submit-indicator {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    margin-bottom: 12px;
+    border: 1px solid #ff9800;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+}
+
+.result-response,
+.result-feedback {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px auto;
+    font-style: italic;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+    text-align: left;
+    max-width: 90%;
+    width: 600px;
+    height: auto;
+    min-height: 80px;
+    max-height: none; /* Corrected: Allows the box to grow */
+    word-break: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    overflow: visible; /* Corrected: Prevents overflow forcing scrollbar */
+}
+
+.continue-instruction {
+    margin: 15px 0;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ... (rest of your CSS code) ... */
+
+/* ===== MOBILE RESPONSIVENESS ===== */
+@media (max-width: 768px) {
+    /* ... (other mobile styles) ... */
+
+    .individual-result {
+        padding: 20px;
+        margin: 10px;
+        max-width: 90%;
+        max-height: none; /* Corrected: Removed fixed height limit */
+        overflow: visible; /* Corrected: Prevents scrollbar on mobile */
+    }
+
+    .individual-result h3 {
+        font-size: 1.6em;
+    }
+
+    .result-feedback,
+    .result-response {
+        /* This line was causing a lot of issues */
+        max-height: none;
+        overflow: visible;
+        font-size: 0.95em;
+    }
