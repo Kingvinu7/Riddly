@@ -380,19 +380,18 @@ function startChallengeTimer(elementId, seconds) {
 function typeWriter(element, text, speed = 30) {
     return new Promise((resolve) => {
         element.textContent = '';
+        element.scrollTop = 0; // Start at top
         let i = 0;
-        let isTyping = true;
-        
-        document.body.style.pointerEvents = 'none';
         
         function typeNextChar() {
-            if (i < text.length && isTyping) {
+            if (i < text.length) {
                 element.textContent += text.charAt(i);
+                element.scrollTop = element.scrollHeight; // Auto-scroll to bottom
                 i++;
                 
                 const char = text.charAt(i - 1);
                 let delay = speed;
-        
+                
                 if (char === '.' || char === '!' || char === '?') {
                     delay = speed * 3;
                 } else if (char === ',' || char === ';') {
@@ -401,8 +400,6 @@ function typeWriter(element, text, speed = 30) {
                 
                 setTimeout(typeNextChar, delay);
             } else {
-                isTyping = false;
-                document.body.style.pointerEvents = 'auto';
                 resolve();
             }
         }
