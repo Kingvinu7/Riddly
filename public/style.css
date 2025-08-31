@@ -1256,7 +1256,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     overflow-wrap: break-word;
     text-align: left;
     max-width: 90%;
-    width: 100%;
+    width: 600px; /* Increased the box size */
     /* Allow unlimited height during typing */
     height: auto;
     min-height: 80px;
@@ -1529,7 +1529,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     }
     
     .result-feedback, .result-response {
-        max-height: 120px;
+        /* This line was removed: max-height: 120px; */
         font-size: 0.95em;
     }
     
