@@ -1158,8 +1158,8 @@ input[type="text"]::placeholder, textarea::placeholder {
     border-radius: 12px;
     padding: 30px;
     text-align: center;
-    max-width: 800px;
-    max-height: 90vh;
+    max-width: 1000px;
+    max-height: 100vh;
     overflow-y: auto;
     animation: resultPopIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
     backdrop-filter: blur(20px);
