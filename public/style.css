@@ -1147,7 +1147,7 @@ input[type="text"]::placeholder, textarea::placeholder {
 }
 
 .result-overlay-content {
-    
+    max-width: 90%;
     max-height: 90%;
     overflow-y: auto;
 }
@@ -1158,8 +1158,8 @@ input[type="text"]::placeholder, textarea::placeholder {
     border-radius: 12px;
     padding: 30px;
     text-align: center;
-    max-width: 1000px;
-    max-height: 120vh;
+    max-width: 600px;
+    max-height: 80vh;
     overflow-y: auto;
     animation: resultPopIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
     backdrop-filter: blur(20px);
@@ -1239,7 +1239,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     width: 90%;
     /* Allow unlimited height during typing */
     height: auto;
-    min-height: 80px;
+    min-height: 40px;
     overflow: visible;
 }
 
@@ -1256,11 +1256,10 @@ input[type="text"]::placeholder, textarea::placeholder {
     overflow-wrap: break-word;
     text-align: left;
     max-width: 90%;
-    width: 600px; /* Increased the box size */
+    width: 90%;
     /* Allow unlimited height during typing */
     height: auto;
-    min-height: 80px;
-    max-height: none; 
+    min-height: 40px;
     overflow: visible;
 }
 
@@ -1529,7 +1528,7 @@ input[type="text"]::placeholder, textarea::placeholder {
     }
     
     .result-feedback, .result-response {
-        /* This line was removed: max-height: 120px; */
+        max-height: 120px;
         font-size: 0.95em;
     }
     
