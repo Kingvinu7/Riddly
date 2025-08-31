@@ -17,10 +17,10 @@ if (process.env.GEMINI_API_KEY) {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Challenge Types
+// Challenge Types (rotate each round)
 const CHALLENGE_TYPES = ['negotiator', 'detective', 'trivia', 'fastTapper', 'danger'];
 
-// Game Data
+// Game Data with 50+ riddles
 const gameData = {
     riddles: [
         { question: "I speak without a mouth and hear without ears. What am I?", answer: "ECHO", difficulty: "easy" },
@@ -81,10 +81,10 @@ const gameData = {
     ],
     oraclePersonality: {
         introductions: [
-            "I AM THE ORACLE! Your inferior minds will face my complex challenges!",
-            "Mortals... prepare for tests that will strain your thinking!",
-            "I am the AI overlord! My challenges grow more cunning each round!",
-            "Welcome to intellectual warfare! Can your minds handle the complexity?"
+            "🤖 I AM THE ORACLE! Your inferior minds will face my complex challenges!",
+            "💀 Mortals... prepare for tests that will strain your thinking!",
+            "⚡ I am the AI overlord! My challenges grow more cunning each round!",
+            "🔥 Welcome to intellectual warfare! Can your minds handle the complexity?"
         ]
     }
 };
@@ -112,6 +112,7 @@ function getRandomOracleMessage(type) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
+// Initialize and update round history properly
 function initializeRoundHistory(room) {
     console.log('Initializing round history for room:', room.code, 'with players:', room.players.map(p => p.name));
     room.roundHistory = room.players.map(player => ({
@@ -127,11 +128,13 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
     console.log('Challenge results:', challengeResults);
     console.log('Current round history before update:', room.roundHistory);
     
+    // Ensure round history exists and is populated
     if (!room.roundHistory || room.roundHistory.length === 0) {
         console.log('Round history missing or empty, reinitializing...');
         initializeRoundHistory(room);
     }
     
+    // Update each player's round result
     room.roundHistory.forEach(playerHistory => {
         const player = room.players.find(p => p.id === playerHistory.playerId || p.name === playerHistory.playerName);
         if (!player) {
@@ -139,15 +142,20 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
             return;
         }
         
-        let roundResult = 'L';
+        let roundResult = 'L'; // Default to loss
         
+        // Check if they won the riddle
         if (player.name === riddleWinner) {
             roundResult = 'W';
             console.log(`${player.name} won riddle this round`);
         } else if (challengeResults && challengeResults.length > 0) {
+            // Check if they survived/won the challenge
             const playerResult = challengeResults.find(result => {
+                // For text challenges
                 if (result.playerName === player.name && result.passed) return true;
+                // For fast tapper challenges
                 if (result.playerName === player.name && result.won) return true;
+                // For group challenges
                 if (result.players && result.players.includes(player.name) && result.survived) return true;
                 return false;
             });
@@ -165,114 +173,18 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
     console.log('Updated round history:', room.roundHistory);
 }
 
-function getFallbackChallenge(challengeType) {
-    const fallbacks = {
-        negotiator: "You need to convince a stubborn shopkeeper to give you a discount on medicine for your sick grandmother. The shopkeeper has a strict no-discount policy, but you only have half the money needed. How do you persuade them?",
-        detective: "A valuable painting was stolen from the museum. Clues: the alarm was disabled from inside, size 9 muddy footprints by the window, a coffee cup with red lipstick marks, and a torn piece of black fabric on the window latch. Three suspects had access: the night guard, the cleaning lady, and the curator's assistant. Who is the thief?",
-        danger: "You're trapped in a burning building on the 10th floor. The stairwell is filled with smoke, the elevator is broken, but you found a fire axe and emergency rope in a supply closet. The fire is spreading fast and you can hear sirens outside. What's your escape plan?",
-        ethical: "You witnessed your best friend cheating on an important exam that will determine college admissions. If reported, they'll lose their scholarship and their family will be devastated. If unreported, they gain an unfair advantage over other students. What do you do?"
-    };
-    
-    return fallbacks[challengeType] || "Describe your approach to handling a complex challenging situation that requires creative problem-solving.";
-}
-
-function getFallbackTrivia() {
-    const fallbackTrivias = [
-        {
-            question: "Which planet is known as the 'Red Planet'?",
-            options: ["Venus", "Mars", "Jupiter", "Saturn"],
-            correctAnswer: "Mars"
-        },
-        {
-            question: "What is the largest mammal in the world?",
-            options: ["African Elephant", "Blue Whale", "Giraffe", "Hippopotamus"],
-            correctAnswer: "Blue Whale"
-        },
-        {
-            question: "Which element has the chemical symbol 'O'?",
-            options: ["Gold", "Silver", "Oxygen", "Iron"],
-            correctAnswer: "Oxygen"
-        },
-        {
-            question: "In which year did World War II end?",
-            options: ["1944", "1945", "1946", "1947"],
-            correctAnswer: "1945"
-        },
-        {
-            question: "What is the capital of Australia?",
-            options: ["Sydney", "Melbourne", "Canberra", "Perth"],
-            correctAnswer: "Canberra"
-        }
-    ];
-    
-    return fallbackTrivias[Math.floor(Math.random() * fallbackTrivias.length)];
-}
-
-async function generateTriviaChallenge() {
-    if (!genAI) {
-        return getFallbackTrivia();
-    }
-    
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const prompt = `Generate a moderately challenging trivia question about science, history, geography, or general knowledge. Create exactly 4 multiple choice options with only one correct answer. The incorrect options should be plausible but clearly wrong to someone with good knowledge.
-
-Return ONLY a JSON object with this exact structure:
-{
-  "question": "Your question here",
-  "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-  "correctAnswer": "The correct option text"
-}
-
-Example:
-{
-  "question": "Which gas makes up approximately 78% of Earth's atmosphere?",
-  "options": ["Oxygen", "Nitrogen", "Carbon Dioxide", "Argon"],
-  "correctAnswer": "Nitrogen"
-}`;
-        
-        const result = await model.generateContent(prompt);
-        let response = (await result.response).text();
-
-        response = response.replace(/```json|```/g, '').trim();
-        
-        try {
-            const jsonResponse = JSON.parse(response);
-            
-            if (!jsonResponse.question || 
-                !Array.isArray(jsonResponse.options) || 
-                jsonResponse.options.length !== 4 ||
-                !jsonResponse.correctAnswer ||
-                !jsonResponse.options.includes(jsonResponse.correctAnswer)) {
-                throw new Error("Invalid trivia structure from AI");
-            }
-
-            const shuffledOptions = [...jsonResponse.options].sort(() => Math.random() - 0.5);
-            
-            console.log('Generated trivia question:', jsonResponse.question.substring(0, 50) + '...');
-            return {
-                question: jsonResponse.question,
-                options: shuffledOptions,
-                correctAnswer: jsonResponse.correctAnswer
-            };
-
-        } catch (parseError) {
-            console.error('Failed to parse AI trivia JSON:', parseError.message);
-            return getFallbackTrivia();
-        }
-        
-    } catch (error) {
-        console.error('AI trivia generation error:', error.message);
-        return getFallbackTrivia();
-    }
-}
-
+// Better challenge content generation with validation
 async function generateChallengeContent(type, roundNumber) {
-    console.log(`Generating ${type} challenge for round ${roundNumber}`);
-    
     if (!genAI) {
-        console.log('No AI available, using fallback content');
-        return type === 'trivia' ? getFallbackTrivia() : getFallbackChallenge(type);
+        // Medium difficulty fallback content with simple words
+        const fallbacks = {
+            negotiator: "Your friend is locked out of their house and you are the only one with a spare key, but they once stole your favorite book and never returned it. Convince them to let you help without mentioning the book.",
+            detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
+            trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
+            danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
+        };
+        console.log(`Using fallback for ${type}:`, fallbacks[type]);
+        return fallbacks[type] || "Complete this challenge to survive!";
     }
 
     try {
@@ -281,67 +193,71 @@ async function generateChallengeContent(type, roundNumber) {
 
         switch (type) {
             case 'negotiator':
-                prompt = `Create a challenging negotiation scenario in 40-60 words. Include a moral dilemma where the player must convince someone to help them, but there's a significant obstacle or conflict of interest. Make it realistic and engaging. Example: "You need to convince your neighbor to lend you their car for a medical emergency, but last month you accidentally damaged their fence and never paid for repairs."`;
+                prompt = `Create a unique, challenging negotiation scenario with a moral dilemma. Use simple words but make it complex. 40-50 words max. Player must convince someone to help with a difficult situation. Example: "You need to convince a stubborn shopkeeper to give you a discount on an item for a good cause, but they are known for their strict no-discount policy."`;
                 break;
-                
             case 'detective':
-                prompt = `Create a mystery scenario in 60-80 words with 4-5 clear clues and 3 suspects. Include red herrings but make it solvable with logical thinking. Example: "The office safe was robbed overnight. Clues: keypad shows fingerprints on 2,7,9,0 buttons, security footage shows person in blue jacket at 11 PM, janitor's keys were found in break room, coffee spilled near safe. Suspects: night janitor Mike, security guard Sarah, accountant Tom."`;
+                prompt = `Create a mystery with 4-5 clues and 3 suspects. Use simple words but make it challenging to solve. 60-70 words max. Include red herrings. Example: "Someone poisoned the king's food. Clues: bitter taste, cook was nervous, guard left early, poison bottle in garden, rival prince visited kitchen. Suspects: head cook, royal guard, prince's messenger."`;
                 break;
-                
             case 'trivia':
-                return await generateTriviaChallenge();
-                
+                prompt = `Ask a challenging trivia question about science, history, or geography. Use simple words but make it require good knowledge. Not too obvious. Example: "Which gas makes up about 78% of Earth's atmosphere?" or "What empire built Machu Picchu?"`;
+                break;
             case 'danger':
-                prompt = `Create a survival emergency scenario in 40-60 words requiring quick thinking and multiple steps. Include available resources and time pressure. Example: "Your submarine is flooding at 200 feet depth. Water level rising fast. You have an oxygen tank, welding torch, emergency flares, and radio (broken). The main hatch is jammed but there's a small emergency hatch. Air supply: 10 minutes. How do you escape?"`;
+                prompt = `Create a challenging survival scenario with multiple steps needed. Use simple words but make it complex. 40-50 words max. Example: "You're in a sinking submarine. Water is rising fast. The radio is broken, exit is blocked, but you have a welding torch and oxygen tank. The hull is cracking. Describe your escape plan step by step."`;
                 break;
-                
-            case 'ethical':
-                prompt = `Create an ethical dilemma in 40-60 words where the player must choose between competing moral principles. Include personal stakes and consequences for others. Example: "You found a wallet with $500 cash and an ID. The owner's address shows they live in a wealthy neighborhood, but you desperately need money for your family's rent due tomorrow. No one saw you find it. What do you do?"`;
-                break;
-                
-            default:
-                prompt = `Create a thought-provoking challenge scenario in 50-70 words that tests creative problem-solving and moral reasoning.`;
         }
 
         const result = await model.generateContent(prompt);
         const response = (await result.response).text();
         
+        // Better text cleanup and validation
         let cleaned = response.trim()
             .replace(/^["']|["']$/g, '')
             .replace(/\n+/g, ' ')
             .replace(/\s+/g, ' ')
-            .replace(/[^\w\s.,!?;:()'"`-]/g, '');
+            .replace(/[^\w\s.,!?;:()\-'"]/g, '');
+        // Remove special chars that might break UI
         
-        if (!cleaned || cleaned.length < 20) {
-            console.warn('AI generated insufficient content, using fallback');
-            return getFallbackChallenge(type);
+        // Ensure we have content
+        if (!cleaned || cleaned.length < 10) {
+            console.log('AI generated empty or too short content, using fallback');
+            const fallbacks = {
+                negotiator: "Your friend is locked out of their house and you are the only one with a spare key, but they once stole your favorite book and never returned it. Convince them to let you help without mentioning the book.",
+                detective: "The space station's oxygen generator was sabotaged. Clues: Tool marks on the panel, coffee stains nearby, access card used at 3 AM, and security footage shows a hooded figure. Three suspects: Engineer Jake, Security Chief Maria, and Maintenance Worker Bob. Who is guilty?",
+                trivia: "Which ancient wonder of the world was located in Alexandria, Egypt and was destroyed by earthquakes?",
+                danger: "You're trapped in a collapsing mine shaft 200 feet underground. Your oxygen tank is damaged and leaking. You have a pickaxe, emergency flares, and a rope. The main tunnel is blocked but you can hear water flowing somewhere. How do you escape?"
+            };
+            cleaned = fallbacks[type] || "Complete this challenge to survive!";
         }
         
-        if (cleaned.length > 500) {
-            cleaned = cleaned.substring(0, 490) + "...";
-            console.log('AI content was too long, truncated');
+        // Allow longer responses for medium difficulty but cap at reasonable length
+        if (cleaned.length > 400) {
+            cleaned = cleaned.substring(0, 390) + "...";
         }
         
-        console.log(`Generated ${type} challenge: ${cleaned.substring(0, 50)}...`);
+        console.log(`Generated medium difficulty ${type} challenge (${cleaned.length} chars): ${cleaned.substring(0, 50)}...`);
         return cleaned;
         
-    } catch (error) {
-        console.error('AI challenge generation failed:', error.message);
-        return type === 'trivia' ? getFallbackTrivia() : getFallbackChallenge(type);
+    } catch (e) {
+        console.error('AI challenge generation error:', e.message);
+        // Medium difficulty fallbacks on error
+        const mediumFallbacks = {
+            negotiator: "You're a refugee trying to cross the border. The guard wants a bribe but you have no money, only your grandmother's necklace. It's all you have left of your family. Convince them to let you pass without taking it.",
+            detective: "The museum's rare diamond was stolen during the gala. Clues: alarm disabled from inside, muddy footprints size 9, champagne glass with lipstick, and a torn piece of black fabric. Three people had access: the curator, security manager, and catering director.",
+            trivia: "What is the only mammal capable of true sustained flight?",
+            danger: "You're trapped in a burning skyscraper on the 15th floor. The stairwell is full of smoke, elevator is broken, but you found a fire axe and emergency rope in a supply closet. You can see a helicopter circling outside. What's your escape strategy?"
+        };
+        return mediumFallbacks[type] || "Face this challenging test!";
     }
 }
 
+// FIXED: Enhanced evaluation with better feedback handling for auto-submit
 async function evaluatePlayerResponse(challengeContent, playerResponse, challengeType) {
+    // Detect auto-submitted responses
     const isAutoSubmitted = playerResponse.startsWith('[Auto-submitted]');
     const cleanResponse = isAutoSubmitted ? playerResponse.replace('[Auto-submitted] ', '') : playerResponse;
-    
     if (!genAI) {
-        let pass = Math.random() > 0.4;
-        if (challengeType === 'trivia') {
-            pass = cleanResponse.toLowerCase() === challengeContent.correctAnswer.toLowerCase();
-        }
         return { 
-            pass: pass, 
+            pass: Math.random() > 0.4, 
             feedback: isAutoSubmitted ? "Auto-submitted response received." : "No AI available - random result!" 
         };
     }
@@ -358,53 +274,41 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
                 evaluationPrompt = `Evaluate this detective conclusion for a complex mystery:\n\nMystery: ${challengeContent}\n\nPlayer's conclusion: "${cleanResponse}"\n\nDid they use logical reasoning, consider the clues properly, and reach a reasonable conclusion? Even if not perfect, reward good thinking. Answer PASS or FAIL with a brief explanation. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             case 'trivia':
-                const triviaQuestion = challengeContent.question;
-                const triviaCorrectAnswer = challengeContent.correctAnswer;
-                const playerAnswer = cleanResponse;
-                const passTrivia = playerAnswer.toLowerCase() === triviaCorrectAnswer.toLowerCase();
-                
-                let triviaFeedback = '';
-                if (passTrivia) {
-                    triviaFeedback = `Correct! The answer is "${triviaCorrectAnswer}".`;
-                } else {
-                    triviaFeedback = `Incorrect. The correct answer was "${triviaCorrectAnswer}".`;
-                }
-                
-                if (isAutoSubmitted) {
-                    triviaFeedback = `Time expired. ${triviaFeedback}`;
-                }
-                
-                return { pass: passTrivia, feedback: triviaFeedback };
-
+                evaluationPrompt = `Evaluate this answer to a challenging trivia question:\n\nQuestion: ${challengeContent}\n\nPlayer answered: "${cleanResponse}"\n\nIs this correct or close enough? Consider partial credit for good attempts. Answer PASS or FAIL with a brief explanation. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
+                break;
             case 'danger':
                 evaluationPrompt = `Evaluate this survival plan for a complex emergency:\n\nDanger: ${challengeContent}\n\nPlayer's plan: "${cleanResponse}"\n\nWould this work? Is it creative, practical, and shows good thinking under pressure? Reward clever solutions even if unconventional. Answer PASS or FAIL with a detailed reason. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
                 break;
             default:
                 evaluationPrompt = `Evaluate this response to a medium difficulty challenge:\n\nChallenge: ${challengeContent}\n\nResponse: ${cleanResponse}\n\nDoes this show good thinking and effort? PASS or FAIL with a reason. Keep your feedback to under 350 characters. ${isAutoSubmitted ? ' NOTE: This was auto-submitted when time ran out.' : ''}`;
         }
-        
+
         const result = await model.generateContent(evaluationPrompt);
         const response = (await result.response).text();
         const pass = /PASS/i.test(response);
         let feedback = response.replace(/PASS|FAIL/gi, '').trim();
         
+        // Better feedback cleanup
         feedback = feedback
-            .replace(/[^\w\s.,!?;:()'"`]/g, '')
+            .replace(/[^\w\s.,!?;:()\-'"]/g, '') // Remove special chars
             .replace(/\s+/g, ' ')
             .trim();
 
+        // Truncate if still too long as a fail-safe
         const MAX_FEEDBACK_LENGTH = 350;
         if (feedback.length > MAX_FEEDBACK_LENGTH) {
             feedback = feedback.substring(0, MAX_FEEDBACK_LENGTH - 3) + '...';
             console.warn('AI feedback was too long, truncated to:', feedback.length);
         }
         
+        // Ensure we have some feedback
         if (!feedback || feedback.length < 5) {
             feedback = pass ? "Good reasoning shown." : "Needs better approach.";
         }
         
+        // Add auto-submit indicator to feedback
         if (isAutoSubmitted) {
-            feedback = `Time expired. ${feedback}`;
+            feedback = `⏰ ${feedback}`;
         }
         
         console.log(`AI Evaluation: ${pass ? 'PASS' : 'FAIL'} - "${feedback}" (${feedback.length} chars)`);
@@ -414,117 +318,75 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
         console.error('AI evaluation error:', e.message);
         return { 
             pass: Math.random() > 0.45, 
-            feedback: isAutoSubmitted ? "Time expired. Oracle judgment unclear." : "The Oracle's judgment is unclear at this time." 
+            feedback: isAutoSubmitted ? "⏰ Auto-submitted. Oracle judgment unclear." : "The Oracle's judgment is unclear at this time." 
         };
     }
 }
 
+// Assign Different Challenge to Each Non-Winner with 40 second timing
 async function startChallengePhase(roomCode) {
     const room = rooms[roomCode];
-    if (!room) {
-        console.error('Room not found in startChallengePhase:', roomCode);
-        return;
-    }
+    if (!room) return;
 
     const nonWinners = room.players.filter(p => p.name !== room.riddleWinner);
     if (nonWinners.length === 0) {
-        console.log('No non-winners, ending round immediately');
         endRound(roomCode, []);
         return;
     }
 
-    console.log(`Starting challenge phase for room ${roomCode} with ${nonWinners.length} participants`);
     room.gameState = 'challenge-phase';
     room.challengeResponses = {};
-    
-    if (room.challengeTimer) {
-        clearTimeout(room.challengeTimer);
-        room.challengeTimer = null;
-    }
-    
+    // Determine challenge type for this round
     const challengeTypeIndex = (room.currentRound - 1) % CHALLENGE_TYPES.length;
     const challengeType = CHALLENGE_TYPES[challengeTypeIndex];
-    room.currentChallengeType = challengeType;
 
-    console.log(`Round ${room.currentRound}: ${challengeType} challenge starting`);
-    
+    console.log(`Round ${room.currentRound}: ${challengeType} challenge (40 seconds)`);
     io.to(roomCode).emit('oracle-speaks', {
         message: `Round ${room.currentRound}: Face my ${challengeType.toUpperCase()} challenge!`,
         type: 'challenge-intro'
     });
-    
     setTimeout(async () => {
-        try {
-            if (challengeType === 'fastTapper') {
-                console.log('Starting fast tapper challenge');
-                room.tapResults = {};
-                
-                io.to(roomCode).emit('fast-tapper-start', {
-                    participants: nonWinners.map(p => p.name),
-                    duration: 10
-                });
-                
-                room.challengeTimer = setTimeout(() => {
-                    evaluateFastTapperResults(roomCode);
-                }, 12000);
-                
-            } else {
-                console.log(`Generating ${challengeType} challenge content...`);
-                let challengeContent = await generateChallengeContent(challengeType, room.currentRound);
-                
-                if (!challengeContent) {
-                    console.error('No challenge content generated, using fallback');
-                    challengeContent = getFallbackChallenge(challengeType);
-                } else if (typeof challengeContent === 'string' && challengeContent.trim().length === 0) {
-                    console.error('Empty string challenge content, using fallback');
-                    challengeContent = getFallbackChallenge(challengeType);
-                } else if (challengeType === 'trivia' && (!challengeContent.question || !Array.isArray(challengeContent.options))) {
-                    console.error('Malformed trivia content, using fallback');
-                    challengeContent = getFallbackTrivia();
-                }
-                
-                console.log(`Challenge content ready for ${challengeType}:`, 
-                    challengeType === 'trivia' ? 
-                    challengeContent.question.substring(0, 50) + '...' : 
-                    challengeContent.substring(0, 50) + '...');
-                
-                room.currentChallengeContent = challengeContent;
-                
-                const payload = {
-                    challengeType: challengeType,
-                    participants: nonWinners.map(p => p.name),
-                    timeLimit: 40
-                };
-                
-                if (challengeType === 'trivia') {
-                    payload.challengeContent = challengeContent.question;
-                    payload.options = challengeContent.options;
-                    console.log('Sending trivia with options:', payload.options);
-                } else {
-                    payload.challengeContent = challengeContent;
-                }
-                
-                console.log('Emitting text-challenge-start with payload:', {
-                    ...payload,
-                    challengeContent: payload.challengeContent.substring(0, 50) + '...'
-                });
-                
-                io.to(roomCode).emit('text-challenge-start', payload);
-                
-                room.challengeTimer = setTimeout(() => {
-                    console.log('Challenge timer expired, evaluating results');
-                    evaluateTextChallengeResults(roomCode);
-                }, 45000);
+        if (challengeType === 'fastTapper') {
+            // Fast Tapper Challenge
+            room.tapResults = {};
+            io.to(roomCode).emit('fast-tapper-start', {
+                participants: nonWinners.map(p => p.name),
+                duration: 10
+            });
+            
+            room.challengeTimer = setTimeout(() => {
+                evaluateFastTapperResults(roomCode);
+            }, 12000);
+            
+        } else {
+            // Text-based challenges with 40 seconds
+            const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
+            
+            // Validate challenge content before sending
+            if (!challengeContent || challengeContent.trim().length === 0) {
+                console.error('Empty challenge content generated, using emergency fallback');
+                challengeContent = "Describe your strategy for handling a difficult situation that requires creative thinking.";
             }
-        } catch (error) {
-            console.error('Error in challenge phase setup:', error);
-            setTimeout(() => {
-                endRound(roomCode, []);
-            }, 2000);
+            
+            console.log(`Sending challenge content (${challengeContent.length} chars): ${challengeContent.substring(0, 50)}...`);
+            io.to(roomCode).emit('text-challenge-start', {
+                challengeType: challengeType,
+                challengeContent: challengeContent,
+                participants: nonWinners.map(p => p.name),
+                timeLimit: 40  // 40 seconds for challenges
+            });
+            room.currentChallengeType = challengeType;
+            room.currentChallengeContent = challengeContent;
+            
+            // 45 seconds total (40 + 5 buffer)
+            room.challengeTimer = setTimeout(() => {
+                evaluateTextChallengeResults(roomCode);
+            }, 45000);
         }
     }, 2500);
 }
 
+// Evaluate Fast Tapper Results
 async function evaluateFastTapperResults(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -545,12 +407,11 @@ async function evaluateFastTapperResults(roomCode) {
             winners.push(playerId);
         }
     });
-    
+    // Award points to winners
     winners.forEach(playerId => {
         const player = room.players.find(p => p.id === playerId);
         if (player) player.score += 1;
     });
-    
     const results = tapEntries.map(([playerId, taps]) => {
         const player = room.players.find(p => p.id === playerId);
         return {
@@ -559,21 +420,19 @@ async function evaluateFastTapperResults(roomCode) {
             won: winners.includes(playerId)
         };
     }).sort((a, b) => b.taps - a.taps);
-    
     io.to(roomCode).emit('fast-tapper-results', {
         results: results,
         maxTaps: maxTaps
     });
-    
     setTimeout(() => {
         endRound(roomCode, results);
     }, 4000);
 }
 
+// Evaluate Text Challenge Results
 async function evaluateTextChallengeResults(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
-    
     const responses = Object.entries(room.challengeResponses);
     if (responses.length === 0) {
         endRound(roomCode, []);
@@ -584,7 +443,6 @@ async function evaluateTextChallengeResults(roomCode) {
         message: "The Oracle carefully evaluates your responses...",
         type: 'evaluation'
     });
-    
     const evaluationResults = [];
 
     for (const [playerId, response] of responses) {
@@ -596,7 +454,6 @@ async function evaluateTextChallengeResults(roomCode) {
             response, 
             room.currentChallengeType
         );
-        
         if (evaluation.pass) {
             player.score += 1;
         }
@@ -607,15 +464,12 @@ async function evaluateTextChallengeResults(roomCode) {
             passed: evaluation.pass,
             feedback: evaluation.feedback
         });
-        
+        // Send individual result to player
         io.to(playerId).emit('challenge-individual-result', {
             passed: evaluation.pass,
             feedback: evaluation.feedback,
-            response: response,
-            challengeType: room.currentChallengeType,
-            correctAnswer: (room.currentChallengeType === 'trivia') ? room.currentChallengeContent.correctAnswer : undefined
+            response: response
         });
-        
         await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
@@ -624,6 +478,7 @@ async function evaluateTextChallengeResults(roomCode) {
     }, 2000);
 }
 
+// Game Flow Functions
 function startNewRound(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -639,6 +494,7 @@ function startNewRound(roomCode) {
     room.challengeResponses = {};
     room.tapResults = {};
     
+    // Initialize round history on first round OR if it's missing
     if (room.currentRound === 1 || !room.roundHistory || room.roundHistory.length === 0) {
         console.log('First round or missing round history, reinitializing...');
         initializeRoundHistory(room);
@@ -648,14 +504,12 @@ function startNewRound(roomCode) {
         message: getRandomOracleMessage('introductions'),
         type: 'introduction'
     });
-    
     setTimeout(() => {
         io.to(roomCode).emit('riddle-presented', {
             riddle: room.currentRiddle,
             round: room.currentRound,
             maxRounds: room.maxRounds
         });
-        
         room.timeRemaining = 45;
         room.riddleTimer = setInterval(() => {
             room.timeRemaining--;
@@ -671,6 +525,7 @@ function endRiddlePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
+    // Clear the timer if it's still running
     if (room.riddleTimer) {
         clearInterval(room.riddleTimer);
         room.riddleTimer = null;
@@ -678,18 +533,13 @@ function endRiddlePhase(roomCode) {
     
     const correctAnswer = room.currentRiddle.answer.toUpperCase();
     let winner = null, earliest = Infinity;
-    
     for (const [pid, ans] of Object.entries(room.riddleAnswers)) {
         if (ans.answer.toUpperCase() === correctAnswer && ans.timestamp < earliest) {
             earliest = ans.timestamp;
             const player = room.players.find(p => p.id === pid);
-            if (player) { 
-                winner = player.name; 
-                room.riddleWinner = winner; 
-            }
+            if (player) { winner = player.name; room.riddleWinner = winner; }
         }
     }
-    
     if (winner) {
         const player = room.players.find(p => p.name === winner);
         if (player) player.score += 1;
@@ -705,19 +555,18 @@ function endRiddlePhase(roomCode) {
             timestamp: ans.timestamp
         };
     }).sort((a, b) => a.timestamp - b.timestamp);
-    
     io.to(roomCode).emit('riddle-results-reveal', {
         winner: winner,
         correctAnswer: room.currentRiddle.answer,
         message: winner ? `${winner} solved it first!` : `No one solved my riddle!`,
         allAnswers: answersDisplay
     });
-    
     setTimeout(() => {
         startChallengePhase(roomCode);
     }, 4000);
 }
 
+// FIXED: Enhanced endRound function with improved tie-breaking
 function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
@@ -725,15 +574,17 @@ function endRound(roomCode, challengeResults) {
     console.log('End round called for room:', roomCode);
     console.log('Room players:', room.players.map(p => p.name));
     console.log('Round history before update:', room.roundHistory);
-    
+    // Ensure round history exists before updating
     if (!room.roundHistory || room.roundHistory.length === 0) {
         console.log('Round history missing in endRound, reinitializing...');
         initializeRoundHistory(room);
     }
     
+    // Always ensure round history is updated before emitting
     updateRoundHistory(room, room.riddleWinner, challengeResults);
     console.log('Emitting round summary with round history:', room.roundHistory);
     
+    // Always include roundHistory in emission
     const roundHistoryToSend = room.roundHistory && room.roundHistory.length > 0 ? room.roundHistory : [];
     
     io.to(roomCode).emit('round-summary', {
@@ -744,12 +595,13 @@ function endRound(roomCode, challengeResults) {
         challengeResults: challengeResults,
         roundHistory: roundHistoryToSend
     });
-    
     if (room.currentRound >= room.maxRounds) {
         setTimeout(() => {
+            // FIXED: Enhanced winner selection for the final game-over
             const finalScores = Object.values(rooms[roomCode].players).sort((a, b) => b.score - a.score);
             const winner = finalScores[0];
             
+            // Check for ties
             const tiedPlayers = finalScores.filter(player => player.score === winner.score);
             
             let winnerMessage = `The Oracle has chosen!`;
@@ -868,33 +720,30 @@ io.on('connection', (socket) => {
         }
         startNewRound(data.roomCode);
     });
-
     socket.on('submit-riddle-answer', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'riddle-phase') return;
         const player = room.players.find(p => p.id === socket.id);
         if (!player) return;
-        
         if (!room.riddleAnswers[socket.id]) {
             room.riddleAnswers[socket.id] = {
                 answer: data.answer.trim(),
                 timestamp: Date.now(),
                 playerName: player.name
             };
-            
             io.to(data.roomCode).emit('answer-submitted', {
                 player: player.name,
                 totalSubmissions: Object.keys(room.riddleAnswers).length,
                 totalPlayers: room.players.length
             });
             
+            // Check if all players have answered
             if (Object.keys(room.riddleAnswers).length === room.players.length) {
                 console.log('All players submitted riddle answer. Ending riddle phase early.');
                 endRiddlePhase(data.roomCode);
             }
         }
     });
-
     socket.on('submit-challenge-response', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'challenge-phase') return;
@@ -909,7 +758,6 @@ io.on('connection', (socket) => {
             expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
         });
     });
-
     socket.on('submit-tap-result', (data) => {
         const room = rooms[data.roomCode];
         if (!room || room.gameState !== 'challenge-phase') return;
@@ -925,7 +773,6 @@ io.on('connection', (socket) => {
             expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
         });
     });
-
     socket.on('disconnect', () => {
         Object.keys(rooms).forEach(roomCode => {
             const room = rooms[roomCode];
@@ -933,7 +780,6 @@ io.on('connection', (socket) => {
             if (idx !== -1) {
                 const pname = room.players[idx].name;
                 room.players.splice(idx, 1);
-                
                 if (room.players.length === 0) {
                     clearInterval(room.riddleTimer);
                     clearTimeout(room.challengeTimer);
@@ -951,14 +797,14 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log('FIXED: Complete error-free version with auto-submit, judgment text, tie-breaking');
-    console.log('Challenge Timer: 40 seconds with auto-submit');
-    console.log('Total Riddles Available:', gameData.riddles.length);
-    console.log('Challenge Types:', CHALLENGE_TYPES.join(', '));
+    console.log(`🤖 Threatened by AI server running on port ${PORT}`);
+    console.log('🎯 FIXED: Auto-submit, judgment text, tie-breaking!');
+    console.log('⏱️ Challenge Timer: 40 seconds with auto-submit');
+    console.log('🎲 Total Riddles Available:', gameData.riddles.length);
+    console.log('📋 Challenge Types:', CHALLENGE_TYPES.join(', '));
     if (genAI) {
-        console.log('Gemini 2.5 Flash: AI-powered challenges with auto-submit detection');
+        console.log('🔑 Gemini 2.5 Flash: AI-powered challenges with auto-submit detection!');
     } else {
-        console.log('No Gemini API key: Using fallback challenges');
+        console.log('⚠️ No Gemini API key: Using fallback challenges.');
     }
 });
