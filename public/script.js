@@ -448,13 +448,10 @@ async function showIndividualResult(data) {
     const continueBtn = content.querySelector('.btn');
     
     // Animate the typing effect
-    // Animate the typing effect
-await typeWriter(responseEl, `"${responseText}"`, 20); // Faster speed for the response
-responseEl.classList.add('typing-complete'); // Add this line
+    await typeWriter(responseEl, `"${responseText}"`, 20);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await typeWriter(feedbackEl, feedbackText);
 
-await new Promise(resolve => setTimeout(resolve, 500)); // Pause between the two texts
-await typeWriter(feedbackEl, feedbackText);
-feedbackEl.classList.add('typing-complete'); // Add this line
     
     continueBtn.classList.remove('hidden'); // Show the button after typing is complete
     
