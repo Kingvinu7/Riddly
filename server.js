@@ -20,6 +20,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Challenge Types
 const CHALLENGE_TYPES = ['negotiator', 'detective', 'trivia', 'fastTapper', 'danger'];
 
+// Rate limiting for tap challenges
+const tapLimits = new Map(); // playerId -> { lastTap: timestamp, tapCount: number }
+const MAX_TAPS_PER_SECOND = 15;
+
 // Game Data
 const gameData = {
     riddles: [
@@ -127,8 +131,8 @@ function updateRoundHistory(room, riddleWinner, challengeResults) {
     console.log('Challenge results:', challengeResults);
     console.log('Current round history before update:', room.roundHistory);
     
-    if (!room.roundHistory || room.roundHistory.length === 0) {
-        console.log('Round history missing or empty, reinitializing...');
+    if (!room.roundHistory || room.roundHistory.length !== room.players.length) {
+        console.log('Round history mismatch, reinitializing...');
         initializeRoundHistory(room);
     }
     
@@ -208,6 +212,61 @@ function getFallbackTrivia() {
     return fallbackTrivias[Math.floor(Math.random() * fallbackTrivias.length)];
 }
 
+// Improved answer matching for trivia
+function isAnswerCorrect(playerAnswer, correctAnswer) {
+    const normalizedPlayer = playerAnswer.trim().toLowerCase();
+    const normalizedCorrect = correctAnswer.trim().toLowerCase();
+    
+    // Exact match
+    if (normalizedPlayer === normalizedCorrect) return true;
+    
+    // Simple similarity check for typos
+    if (normalizedPlayer.length >= 3 && normalizedCorrect.length >= 3) {
+        const similarity = calculateSimilarity(normalizedPlayer, normalizedCorrect);
+        return similarity > 0.85; // 85% similarity threshold
+    }
+    
+    return false;
+}
+
+function calculateSimilarity(str1, str2) {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const editDistance = levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+}
+
+function levenshteinDistance(str1, str2) {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+    
+    return matrix[str2.length][str1.length];
+}
+
 async function generateTriviaChallenge() {
     if (!genAI) {
         return getFallbackTrivia();
@@ -234,7 +293,7 @@ Example:
         const result = await model.generateContent(prompt);
         let response = (await result.response).text();
 
-        response = response.replace(/```json|```/g, '').trim();
+        response = response.replace(/``````/g, '').trim();
         
         try {
             const jsonResponse = JSON.parse(response);
@@ -338,7 +397,7 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
     if (!genAI) {
         let pass = Math.random() > 0.4;
         if (challengeType === 'trivia') {
-            pass = cleanResponse.toLowerCase() === challengeContent.correctAnswer.toLowerCase();
+            pass = isAnswerCorrect(cleanResponse, challengeContent.correctAnswer);
         }
         return { 
             pass: pass, 
@@ -361,7 +420,7 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
                 const triviaQuestion = challengeContent.question;
                 const triviaCorrectAnswer = challengeContent.correctAnswer;
                 const playerAnswer = cleanResponse;
-                const passTrivia = playerAnswer.toLowerCase() === triviaCorrectAnswer.toLowerCase();
+                const passTrivia = isAnswerCorrect(playerAnswer, triviaCorrectAnswer);
                 
                 let triviaFeedback = '';
                 if (passTrivia) {
@@ -419,6 +478,25 @@ async function evaluatePlayerResponse(challengeContent, playerResponse, challeng
     }
 }
 
+function cleanupRoom(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) return;
+    
+    // Clear all timers
+    if (room.riddleTimer) {
+        clearInterval(room.riddleTimer);
+        room.riddleTimer = null;
+    }
+    if (room.challengeTimer) {
+        clearTimeout(room.challengeTimer);
+        room.challengeTimer = null;
+    }
+    
+    // Remove from rooms object
+    delete rooms[roomCode];
+    console.log(`Room ${roomCode} cleaned up`);
+}
+
 async function startChallengePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) {
@@ -458,6 +536,12 @@ async function startChallengePhase(roomCode) {
             if (challengeType === 'fastTapper') {
                 console.log('Starting fast tapper challenge');
                 room.tapResults = {};
+                room.tapStartTime = Date.now();
+                
+                // Reset tap limits for all participants
+                nonWinners.forEach(player => {
+                    tapLimits.set(player.id, { lastTap: 0, tapCount: 0 });
+                });
                 
                 io.to(roomCode).emit('fast-tapper-start', {
                     participants: nonWinners.map(p => p.name),
@@ -546,9 +630,14 @@ async function evaluateFastTapperResults(roomCode) {
         }
     });
     
+    // Award scores only once per player
+    const scoredPlayers = new Set();
     winners.forEach(playerId => {
         const player = room.players.find(p => p.id === playerId);
-        if (player) player.score += 1;
+        if (player && !scoredPlayers.has(playerId)) {
+            player.score += 1;
+            scoredPlayers.add(playerId);
+        }
     });
     
     const results = tapEntries.map(([playerId, taps]) => {
@@ -574,6 +663,14 @@ async function evaluateTextChallengeResults(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
+    // Auto-submit for players who didn't respond
+    const nonWinners = room.players.filter(p => p.name !== room.riddleWinner);
+    nonWinners.forEach(player => {
+        if (!room.challengeResponses[player.id]) {
+            room.challengeResponses[player.id] = "[Auto-submitted] No response provided.";
+        }
+    });
+    
     const responses = Object.entries(room.challengeResponses);
     if (responses.length === 0) {
         endRound(roomCode, []);
@@ -586,6 +683,7 @@ async function evaluateTextChallengeResults(roomCode) {
     });
     
     const evaluationResults = [];
+    const scoredPlayers = new Set();
 
     for (const [playerId, response] of responses) {
         const player = room.players.find(p => p.id === playerId);
@@ -597,8 +695,10 @@ async function evaluateTextChallengeResults(roomCode) {
             room.currentChallengeType
         );
         
-        if (evaluation.pass) {
+        // Award score only once per player
+        if (evaluation.pass && !scoredPlayers.has(playerId)) {
             player.score += 1;
+            scoredPlayers.add(playerId);
         }
 
         evaluationResults.push({
@@ -616,7 +716,7 @@ async function evaluateTextChallengeResults(roomCode) {
             correctAnswer: (room.currentChallengeType === 'trivia') ? room.currentChallengeContent.correctAnswer : undefined
         });
         
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     setTimeout(() => {
@@ -634,13 +734,16 @@ function startNewRound(roomCode) {
     room.currentRiddle = riddle;
     room.usedRiddleIndices.push(index);
     
+    // Reset round-specific data
     room.riddleWinner = null;
     room.riddleAnswers = {};
     room.challengeResponses = {};
     room.tapResults = {};
+    room.roundStarted = false;
     
-    if (room.currentRound === 1 || !room.roundHistory || room.roundHistory.length === 0) {
-        console.log('First round or missing round history, reinitializing...');
+    // Initialize round history only on first round or if player count changed
+    if (room.currentRound === 1 || !room.roundHistory || room.roundHistory.length !== room.players.length) {
+        console.log('Initializing round history for round', room.currentRound);
         initializeRoundHistory(room);
     }
     
@@ -657,10 +760,13 @@ function startNewRound(roomCode) {
         });
         
         room.timeRemaining = 45;
+        room.riddlePhaseActive = true;
         room.riddleTimer = setInterval(() => {
             room.timeRemaining--;
             if (room.timeRemaining <= 0) {
                 clearInterval(room.riddleTimer);
+                room.riddleTimer = null;
+                room.riddlePhaseActive = false;
                 endRiddlePhase(roomCode);
             }
         }, 1000);
@@ -671,6 +777,10 @@ function endRiddlePhase(roomCode) {
     const room = rooms[roomCode];
     if (!room) return;
     
+    // Prevent multiple calls
+    if (!room.riddlePhaseActive) return;
+    room.riddlePhaseActive = false;
+    
     if (room.riddleTimer) {
         clearInterval(room.riddleTimer);
         room.riddleTimer = null;
@@ -678,6 +788,7 @@ function endRiddlePhase(roomCode) {
     
     const correctAnswer = room.currentRiddle.answer.toUpperCase();
     let winner = null, earliest = Infinity;
+    const scoredPlayers = new Set();
     
     for (const [pid, ans] of Object.entries(room.riddleAnswers)) {
         if (ans.answer.toUpperCase() === correctAnswer && ans.timestamp < earliest) {
@@ -685,14 +796,15 @@ function endRiddlePhase(roomCode) {
             const player = room.players.find(p => p.id === pid);
             if (player) { 
                 winner = player.name; 
-                room.riddleWinner = winner; 
+                room.riddleWinner = winner;
+                
+                // Award score only once
+                if (!scoredPlayers.has(pid)) {
+                    player.score += 1;
+                    scoredPlayers.add(pid);
+                }
             }
         }
-    }
-    
-    if (winner) {
-        const player = room.players.find(p => p.name === winner);
-        if (player) player.score += 1;
     }
     
     const answersDisplay = Object.entries(room.riddleAnswers).map(([pid, ans]) => {
@@ -722,19 +834,15 @@ function endRound(roomCode, challengeResults) {
     const room = rooms[roomCode];
     if (!room) return;
     
-    console.log('End round called for room:', roomCode);
-    console.log('Room players:', room.players.map(p => p.name));
-    console.log('Round history before update:', room.roundHistory);
+    // Prevent multiple calls
+    if (room.roundEnded) return;
+    room.roundEnded = true;
     
-    if (!room.roundHistory || room.roundHistory.length === 0) {
-        console.log('Round history missing in endRound, reinitializing...');
-        initializeRoundHistory(room);
-    }
+    console.log('End round called for room:', roomCode);
     
     updateRoundHistory(room, room.riddleWinner, challengeResults);
-    console.log('Emitting round summary with round history:', room.roundHistory);
     
-    const roundHistoryToSend = room.roundHistory && room.roundHistory.length > 0 ? room.roundHistory : [];
+    const roundHistoryToSend = room.roundHistory || [];
     
     io.to(roomCode).emit('round-summary', {
         round: room.currentRound,
@@ -747,7 +855,7 @@ function endRound(roomCode, challengeResults) {
     
     if (room.currentRound >= room.maxRounds) {
         setTimeout(() => {
-            const finalScores = Object.values(rooms[roomCode].players).sort((a, b) => b.score - a.score);
+            const finalScores = [...room.players].sort((a, b) => b.score - a.score);
             const winner = finalScores[0];
             
             const tiedPlayers = finalScores.filter(player => player.score === winner.score);
@@ -766,9 +874,15 @@ function endRound(roomCode, challengeResults) {
                 scores: finalScores,
                 roundHistory: room.roundHistory
             });
+            
+            // Clean up room after game over
+            setTimeout(() => {
+                cleanupRoom(roomCode);
+            }, 30000);
         }, 4000);
     } else {
         setTimeout(() => {
+            room.roundEnded = false; // Reset for next round
             startNewRound(roomCode);
         }, 4000);
     }
@@ -776,11 +890,18 @@ function endRound(roomCode, challengeResults) {
 
 // Socket Events
 io.on('connection', (socket) => {
+    console.log('New connection:', socket.id);
+    
     socket.on('create-room', (data) => {
+        if (!data || !data.playerName || typeof data.playerName !== 'string') {
+            socket.emit('error', { message: 'Invalid player name' });
+            return;
+        }
+        
         const roomCode = generateRoomCode();
         const newRoom = {
             code: roomCode,
-            players: [{ id: socket.id, name: data.playerName, score: 0 }],
+            players: [{ id: socket.id, name: data.playerName.trim(), score: 0 }],
             gameState: 'waiting',
             currentRound: 0,
             maxRounds: 5,
@@ -796,7 +917,10 @@ io.on('connection', (socket) => {
             riddleTimer: null,
             challengeTimer: null,
             roundHistory: [],
-            ownerId: socket.id
+            ownerId: socket.id,
+            riddlePhaseActive: false,
+            roundEnded: false,
+            roundStarted: false
         };
         
         rooms[roomCode] = newRoom;
@@ -806,13 +930,19 @@ io.on('connection', (socket) => {
         
         socket.emit('room-created', { 
             roomCode: roomCode, 
-            playerName: data.playerName,
+            playerName: data.playerName.trim(),
             isOwner: true
         });
     });
 
     socket.on('join-room', (data) => {
-        const room = rooms[data.roomCode];
+        if (!data || !data.roomCode || !data.playerName || 
+            typeof data.roomCode !== 'string' || typeof data.playerName !== 'string') {
+            socket.emit('error', { message: 'Invalid room code or player name' });
+            return;
+        }
+        
+        const room = rooms[data.roomCode.toUpperCase()];
         if (!room) {
             socket.emit('error', { message: 'Room not found' });
             return;
@@ -825,30 +955,36 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: 'Game already in progress' });
             return;
         }
-        const existingPlayer = room.players.find(p => p.name === data.playerName);
+        
+        const playerName = data.playerName.trim();
+        const existingPlayer = room.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
         if (existingPlayer) {
             socket.emit('error', { message: 'Player name already taken' });
             return;
         }
         
-        room.players.push({ id: socket.id, name: data.playerName, score: 0 });
-        room.roundHistory = [];
+        room.players.push({ id: socket.id, name: playerName, score: 0 });
         
-        socket.join(data.roomCode);
-        console.log('Player joined:', data.playerName, 'in room:', data.roomCode);
+        socket.join(data.roomCode.toUpperCase());
+        console.log('Player joined:', playerName, 'in room:', data.roomCode);
         
         socket.emit('join-success', {
-            roomCode: data.roomCode,
-            playerName: data.playerName,
+            roomCode: data.roomCode.toUpperCase(),
+            playerName: playerName,
             isOwner: false
         });
-        io.to(data.roomCode).emit('player-joined', {
+        io.to(data.roomCode.toUpperCase()).emit('player-joined', {
             players: room.players,
-            newPlayer: data.playerName
+            newPlayer: playerName
         });
     });
 
     socket.on('start-game', (data) => {
+        if (!data || !data.roomCode) {
+            socket.emit('error', { message: 'Invalid room code' });
+            return;
+        }
+        
         const room = rooms[data.roomCode];
         if (!room) {
             socket.emit('error', { message: 'Room not found' });
@@ -866,99 +1002,194 @@ io.on('connection', (socket) => {
             socket.emit('error', { message: 'Game already started' });
             return;
         }
+        
+        console.log('Starting game in room:', data.roomCode);
         startNewRound(data.roomCode);
     });
 
     socket.on('submit-riddle-answer', (data) => {
+        if (!data || !data.roomCode || !data.answer || typeof data.answer !== 'string') {
+            return;
+        }
+        
         const room = rooms[data.roomCode];
-        if (!room || room.gameState !== 'riddle-phase') return;
+        if (!room || room.gameState !== 'riddle-phase' || !room.riddlePhaseActive) {
+            return;
+        }
+        
         const player = room.players.find(p => p.id === socket.id);
         if (!player) return;
         
-        if (!room.riddleAnswers[socket.id]) {
-            room.riddleAnswers[socket.id] = {
-                answer: data.answer.trim(),
-                timestamp: Date.now(),
-                playerName: player.name
-            };
-            
-            io.to(data.roomCode).emit('answer-submitted', {
-                player: player.name,
-                totalSubmissions: Object.keys(room.riddleAnswers).length,
-                totalPlayers: room.players.length
-            });
-            
-            if (Object.keys(room.riddleAnswers).length === room.players.length) {
-                console.log('All players submitted riddle answer. Ending riddle phase early.');
-                endRiddlePhase(data.roomCode);
-            }
+        // Prevent duplicate submissions
+        if (room.riddleAnswers[socket.id]) {
+            return;
         }
+        
+        room.riddleAnswers[socket.id] = {
+            answer: data.answer.trim(),
+            timestamp: Date.now(),
+            playerName: player.name
+        };
+        
+        console.log(`${player.name} submitted riddle answer: ${data.answer.trim()}`);
+        
+        // Optional: Send confirmation to player
+        socket.emit('answer-received', { 
+            message: 'Answer received!',
+            answer: data.answer.trim()
+        });
     });
 
     socket.on('submit-challenge-response', (data) => {
+        if (!data || !data.roomCode || !data.response || typeof data.response !== 'string') {
+            return;
+        }
+        
         const room = rooms[data.roomCode];
-        if (!room || room.gameState !== 'challenge-phase') return;
+        if (!room || room.gameState !== 'challenge-phase') {
+            return;
+        }
+        
         const player = room.players.find(p => p.id === socket.id);
-        if (!player || player.name === room.riddleWinner) return;
+        if (!player) return;
+        
+        // Only allow responses from non-winners
+        if (player.name === room.riddleWinner) {
+            return;
+        }
+        
+        // Prevent duplicate submissions
+        if (room.challengeResponses[socket.id]) {
+            return;
+        }
         
         room.challengeResponses[socket.id] = data.response.trim();
+        console.log(`${player.name} submitted challenge response`);
         
-        io.to(data.roomCode).emit('challenge-response-submitted', {
-            player: player.name,
-            totalSubmissions: Object.keys(room.challengeResponses).length,
-            expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
+        socket.emit('response-received', { 
+            message: 'Response received!' 
         });
     });
 
-    socket.on('submit-tap-result', (data) => {
+    socket.on('submit-tap', (data) => {
+        if (!data || !data.roomCode) {
+            return;
+        }
+        
         const room = rooms[data.roomCode];
-        if (!room || room.gameState !== 'challenge-phase') return;
+        if (!room || room.currentChallengeType !== 'fastTapper' || !room.tapStartTime) {
+            return;
+        }
+        
         const player = room.players.find(p => p.id === socket.id);
-        if (!player || player.name === room.riddleWinner) return;
+        if (!player) return;
         
-        room.tapResults[socket.id] = data.taps;
+        // Only allow taps from non-winners
+        if (player.name === room.riddleWinner) {
+            return;
+        }
         
-        io.to(data.roomCode).emit('tap-result-submitted', {
-            player: player.name,
-            taps: data.taps,
-            totalSubmissions: Object.keys(room.tapResults).length,
-            expectedSubmissions: room.players.filter(p => p.name !== room.riddleWinner).length
-        });
+        const now = Date.now();
+        const challengeDuration = now - room.tapStartTime;
+        
+        // Only count taps during the challenge window (10 seconds + 2 second buffer)
+        if (challengeDuration > 12000) {
+            return;
+        }
+        
+        // Rate limiting
+        const playerLimit = tapLimits.get(socket.id);
+        if (playerLimit) {
+            const timeSinceLastTap = now - playerLimit.lastTap;
+            
+            if (timeSinceLastTap < 1000) { // Within last second
+                playerLimit.tapCount++;
+                if (playerLimit.tapCount > MAX_TAPS_PER_SECOND) {
+                    return; // Ignore excessive taps
+                }
+            } else {
+                playerLimit.tapCount = 1; // Reset count for new second
+            }
+            
+            playerLimit.lastTap = now;
+        }
+        
+        // Count the tap
+        if (!room.tapResults[socket.id]) {
+            room.tapResults[socket.id] = 0;
+        }
+        room.tapResults[socket.id]++;
     });
 
     socket.on('disconnect', () => {
-        Object.keys(rooms).forEach(roomCode => {
+        console.log('User disconnected:', socket.id);
+        
+        // Find and remove player from all rooms
+        for (const roomCode in rooms) {
             const room = rooms[roomCode];
-            const idx = room.players.findIndex(p => p.id === socket.id);
-            if (idx !== -1) {
-                const pname = room.players[idx].name;
-                room.players.splice(idx, 1);
+            const playerIndex = room.players.findIndex(p => p.id === socket.id);
+            
+            if (playerIndex !== -1) {
+                const player = room.players[playerIndex];
+                room.players.splice(playerIndex, 1);
                 
+                console.log(`Player ${player.name} left room ${roomCode}`);
+                
+                // If room is empty, clean it up
                 if (room.players.length === 0) {
-                    clearInterval(room.riddleTimer);
-                    clearTimeout(room.challengeTimer);
-                    delete rooms[roomCode];
+                    console.log(`Room ${roomCode} is now empty, cleaning up`);
+                    cleanupRoom(roomCode);
                 } else {
+                    // Transfer ownership if owner left
+                    if (room.ownerId === socket.id && room.players.length > 0) {
+                        room.ownerId = room.players[0].id;
+                        console.log(`Ownership of room ${roomCode} transferred to ${room.players[0].name}`);
+                    }
+                    
+                    // Notify remaining players
                     io.to(roomCode).emit('player-left', {
                         players: room.players,
-                        leftPlayer: pname
+                        leftPlayer: player.name,
+                        newOwner: room.ownerId === room.players[0]?.id ? room.players[0].name : null
                     });
+                    
+                    // If game is in progress and too few players remain
+                    if (room.gameState !== 'waiting' && room.players.length < 2) {
+                        io.to(roomCode).emit('game-ended', {
+                            reason: 'Not enough players to continue'
+                        });
+                        
+                        setTimeout(() => {
+                            cleanupRoom(roomCode);
+                        }, 5000);
+                    }
                 }
+                break;
             }
-        });
+        }
+        
+        // Clean up tap limits
+        tapLimits.delete(socket.id);
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log('FIXED: Complete error-free version with auto-submit, judgment text, tie-breaking');
-    console.log('Challenge Timer: 40 seconds with auto-submit');
-    console.log('Total Riddles Available:', gameData.riddles.length);
-    console.log('Challenge Types:', CHALLENGE_TYPES.join(', '));
-    if (genAI) {
-        console.log('Gemini 2.5 Flash: AI-powered challenges with auto-submit detection');
-    } else {
-        console.log('No Gemini API key: Using fallback challenges');
+// Cleanup expired rooms periodically
+setInterval(() => {
+    const now = Date.now();
+    const ROOM_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    
+    for (const roomCode in rooms) {
+        const room = rooms[roomCode];
+        
+        // Check if room has been inactive
+        if (room.players.length === 0) {
+            console.log(`Cleaning up empty room: ${roomCode}`);
+            cleanupRoom(roomCode);
+        }
     }
+}, 5 * 60 * 1000); // Check every 5 minutes
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
