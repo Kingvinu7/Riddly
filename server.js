@@ -360,31 +360,36 @@ async function startChallengePhase(roomCode) {
             
         } else {
             // Text-based challenges with 40 seconds
-            const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
-            
-            // Validate challenge content before sending
-            if (!challengeContent || challengeContent.trim().length === 0) {
-                console.error('Empty challenge content generated, using emergency fallback');
-                challengeContent = "Describe your strategy for handling a difficult situation that requires creative thinking.";
-            }
-            
-            console.log(`Sending challenge content (${challengeContent.length} chars): ${challengeContent.substring(0, 50)}...`);
-            io.to(roomCode).emit('text-challenge-start', {
-                challengeType: challengeType,
-                challengeContent: challengeContent,
-                participants: nonWinners.map(p => p.name),
-                timeLimit: 40  // 40 seconds for challenges
-            });
-            room.currentChallengeType = challengeType;
-            room.currentChallengeContent = challengeContent;
-            
-            // 45 seconds total (40 + 5 buffer)
-            room.challengeTimer = setTimeout(() => {
-                evaluateTextChallengeResults(roomCode);
-            }, 45000);
-        }
-    }, 1000);
+            // Text-based challenges with dynamic time limits
+const challengeContent = await generateChallengeContent(challengeType, room.currentRound);
+
+// Validate challenge content before sending
+if (!challengeContent || challengeContent.trim().length === 0) {
+    console.error('Empty challenge content generated, using emergency fallback');
+    challengeContent = "Describe your strategy for handling a difficult situation that requires creative thinking.";
 }
+
+// Set time limit based on challenge type
+let timeLimit = 40; // Default for detective, trivia, danger
+if (challengeType === 'negotiator') {
+    timeLimit = 70; // Extra time for negotiator challenges
+}
+
+console.log(`Sending ${challengeType} challenge content (${challengeContent.length} chars): ${challengeContent.substring(0, 50)}...`);
+io.to(roomCode).emit('text-challenge-start', {
+    challengeType: challengeType,
+    challengeContent: challengeContent,
+    participants: nonWinners.map(p => p.name),
+    timeLimit: timeLimit
+});
+room.currentChallengeType = challengeType;
+room.currentChallengeContent = challengeContent;
+
+// Set timer with 5 second buffer
+room.challengeTimer = setTimeout(() => {
+    evaluateTextChallengeResults(roomCode);
+}, timeLimit * 1000 + 5000);
+        
 
 // Evaluate Fast Tapper Results
 async function evaluateFastTapperResults(roomCode) {
