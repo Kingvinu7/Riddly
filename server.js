@@ -563,7 +563,7 @@ function endRiddlePhase(roomCode) {
     });
     setTimeout(() => {
         startChallengePhase(roomCode);
-    }, 4000);
+    }, 1500);
 }
 
 // FIXED: Enhanced endRound function with improved tie-breaking
