@@ -1879,3 +1879,41 @@ body::before { z-index: -1; }
     max-height: none;
     overflow: visible;
 }
+
+/* POINTS TABLE FIX */
+.points-table-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 24px auto;
+    width: 100%;
+    max-width: 850px;
+}
+
+.points-table {
+    display: block !important;
+    width: 100%;
+    visibility: visible !important;
+}
+
+.points-table-header,
+.points-table-row {
+    display: grid !important;
+    grid-template-columns: 2fr repeat(5, 1fr) 1fr !important;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure individual cells display */
+.player-name-cell,
+.round-result,
+.total-score,
+.player-name-header,
+.round-header,
+.total-header {
+    display: block !important;
+    visibility: visible !important;
+}
