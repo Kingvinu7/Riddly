@@ -624,11 +624,11 @@ function endRound(roomCode, challengeResults) {
                 scores: finalScores,
                 roundHistory: room.roundHistory
             });
-        }, 4000);
+        }, 8000);
     } else {
         setTimeout(() => {
             startNewRound(roomCode);
-        }, 4000);
+        }, 8000);
     }
 }
 
