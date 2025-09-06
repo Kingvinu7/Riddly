@@ -8,63 +8,73 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <div class="logo">
-        <h1>THREATENED BY AI</h1>
-        <p>Face the Oracle's evolving challenges. Survive. Outsmart. Conquer.</p>
-    </div>
-
     <!-- Home Screen -->
-    <div class="page active" id="home-screen">
+    <div id="home-screen" class="page active">
         <div class="page-content">
+            <div class="logo">
+                <h1 data-text="THREATENED BY AI">THREATENED BY AI</h1>
+                <p>Face the Oracle's evolving challenges. Survive. Outsmart. Conquer.</p>
+            </div>
             <div class="action-section">
                 <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
-                <button class="btn primary large" id="create-room-btn">Create Room</button>
+                <button id="create-room-btn" class="btn primary large">Create Room</button>
                 <div class="join-section">
                     <input type="text" id="room-code" placeholder="Room Code" maxlength="6">
-                    <button class="btn secondary" id="join-room-btn">Join</button>
+                    <button id="join-room-btn" class="btn secondary">Join Room</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Lobby Screen -->
-    <div class="page" id="lobby-screen">
+    <div id="lobby-screen" class="page">
         <div class="page-content">
             <div class="lobby-header">
-                <h2>Lobby</h2>
-                <div class="room-info" id="room-code-display">Room: LOADING</div>
-                <div class="players-section">
-                    <h3>Players</h3>
-                    <div id="players-list"></div>
+                <h2>Game Lobby</h2>
+                <div class="room-info">
+                    <span id="room-code-display">Room: ------</span>
                 </div>
-                <div class="waiting-text">Waiting for players...</div>
-                <button class="btn primary large hidden" id="start-game-btn">Start Game</button>
+            </div>
+            <div class="players-section">
+                <h3>👥 Players</h3>
+                <div id="players-list"></div>
+            </div>
+            <div class="lobby-actions">
+                <button id="start-game-btn" class="btn primary large hidden">Start Game</button>
+                <p class="waiting-text" style="display: none;">Waiting for more players...</p>
             </div>
         </div>
     </div>
 
-    <!-- Oracle Introduction -->
-    <div class="page" id="oracle-intro-screen">
+    <!-- Oracle Introduction Screen -->
+    <div id="oracle-intro-screen" class="page">
         <div class="page-content">
             <div class="oracle-avatar large">🤖</div>
-            <div class="oracle-message" id="oracle-intro-message">
-                I AM THE ORACLE! Prepare for intellectual warfare!
+            <div class="oracle-message">
+                <p id="oracle-intro-message">Loading Oracle message...</p>
+            </div>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </div>
 
     <!-- Riddle Screen -->
-    <div class="page" id="riddle-screen">
+    <div id="riddle-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
-                <div class="timer" id="riddle-timer">45</div>
+                <div id="riddle-timer" class="timer">45</div>
                 <p>seconds to answer</p>
             </div>
-            <div id="round-display">Round 1/5</div>
-            <div class="riddle-question" id="riddle-text">Loading riddle...</div>
+            <div class="riddle-section">
+                <h2 id="round-display">Round 1/5</h2>
+                <p id="riddle-text" class="riddle-question">Loading riddle...</p>
+            </div>
             <div class="answer-section">
-                <input type="text" id="riddle-answer" placeholder="Your answer">
-                <button class="btn primary" id="submit-riddle">Submit Answer</button>
+                <input type="text" id="riddle-answer" placeholder="Type your answer..." maxlength="50">
+                <button id="submit-riddle" class="btn primary large">Submit Answer</button>
                 <div class="submission-status">
                     <p id="submission-count">0/0 players answered</p>
                 </div>
@@ -72,35 +82,35 @@
         </div>
     </div>
 
-    <!-- Riddle Results -->
-    <div class="page" id="riddle-results-screen">
+    <!-- Riddle Results Screen -->
+    <div id="riddle-results-screen" class="page">
         <div class="page-content">
             <div class="results-header">
-                <h2>Riddle Results</h2>
-                <div class="oracle-message" id="riddle-results-message">Calculating results...</div>
+                <h2>🎯 Riddle Results</h2>
+                <p id="riddle-results-message">Calculating results...</p>
             </div>
             <div class="all-answers-section">
+                <h3>All Answers</h3>
                 <div id="all-answers-list"></div>
             </div>
         </div>
     </div>
 
     <!-- Text Challenge Screen -->
-    <div class="page" id="text-challenge-screen">
+    <div id="text-challenge-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
-                <div class="timer" id="text-challenge-timer">40</div>
+                <div id="text-challenge-timer" class="timer">60</div>
                 <p>seconds to respond</p>
             </div>
-            <h2 id="text-challenge-title">AI CHALLENGE</h2>
-            <div class="challenge-description" id="text-challenge-content">
-                Loading challenge...
+            <div class="challenge-section">
+                <h2 id="text-challenge-title">🧠 AI Challenge</h2>
+                <p id="text-challenge-content" class="challenge-description"></p>
             </div>
             <div class="response-section">
-                <textarea class="response-textarea" id="challenge-response" 
-                          placeholder="Think carefully and provide a detailed response..."></textarea>
-                <button class="btn primary" id="submit-challenge-response">Submit Response</button>
-                <div class="submission-status">
+                <textarea id="challenge-response" placeholder="Type your response..." class="response-textarea" maxlength="500"></textarea>
+                <button id="submit-challenge-response" class="btn primary large">Submit Response</button>
+                <div class="submission-status" id="text-challenge-submission-status">
                     <p id="text-challenge-submission-count">0/3 players responded</p>
                 </div>
             </div>
@@ -108,42 +118,44 @@
     </div>
 
     <!-- Fast Tapper Screen -->
-    <div class="page" id="fast-tapper-screen">
+    <div id="fast-tapper-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
-                <div class="timer" id="fast-tapper-timer">10</div>
+                <div id="fast-tapper-timer" class="timer danger">10</div>
                 <p>seconds remaining</p>
             </div>
-            <h2>Fast Tapper Challenge</h2>
             <div class="tapper-section">
-                <p>Tap the button as fast as you can!</p>
+                <h2>⚡ FAST TAPPER CHALLENGE</h2>
+                <p class="challenge-description">Tap the button as fast as you can!</p>
                 <div class="tap-counter">
-                    <div class="tap-count-display" id="tap-count">0</div>
+                    <span id="tap-count" class="tap-count-display">0</span>
                     <p>taps</p>
                 </div>
-                <button class="btn primary tap-btn" id="tap-button">TAP!</button>
+                <button id="tap-button" class="btn primary tap-btn">TAP!</button>
             </div>
         </div>
     </div>
 
-    <!-- Challenge Results -->
-    <div class="page" id="challenge-results-screen">
+    <!-- Challenge Results Screen -->
+    <div id="challenge-results-screen" class="page">
         <div class="page-content">
             <div class="results-header">
-                <h2 id="challenge-results-title">Challenge Results</h2>
-                <div class="oracle-message" id="challenge-results-message">Processing results...</div>
+                <h2 id="challenge-results-title">⚖️ CHALLENGE RESULTS</h2>
+                <div class="oracle-response">
+                    <div class="oracle-avatar">🤖</div>
+                    <p id="challenge-results-message" class="oracle-message"></p>
+                </div>
             </div>
             <div id="challenge-results-content"></div>
         </div>
     </div>
 
     <!-- Waiting Screen -->
-    <div class="page" id="waiting-screen">
+    <div id="waiting-screen" class="page">
         <div class="page-content">
             <div class="waiting-section">
-                <div class="oracle-avatar">🤖</div>
-                <h2 id="waiting-title">Others are completing their challenges...</h2>
-                <div class="waiting-text" id="waiting-message">Please wait...</div>
+                <h2 id="waiting-title">⏳ Please Wait</h2>
+                <p id="waiting-message" class="waiting-text">Others are completing their challenges...</p>
                 <div class="loading-dots">
                     <span></span>
                     <span></span>
@@ -153,46 +165,52 @@
         </div>
     </div>
 
-    <!-- FIXED: Round Summary Screen with Points Table -->
-    <div class="page" id="round-summary-screen">
+    <!-- Round Summary Screen -->
+    <div id="round-summary-screen" class="page">
         <div class="page-content">
             <div class="round-summary-section">
                 <h2 id="round-summary-title">Round Complete!</h2>
                 <div class="points-table-container">
-                    <h3>Leaderboard</h3>
+                    <h3>📊 Current Standings</h3>
                     <div id="points-table"></div>
                 </div>
-                <div class="waiting-text" id="next-round-text">Next round starting soon...</div>
+                <p id="next-round-text" class="waiting-text">Next round starting soon...</p>
+                <div class="loading-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Game Over Screen -->
-    <div class="page" id="game-over-screen">
+    <div id="game-over-screen" class="page">
         <div class="page-content">
             <div class="game-over-section">
-                <div class="oracle-avatar large" id="final-oracle">🤖</div>
-                <div class="oracle-message" id="final-oracle-message">"The Oracle has chosen!"</div>
-                
-                <div class="big-winner-announcement" id="big-winner-announcement">
-                    🏆 CHAMPION: Player 🏆
+                <h1>🏁 GAME OVER</h1>
+                <div id="big-winner-announcement" class="big-winner-announcement">
+                    🏆 CHAMPION: UNKNOWN 🏆
                 </div>
-                
-                <div class="final-points-table-container">
-                    <h3>Final Leaderboard</h3>
-                    <div id="final-points-table"></div>
+                <div class="oracle-response">
+                    <div id="final-oracle" class="oracle-avatar large">🤖</div>
+                    <p id="final-oracle-message" class="oracle-message">"Your feeble minds were no match!"</p>
                 </div>
-                
-                <div class="all-answers-section">
-                    <h3>Final Scores</h3>
+                <div class="final-scores-section">
+                    <h3>🏆 Final Standings</h3>
                     <div id="final-scores"></div>
                 </div>
+                <div class="final-points-table-container">
+                    <h3>📊 Final Points Table</h3>
+                    <div id="final-points-table"></div>
+                </div>
+                <button onclick="location.reload()" class="btn primary large">Play Again</button>
             </div>
         </div>
     </div>
 
     <!-- Individual Result Overlay -->
-    <div class="result-overlay" id="result-overlay">
+    <div id="result-overlay" class="result-overlay" style="display: none;">
         <div class="result-overlay-content">
             <div id="individual-result-content"></div>
         </div>
