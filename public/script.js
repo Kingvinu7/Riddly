@@ -56,6 +56,7 @@ document.getElementById('challenge-response').addEventListener('keypress', (e) =
 
 // Fast tapper event listener
 document.getElementById('tap-button').addEventListener('click', onTap);
+
 // Utility functions
 function showPage(pageName) {
     Object.values(pages).forEach(page => page.classList.remove('active'));
@@ -112,12 +113,10 @@ function submitRiddleAnswer() {
     submitRiddleBtn.textContent = 'Submitted!';
 }
 
-// FIXED: Enhanced submit challenge response with auto-submit support
 function submitChallengeResponse(isAutoSubmit = false) {
     const response = document.getElementById('challenge-response').value.trim();
     const submitBtn = document.getElementById('submit-challenge-response');
     
-    // Skip validation for auto-submit
     if (!isAutoSubmit) {
         if (!response) {
             alert('Please enter your response - this is a complex challenge that requires thought!');
@@ -130,27 +129,23 @@ function submitChallengeResponse(isAutoSubmit = false) {
     }
     
     if (!currentRoom) return;
-    // Add indicator for auto-submitted responses
     const finalResponse = isAutoSubmit ? `[Auto-submitted] ${response}` : response;
     socket.emit('submit-challenge-response', { roomCode: currentRoom, response: finalResponse });
     document.getElementById('challenge-response').disabled = true;
     submitBtn.disabled = true;
     submitBtn.textContent = isAutoSubmit ? 'Auto-Submitted!' : 'Submitted!';
     if (isAutoSubmit) {
-        // Show user their response was auto-submitted
         setTimeout(() => {
             const shortResponse = response.length > 50 ? response.substring(0, 50) + '...' : response;
-            alert(`⏰ Your response was auto-submitted: "${shortResponse}"`);
+            alert(`Your response was auto-submitted: "${shortResponse}"`);
         }, 1000);
     }
 }
 
-// Fast tapper functionality
 function onTap() {
     if (!tapperActive) return;
     tapCount++;
     document.getElementById('tap-count').textContent = tapCount.toString();
-    // Enhanced visual feedback
     const button = document.getElementById('tap-button');
     const countDisplay = document.getElementById('tap-count');
     
@@ -163,7 +158,6 @@ function onTap() {
     }, 50);
 }
 
-// Enhanced fast tapper timer
 function startFastTapperTimer(duration) {
     tapperActive = true;
     let timeLeft = duration;
@@ -176,8 +170,7 @@ function startFastTapperTimer(duration) {
         } else if (timeLeft <= 5) {
             document.getElementById('fast-tapper-timer').classList.add('danger');
             document.getElementById('fast-tapper-timer').classList.remove('urgent');
-   
-         }
+        }
         
         timeLeft--;
         
@@ -186,11 +179,9 @@ function startFastTapperTimer(duration) {
             tapperActive = false;
             document.getElementById('tap-button').disabled = true;
             document.getElementById('fast-tapper-timer').classList.remove('urgent', 'danger');
-      
-            // Submit result
+            
             socket.emit('submit-tap-result', { roomCode: currentRoom, taps: tapCount });
             
-            // Show completion message
             setTimeout(() => {
                 alert(`Time's up! You tapped ${tapCount} times!`);
             }, 500);
@@ -198,7 +189,6 @@ function startFastTapperTimer(duration) {
     }, 1000);
 }
 
-// Enhanced lobby functions
 function updateLobbyOwnerDisplay() {
     const lobbyHeader = document.querySelector('.lobby-header');
     const existingOwnerBadge = document.querySelector('.owner-badge');
@@ -209,7 +199,7 @@ function updateLobbyOwnerDisplay() {
     if (isRoomOwner) {
         const ownerBadge = document.createElement('div');
         ownerBadge.className = 'owner-badge';
-        ownerBadge.innerHTML = '👑 You are the Room Owner';
+        ownerBadge.innerHTML = 'You are the Room Owner';
         lobbyHeader.appendChild(ownerBadge);
     }
 }
@@ -240,26 +230,44 @@ function updatePlayers(players) {
         const isOwnerPlayer = index === 0;
         return `
             <div class="player ${isOwnerPlayer ? 'owner-player' : ''}">
-                ${isOwnerPlayer ? '👑 ' : ''}${player.name}: ${player.score}pts
+                ${isOwnerPlayer ? 'OWNER ' : ''}${player.name}: ${player.score}pts
             </div>
         `;
     }).join('');
 }
 
-// Enhanced points table creation with bulletproof error handling
+// ENHANCED: Points table creation with comprehensive debugging
 function createPointsTable(roundHistory, tableId) {
+    console.log('=== POINTS TABLE DEBUG START ===');
+    console.log('createPointsTable called with:');
+    console.log('- tableId:', tableId);
+    console.log('- roundHistory:', roundHistory);
+    console.log('- roundHistory type:', typeof roundHistory);
+    console.log('- roundHistory isArray:', Array.isArray(roundHistory));
+    console.log('- roundHistory length:', roundHistory ? roundHistory.length : 'N/A');
+    
     const table = document.getElementById(tableId);
+    console.log('- table element found:', !!table);
+    console.log('- table element:', table);
+    
     if (!table) {
-        console.error(`Table element with id '${tableId}' not found`);
+        console.error('Table element with id "' + tableId + '" not found');
+        console.log('Available elements with "points" in id:');
+        document.querySelectorAll('[id*="points"]').forEach(el => {
+            console.log('  - Found element:', el.id, el);
+        });
         return;
     }
     
-    console.log('Creating points table for:', tableId, 'with data:', roundHistory);
     if (!roundHistory || !Array.isArray(roundHistory) || roundHistory.length === 0) {
-        console.warn('No round history data provided for table:', tableId);
+        console.warn('No valid round history data provided');
+        console.log('Setting no-data message in table');
         table.innerHTML = '<div class="no-data">No game data available yet</div>';
+        console.log('No-data message set');
         return;
     }
+    
+    console.log('Creating points table with valid data');
     
     let tableHtml = '<div class="points-table">';
     // Header
@@ -270,9 +278,14 @@ function createPointsTable(roundHistory, tableId) {
     }
     tableHtml += '<div class="total-header">Total</div>';
     tableHtml += '</div>';
+    
     // Player rows
-    roundHistory.forEach(playerHistory => {
-        if (!playerHistory.playerName) return; // Skip invalid entries
+    roundHistory.forEach((playerHistory, index) => {
+        console.log(`Processing player ${index + 1}:`, playerHistory);
+        if (!playerHistory.playerName) {
+            console.warn('Skipping player with no name:', playerHistory);
+            return;
+        }
         
         tableHtml += '<div class="points-table-row">';
         tableHtml += `<div class="player-name-cell">${playerHistory.playerName}</div>`;
@@ -286,17 +299,20 @@ function createPointsTable(roundHistory, tableId) {
         
         // Total wins
         const totalWins = playerHistory.rounds ? playerHistory.rounds.filter(r => r === 'W').length : 0;
-    
         tableHtml += `<div class="total-score">${totalWins}</div>`;
         tableHtml += '</div>';
     });
     tableHtml += '</div>';
+    
+    console.log('Setting table HTML (length:', tableHtml.length, 'chars)');
+    console.log('HTML preview:', tableHtml.substring(0, 200) + '...');
     table.innerHTML = tableHtml;
     
     console.log('Points table created successfully for:', tableId);
+    console.log('Final table innerHTML length:', table.innerHTML.length);
+    console.log('=== POINTS TABLE DEBUG END ===');
 }
 
-// Enhanced timer with better color progression
 function startTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     let timeLeft = seconds;
@@ -304,7 +320,6 @@ function startTimer(elementId, seconds) {
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
-        // Better color progression
         if (timeLeft <= 10) {
             element.classList.add('urgent');
             element.classList.remove('danger');
@@ -326,7 +341,6 @@ function startTimer(elementId, seconds) {
     return timer;
 }
 
-// FIXED: Enhanced challenge timer with auto-submit functionality
 function startChallengeTimer(elementId, seconds) {
     const element = document.getElementById(elementId);
     const textarea = document.getElementById('challenge-response');
@@ -335,7 +349,6 @@ function startChallengeTimer(elementId, seconds) {
     const timer = setInterval(() => {
         element.textContent = timeLeft;
         
-        // Color coding for better UX - adjusted for 40 seconds
         if (timeLeft <= 10) {
             element.classList.add('urgent');
             element.classList.remove('danger');
@@ -352,22 +365,19 @@ function startChallengeTimer(elementId, seconds) {
             clearInterval(timer);
             element.classList.remove('urgent', 'danger');
             
-            // FIXED: Auto-submit if user has typed something
             if (textarea && !textarea.disabled && !submitBtn.disabled) {
                 const currentText = textarea.value.trim();
                 if (currentText.length > 0) {
-                    console.log('⏰ Auto-submitting response:', currentText.substring(0, 30) + '...');
+                    console.log('Auto-submitting response:', currentText.substring(0, 30) + '...');
                     
-                    // Add visual indicator
                     element.textContent = 'AUTO-SUBMIT';
                     element.classList.add('auto-submit');
                     
-                    // Auto-submit the current text
                     setTimeout(() => {
                         submitChallengeResponse(true);
                     }, 500);
                 } else {
-                    console.log('⏰ Timer ended with no input');
+                    console.log('Timer ended with no input');
                     element.textContent = 'TIME UP';
                 }
             }
@@ -376,17 +386,16 @@ function startChallengeTimer(elementId, seconds) {
     return timer;
 }
 
-// Typing effect function
 function typeWriter(element, text, speed = 30) {
     return new Promise((resolve) => {
         element.textContent = '';
-        element.scrollTop = 0; // Start at top
+        element.scrollTop = 0;
         let i = 0;
         
         function typeNextChar() {
             if (i < text.length) {
                 element.textContent += text.charAt(i);
-                element.scrollTop = element.scrollHeight; // Auto-scroll to bottom
+                element.scrollTop = element.scrollHeight;
                 i++;
                 
                 const char = text.charAt(i - 1);
@@ -408,12 +417,10 @@ function typeWriter(element, text, speed = 30) {
     });
 }
 
-// FIXED: Better individual result overlay with proper text handling
 async function showIndividualResult(data) {
     const overlay = document.getElementById('result-overlay');
     const content = document.getElementById('individual-result-content');
     
-    // FIXED: Better text handling for display
     let responseText = data.response || "";
     const isAutoSubmitted = responseText.startsWith('[Auto-submitted]');
     
@@ -424,11 +431,11 @@ async function showIndividualResult(data) {
     const feedbackText = data.feedback || "No feedback available.";
     
     const autoSubmitIndicator = isAutoSubmitted ?
-        '<div class="auto-submit-indicator">⏰ Auto-submitted when time expired</div>' : '';
+        '<div class="auto-submit-indicator">Auto-submitted when time expired</div>' : '';
     
     const resultHtml = `
         <div class="individual-result ${data.passed ? 'passed' : 'failed'}">
-            <h3>${data.passed ? '✅ WELL REASONED!' : '❌ INSUFFICIENT!'}</h3>
+            <h3>${data.passed ? 'WELL REASONED!' : 'INSUFFICIENT!'}</h3>
             ${autoSubmitIndicator}
             <div class="result-response"></div>
             <div class="result-feedback"></div>
@@ -444,23 +451,17 @@ async function showIndividualResult(data) {
     const feedbackEl = content.querySelector('.result-feedback');
     const continueBtn = content.querySelector('.btn');
     
-    // Animate the typing effect
     await typeWriter(responseEl, `"${responseText}"`, 20);
     await new Promise(resolve => setTimeout(resolve, 500));
     await typeWriter(feedbackEl, feedbackText);
-
     
-    continueBtn.classList.remove('hidden'); // Show the button after typing is complete
+    continueBtn.classList.remove('hidden');
     
-    console.log('Showing individual result:', { passed: data.passed, feedbackLength: feedbackText.length, isAutoSubmitted });
-    
-    // Auto-hide the overlay after a delay if the user hasn't clicked
     setTimeout(() => {
         if (overlay.style.display === 'flex') {
-            console.log("Auto-hiding judgment overlay after timeout.");
             hideIndividualResult();
         }
-    }, 8000); // 8-second delay
+    }, 8000);
 }
 
 function hideIndividualResult() {
@@ -480,6 +481,7 @@ socket.on('room-created', (data) => {
     updateStartButton();
     showPage('lobby');
 });
+
 socket.on('join-success', (data) => {
     currentRoom = data.roomCode;
     isRoomOwner = data.isOwner;
@@ -489,18 +491,22 @@ socket.on('join-success', (data) => {
     updateStartButton();
     showPage('lobby');
 });
+
 socket.on('player-joined', (data) => {
     updatePlayers(data.players);
     updateStartButton();
 });
+
 socket.on('player-left', (data) => {
     updatePlayers(data.players);
     updateStartButton();
 });
+
 socket.on('oracle-speaks', (data) => {
     oracleIntroMessage.textContent = data.message;
     showPage('oracleIntro');
 });
+
 socket.on('riddle-presented', (data) => {
     document.getElementById('round-display').textContent = `Round ${data.round}/${data.maxRounds}`;
     riddleText.textContent = data.riddle.question;
@@ -516,10 +522,12 @@ socket.on('riddle-presented', (data) => {
     showPage('riddle');
     startTimer('riddle-timer', 45);
 });
+
 socket.on('answer-submitted', (data) => {
     document.getElementById('submission-count').textContent = 
         `${data.totalSubmissions}/${data.totalPlayers} players answered`;
 });
+
 socket.on('riddle-results-reveal', (data) => {
     document.getElementById('riddle-results-message').textContent = data.message;
     
@@ -536,11 +544,11 @@ socket.on('riddle-results-reveal', (data) => {
                 <div class="answer-header">
                     <span class="player-name">${answerData.playerName}</span>
                     <span class="answer-order">${orderText}</span>
-                    ${isWinner ? '<span class="winner-badge">🏆 WINNER</span>' : ''}
+                    ${isWinner ? '<span class="winner-badge">WINNER</span>' : ''}
                 </div>
                 <div class="answer-text">"${answerData.answer}"</div>
                 <div class="answer-status">
-                    ${isCorrect ? '✅ Correct' : '❌ Incorrect'}
+                    ${isCorrect ? 'Correct' : 'Incorrect'}
                 </div>
             </div>
         `;
@@ -550,7 +558,6 @@ socket.on('riddle-results-reveal', (data) => {
     showPage('riddleResults');
 });
 
-// FIXED: Handle text challenges with auto-submit functionality
 socket.on('text-challenge-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -558,7 +565,6 @@ socket.on('text-challenge-start', (data) => {
         document.getElementById('text-challenge-title').textContent = 
             `${data.challengeType.toUpperCase()} CHALLENGE`;
         
-        // Better content handling with validation
         const challengeContent = data.challengeContent;
         const contentElement = document.getElementById('text-challenge-content');
         
@@ -578,9 +584,7 @@ socket.on('text-challenge-start', (data) => {
             `0/${data.participants.length} players responded`;
         
         showPage('textChallenge');
-        // FIXED: Use enhanced timer with auto-submit
         startChallengeTimer('text-challenge-timer', data.timeLimit || 40);
-        // Auto-focus on textarea after a brief delay
         setTimeout(() => {
             const textarea = document.getElementById('challenge-response');
             textarea.focus();
@@ -594,7 +598,6 @@ socket.on('text-challenge-start', (data) => {
     }
 });
 
-// Handle fast tapper challenges
 socket.on('fast-tapper-start', (data) => {
     const isParticipant = data.participants.includes(playerName);
     
@@ -611,19 +614,19 @@ socket.on('fast-tapper-start', (data) => {
         showPage('waiting');
     }
 });
-// Handle individual challenge results
+
 socket.on('challenge-individual-result', (data) => {
     showIndividualResult(data);
 });
-// Handle challenge results screens
+
 socket.on('fast-tapper-results', (data) => {
-    document.getElementById('challenge-results-title').textContent = '⚡ FAST TAPPER RESULTS';
+    document.getElementById('challenge-results-title').textContent = 'FAST TAPPER RESULTS';
     document.getElementById('challenge-results-message').textContent = 
         `Fastest fingers: ${data.maxTaps} taps!`;
     
     const resultsHtml = data.results.map(result => `
         <div class="tap-result-item ${result.won ? 'winner' : ''}">
-            <span class="tap-result-name">${result.won ? '🏆 ' : ''}${result.playerName}</span>
+            <span class="tap-result-name">${result.won ? 'WINNER ' : ''}${result.playerName}</span>
             <span class="tap-result-count">${result.taps} taps</span>
         </div>
     `).join('');
@@ -631,28 +634,46 @@ socket.on('fast-tapper-results', (data) => {
     document.getElementById('challenge-results-content').innerHTML = resultsHtml;
     showPage('challengeResults');
 });
-// Handle submission status updates
+
 socket.on('challenge-response-submitted', (data) => {
     document.getElementById('text-challenge-submission-count').textContent = 
         `${data.totalSubmissions}/${data.expectedSubmissions} players responded`;
 });
+
 socket.on('tap-result-submitted', (data) => {
     console.log(`${data.player} tapped ${data.taps} times`);
 });
-// Enhanced round summary handler - always shows leaderboard
+
+// ENHANCED: Round summary handler with comprehensive debugging
 socket.on('round-summary', (data) => {
-    console.log('Received round-summary:', data);
+    console.log('=== ROUND SUMMARY DEBUG START ===');
+    console.log('Full data received:', data);
+    console.log('Round:', data.round);
+    console.log('Max rounds:', data.maxRounds);
+    console.log('Players:', data.players);
+    console.log('Riddle winner:', data.riddleWinner);
+    console.log('Challenge results:', data.challengeResults);
+    console.log('Round history received:');
+    console.log('- Type:', typeof data.roundHistory);
+    console.log('- Is array:', Array.isArray(data.roundHistory));
+    console.log('- Length:', data.roundHistory ? data.roundHistory.length : 'N/A');
+    console.log('- Content:', data.roundHistory);
     
     document.getElementById('round-summary-title').textContent = `Round ${data.round} Complete!`;
     
-    // Always create points table, even with minimal data
     if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
+        console.log('Valid round history found - calling createPointsTable');
+        console.log('Calling createPointsTable with tableId: points-table');
         createPointsTable(data.roundHistory, 'points-table');
+        console.log('createPointsTable call completed');
     } else {
-        console.warn('No round history data received in round-summary');
+        console.warn('No valid round history data received');
+        console.log('Setting fallback message');
         const pointsTable = document.getElementById('points-table');
+        console.log('Points table element found:', !!pointsTable);
         if (pointsTable) {
             pointsTable.innerHTML = '<div class="no-data">Leaderboard data processing...</div>';
+            console.log('Fallback message set in points table');
         }
     }
     
@@ -665,15 +686,25 @@ socket.on('round-summary', (data) => {
         }
     }
     
+    console.log('Showing round summary page');
     showPage('roundSummary');
+    console.log('=== ROUND SUMMARY DEBUG END ===');
 });
-// FIXED: Enhanced game-over handler with tie-breaking display
+
+// ENHANCED: Game over handler with debugging
 socket.on('game-over', (data) => {
-    console.log('🏆 Game over received:', data);
+    console.log('=== GAME OVER DEBUG START ===');
+    console.log('Game over data received:', data);
+    console.log('Winner:', data.winner);
+    console.log('Scores:', data.scores);
+    console.log('Final round history:');
+    console.log('- Type:', typeof data.roundHistory);
+    console.log('- Is array:', Array.isArray(data.roundHistory));
+    console.log('- Length:', data.roundHistory ? data.roundHistory.length : 'N/A');
+    console.log('- Content:', data.roundHistory);
     
-    // Use data.scores from the server, which is the sorted list of players
     const scoresHtml = data.scores.map((player, index) => {
-        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆';
+        const medal = index === 0 ? 'GOLD' : index === 1 ? 'SILVER' : index === 2 ? 'BRONZE' : 'FINISHER';
         return `
             <div class="final-score ${index === 0 ? 'winner' : ''}">
                 <span>${medal} ${player.name}</span>
@@ -684,14 +715,13 @@ socket.on('game-over', (data) => {
     
     const bigWinnerEl = document.getElementById('big-winner-announcement');
     if (bigWinnerEl) {
-        // Use data.tied from the server to check for a tie
-        const tieText = data.tied ? '<br><span style="font-size:0.6em;">🎯 It\'s a Tie!</span>' : '';
-        bigWinnerEl.innerHTML = `🏆 CHAMPION: ${data.winner.name} 🏆<br><span style="font-size:0.7em;">${data.winner.score} Points</span>${tieText}`;
+        const tieText = data.tied ? 'It\'s a Tie!' : '';
+        bigWinnerEl.innerHTML = `CHAMPION: ${data.winner.name}<br>${data.winner.score} Points<br>${tieText}`;
     }
     
     const finalOracleEl = document.getElementById('final-oracle');
     if (finalOracleEl) {
-        finalOracleEl.textContent = data.winner.score > 0 ? '💥' : '🤖';
+        finalOracleEl.textContent = data.winner.score > 0 ? 'DEFEATED' : 'VICTORIOUS';
     }
     
     const finalOracleMessageEl = document.getElementById('final-oracle-message');
@@ -704,19 +734,25 @@ socket.on('game-over', (data) => {
         finalScoresEl.innerHTML = scoresHtml;
     }
     
-    // Always create final points table
     if (data.roundHistory && Array.isArray(data.roundHistory) && data.roundHistory.length > 0) {
+        console.log('Valid final round history found - calling createPointsTable');
+        console.log('Calling createPointsTable with tableId: final-points-table');
         createPointsTable(data.roundHistory, 'final-points-table');
+        console.log('Final createPointsTable call completed');
     } else {
-        console.warn('No final round history data received in game-over');
+        console.warn('No final round history data received');
         const finalPointsTable = document.getElementById('final-points-table');
+        console.log('Final points table element found:', !!finalPointsTable);
         if (finalPointsTable) {
             finalPointsTable.innerHTML = '<div class="no-data">Final leaderboard data not available</div>';
         }
     }
     
+    console.log('Showing game over page');
     showPage('gameOver');
+    console.log('=== GAME OVER DEBUG END ===');
 });
+
 socket.on('error', (data) => {
     console.error('Socket error:', data.message);
     alert(data.message);
@@ -725,4 +761,4 @@ socket.on('error', (data) => {
 // Initialize
 showPage('home');
 playerNameInput.focus();
-console.log('Frontend loaded - Threatened by AI v4.7 (Judgement Typing Effect)');
+console.log('Frontend loaded - Threatened by AI v4.7 (Debug Version with Enhanced Logging)');
