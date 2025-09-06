@@ -390,7 +390,7 @@ room.challengeTimer = setTimeout(() => {
     evaluateTextChallengeResults(roomCode);
 }, timeLimit * 1000 + 5000);
     }
-  },500);
+  },2500);
 }
 // Evaluate Fast Tapper Results
 async function evaluateFastTapperResults(roomCode) {
