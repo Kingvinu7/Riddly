@@ -95,21 +95,49 @@ function toggleHowToPlay() {
     
     if (modal.style.display === 'none' || !modal.style.display) {
         console.log('Showing modal'); // Debug: Check if this logs on desktop
-        modal.style.setProperty('display', 'flex', 'important'); // Force override any CSS !important rules
-        modal.style.opacity = '1';
-        modal.style.visibility = 'visible';
+        // Force override potential CSS conflicts with !important inline styles
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('position', 'fixed', 'important');
+        modal.style.setProperty('top', '0', 'important');
+        modal.style.setProperty('left', '0', 'important');
+        modal.style.setProperty('width', '100vw', 'important');
+        modal.style.setProperty('height', '100vh', 'important');
+        modal.style.setProperty('z-index', '10000', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('background-color', 'rgba(0, 0, 0, 0.5)', 'important'); // Semi-transparent overlay
         document.body.style.overflow = 'hidden';
 
-        // Optional: Force visibility on backdrop and container if needed
+        // Force backdrop styles
         const backdrop = modal.querySelector('.modal-backdrop');
         if (backdrop) {
-            backdrop.style.opacity = '1';
-            backdrop.style.visibility = 'visible';
+            backdrop.style.setProperty('display', 'block', 'important');
+            backdrop.style.setProperty('position', 'absolute', 'important');
+            backdrop.style.setProperty('top', '0', 'important');
+            backdrop.style.setProperty('left', '0', 'important');
+            backdrop.style.setProperty('width', '100%', 'important');
+            backdrop.style.setProperty('height', '100%', 'important');
+            backdrop.style.setProperty('background-color', 'rgba(0, 0, 0, 0.5)', 'important');
+            backdrop.style.setProperty('z-index', '9999', 'important');
+            backdrop.style.setProperty('opacity', '1', 'important');
+            backdrop.style.setProperty('visibility', 'visible', 'important');
         }
+
+        // Force container styles
         const container = modal.querySelector('.modal-container');
         if (container) {
-            container.style.opacity = '1';
-            container.style.visibility = 'visible';
+            container.style.setProperty('display', 'block', 'important');
+            container.style.setProperty('position', 'relative', 'important');
+            container.style.setProperty('z-index', '10001', 'important');
+            container.style.setProperty('max-width', '80%', 'important');
+            container.style.setProperty('width', 'auto', 'important');
+            container.style.setProperty('margin', 'auto', 'important');
+            container.style.setProperty('padding', '20px', 'important');
+            container.style.setProperty('background-color', '#fff', 'important'); // Assume white background
+            container.style.setProperty('border-radius', '8px', 'important');
+            container.style.setProperty('opacity', '1', 'important');
+            container.style.setProperty('visibility', 'visible', 'important');
+            container.style.setProperty('transform', 'none', 'important'); // Override any hidden transforms
         }
     } else {
         console.log('Hiding modal'); // Debug

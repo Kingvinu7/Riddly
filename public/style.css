@@ -1517,98 +1517,881 @@ input[type="text"]::placeholder, textarea::placeholder {
         padding: 20px;
         margin: 10px;
         max-width: 90%;
-        max-height: 70vh;
+        max-height: none; /* Corrected: Removed fixed height limit */
+        overflow: visible; /* Corrected: Prevents scrollbar on mobile */
     }
-    
+
     .individual-result h3 {
         font-size: 1.6em;
     }
-    
+
     .result-feedback, .result-response {
-        max-height: 120px;
+        /* This line was causing a lot of issues */
+        max-height: none;
+        overflow: visible;
         font-size: 0.95em;
     }
-    
-    .challenge-description {
-        font-size: 1.05em;
-        padding: 20px 25px;
-        line-height: 1.7;
-        max-height: 250px;
+
+.challenge-description {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-left: 4px solid var(--accent-red);
+    border-radius: 8px;
+    padding: 25px 30px;
+    margin: 25px 0;
+    line-height: 1.8;
+    font-size: 1.05em; /* Slightly smaller for better fit */
+    backdrop-filter: blur(15px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 20px rgba(255, 8, 68, 0.1);
+    position: relative;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    /* Remove problematic height limit */
+    height: auto;
+    max-height: none;
+    overflow: visible;
+}
+
+/* POINTS TABLE FIX */
+.points-table-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 24px auto;
+    width: 100%;
+    max-width: 850px;
+}
+
+.points-table {
+    display: block !important;
+    width: 100%;
+    visibility: visible !important;
+}
+
+.points-table-header,
+.points-table-row {
+    display: grid !important;
+    grid-template-columns: 2fr repeat(5, 1fr) 1fr !important;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure individual cells display */
+.player-name-cell,
+.round-result,
+.total-score,
+.player-name-header,
+.round-header,
+.total-header {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* HOME SCREEN LAYOUT - SIMPLER APPROACH */
+    /* Add this CSS to the END of your existing style.css file */
+
+/* HOW TO PLAY MODAL - BULLETPROOF STYLING */
+.how-to-play-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 50000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+    opacity: 1 !important; /* Ensure visibility */
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.modal-container {
+    position: relative;
+    background: var(--bg-secondary);
+    border: 2px solid var(--accent-cyan);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 40px rgba(0, 245, 255, 0.3);
+    z-index: 50001;
+    animation: modalSlideIn 0.3s ease-out;
+    opacity: 1 !important; /* Ensure visibility */
+}
+
+@keyframes modalSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+    border-bottom: 2px solid var(--accent-red);
+    position: relative;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.modal-header h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.8em;
+    color: var(--accent-cyan);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+.close-btn {
+    background: none;
+    border: 2px solid var(--accent-red);
+    color: var(--accent-red);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    background: var(--accent-red);
+    color: var(--bg-primary);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 0;
+    overflow-y: auto;
+    max-height: calc(90vh - 100px);
+}
+
+.faq-section {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.faq-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-secondary);
+    border-left: 4px solid var(--accent-red);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.faq-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.05), transparent);
+    transition: left 0.6s;
+}
+
+.faq-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-left-color: var(--accent-cyan);
+    transform: translateX(3px);
+    box-shadow: 0 5px 20px rgba(0, 245, 255, 0.1);
+}
+
+.faq-item:hover::before {
+    left: 100%;
+}
+
+.faq-item h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.3em;
+    color: var(--accent-yellow);
+    margin: 0 0 12px 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.faq-item p {
+    font-size: 1em;
+    line-height: 1.6;
+    margin: 0 0 8px 0;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.faq-item p:last-child {
+    margin-bottom: 0;
+}
+
+.faq-item p strong {
+    color: var(--accent-red);
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(255, 8, 68, 0.3);
+}
+
+/* Mobile Responsiveness for Modal */
+@media (max-width: 768px) {
+    .how-to-play-modal {
+        padding: 10px;
     }
     
-    .points-table-header, 
-    .points-table-row {
-        font-size: 0.8em;
-        padding: 10px 8px;
-        gap: 6px;
+    .modal-container {
+        max-width: 95%;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.5em;
+    }
+    
+    .close-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1.3em;
+    }
+    
+    .faq-section {
+        padding: 20px;
+        gap: 15px;
+    }
+    
+    .faq-item {
+        padding: 15px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.2em;
+    }
+    
+    .faq-item p {
+        font-size: 0.9em;
     }
 }
 
 @media (max-width: 480px) {
-    .page-content {
+    .how-to-play-modal {
+        padding: 5px;
+    }
+    
+    .modal-container {
+        max-width: 98%;
+        border-radius: 12px;
+    }
+    
+    .modal-header {
+        padding: 12px 15px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.3em;
+        letter-spacing: 1px;
+    }
+    
+    .close-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.2em;
+    }
+    
+    .faq-section {
         padding: 15px;
-        margin: 5px;
+        gap: 12px;
     }
     
-    .logo h1 {
-        font-size: 2em;
-    }
-    
-    .btn {
-        padding: 14px 24px;
-        font-size: 1em;
-    }
-    
-    .btn.large {
-        padding: 16px 28px;
-        font-size: 1.1em;
-    }
-    
-    .timer {
-        font-size: 2.4em !important;
-        padding: 12px 24px;
-    }
-    
-    .response-textarea {
-        height: 80px;
+    .faq-item {
         padding: 12px;
+        border-radius: 8px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.1em;
+        margin-bottom: 8px;
+    }
+    
+    .faq-item p {
+        font-size: 0.85em;
+        line-height: 1.5;
+    }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1024px) {
+    .modal-container {
+        max-width: 700px;
+    }
+    
+    .faq-section {
+        padding: 30px;
+        gap: 25px;
+    }
+    
+    .faq-item {
+        padding: 25px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.4em;
+    }
+    
+    .faq-item p {
+        font-size: 1.05em;
+    }
+}
+
+/* ===== INDIVIDUAL RESULT OVERLAY ===== */
+.result-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+    animation: overlayFadeIn 0.3s ease-out;
+}
+
+.result-overlay-content {
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.individual-result {
+    background: var(--bg-secondary);
+    border: 3px solid;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    max-width: 1000px;
+    height: auto;
+    max-height: none; /* Corrected: Explicitly set to none */
+    overflow: visible; /* Corrected: Set to visible to prevent scrollbars */
+    animation: resultPopIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-soft);
+}
+
+.individual-result.passed {
+    border-color: #00ff88;
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), var(--bg-secondary));
+    box-shadow: 0 0 40px rgba(0, 255, 136, 0.3);
+}
+
+.individual-result.failed {
+    border-color: var(--accent-red);
+    background: linear-gradient(135deg, rgba(255, 8, 68, 0.1), var(--bg-secondary));
+    box-shadow: 0 0 40px rgba(255, 8, 68, 0.3);
+}
+
+.individual-result h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2em;
+    font-weight: 800;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.individual-result.passed h3 {
+    color: #00ff88;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.individual-result.failed h3 {
+    color: var(--accent-red);
+    text-shadow: 0 0 20px rgba(255, 8, 68, 0.5);
+}
+
+.auto-submit-indicator {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    margin-bottom: 12px;
+    border: 1px solid #ff9800;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+}
+
+.result-response,
+.result-feedback {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    padding: 15px;
+    margin: 15px auto;
+    font-style: italic;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+    text-align: left;
+    max-width: 90%;
+    width: 600px;
+    height: auto;
+    min-height: 80px;
+    max-height: none; /* Corrected: Allows the box to grow */
+    word-break: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    overflow: visible; /* Corrected: Prevents overflow forcing scrollbar */
+}
+
+.continue-instruction {
+    margin: 15px 0;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ... (rest of your CSS code) ... */
+
+/* ===== MOBILE RESPONSIVENESS ===== */
+@media (max-width: 768px) {
+    /* ... (other mobile styles) ... */
+
+    .individual-result {
+        padding: 20px;
+        margin: 10px;
+        max-width: 90%;
+        max-height: none; /* Corrected: Allows the box to grow */
+        overflow: visible; /* Corrected: Prevents scrollbar on mobile */
+    }
+
+    .individual-result h3 {
+        font-size: 1.6em;
+    }
+
+    .result-feedback,
+    .result-response {
+        /* This line was causing a lot of issues */
+        max-height: none;
+        overflow: visible;
+        font-size: 0.95em;
+    }
+
+.challenge-description {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-left: 4px solid var(--accent-red);
+    border-radius: 8px;
+    padding: 25px 30px;
+    margin: 25px 0;
+    line-height: 1.8;
+    font-size: 1.05em; /* Slightly smaller for better fit */
+    backdrop-filter: blur(15px);
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 20px rgba(255, 8, 68, 0.1);
+    position: relative;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    /* Remove problematic height limit */
+    height: auto;
+    max-height: none;
+    overflow: visible;
+}
+
+/* POINTS TABLE FIX */
+.points-table-container {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 24px auto;
+    width: 100%;
+    max-width: 850px;
+}
+
+.points-table {
+    display: block !important;
+    width: 100%;
+    visibility: visible !important;
+}
+
+.points-table-header,
+.points-table-row {
+    display: grid !important;
+    grid-template-columns: 2fr repeat(5, 1fr) 1fr !important;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure individual cells display */
+.player-name-cell,
+.round-result,
+.total-score,
+.player-name-header,
+.round-header,
+.total-header {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* HOME SCREEN LAYOUT - SIMPLER APPROACH */
+    /* Add this CSS to the END of your existing style.css file */
+
+/* HOW TO PLAY MODAL - BULLETPROOF STYLING */
+.how-to-play-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 50000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.modal-container {
+    position: relative;
+    background: var(--bg-secondary);
+    border: 2px solid var(--accent-cyan);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 40px rgba(0, 245, 255, 0.3);
+    z-index: 50001;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+    border-bottom: 2px solid var(--accent-red);
+    position: relative;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+.modal-header h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.8em;
+    color: var(--accent-cyan);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+.close-btn {
+    background: none;
+    border: 2px solid var(--accent-red);
+    color: var(--accent-red);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    background: var(--accent-red);
+    color: var(--bg-primary);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 0;
+    overflow-y: auto;
+    max-height: calc(90vh - 100px);
+}
+
+.faq-section {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.faq-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-secondary);
+    border-left: 4px solid var(--accent-red);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.faq-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.05), transparent);
+    transition: left 0.6s;
+}
+
+.faq-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-left-color: var(--accent-cyan);
+    transform: translateX(3px);
+    box-shadow: 0 5px 20px rgba(0, 245, 255, 0.1);
+}
+
+.faq-item:hover::before {
+    left: 100%;
+}
+
+.faq-item h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.3em;
+    color: var(--accent-yellow);
+    margin: 0 0 12px 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.faq-item p {
+    font-size: 1em;
+    line-height: 1.6;
+    margin: 0 0 8px 0;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.faq-item p:last-child {
+    margin-bottom: 0;
+}
+
+.faq-item p strong {
+    color: var(--accent-red);
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(255, 8, 68, 0.3);
+}
+
+/* Mobile Responsiveness for Modal */
+@media (max-width: 768px) {
+    .how-to-play-modal {
+        padding: 10px;
+    }
+    
+    .modal-container {
+        max-width: 95%;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.5em;
+    }
+    
+    .close-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1.3em;
+    }
+    
+    .faq-section {
+        padding: 20px;
+        gap: 15px;
+    }
+    
+    .faq-item {
+        padding: 15px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.2em;
+    }
+    
+    .faq-item p {
         font-size: 0.9em;
     }
-    
-    .tap-btn {
-        width: 120px;
-        height: 120px;
-        font-size: 1.2em !important;
-        padding: 15px !important;
+}
+
+@media (max-width: 480px) {
+    .how-to-play-modal {
+        padding: 5px;
     }
     
-    .tap-count-display {
-        font-size: 2.5em;
+    .modal-container {
+        max-width: 98%;
+        border-radius: 12px;
     }
     
-    .challenge-result-item,
-    .tap-result-item {
-        padding: 12px 16px;
-        margin: 6px 0;
+    .modal-header {
+        padding: 12px 15px;
     }
     
-    .challenge-player-name {
-        font-size: 1em;
+    .modal-header h3 {
+        font-size: 1.3em;
+        letter-spacing: 1px;
     }
     
-    .tap-result-name {
-        font-size: 1em;
+    .close-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.2em;
     }
     
-    .tap-result-count {
+    .faq-section {
+        padding: 15px;
+        gap: 12px;
+    }
+    
+    .faq-item {
+        padding: 12px;
+        border-radius: 8px;
+    }
+    
+    .faq-item h4 {
         font-size: 1.1em;
+        margin-bottom: 8px;
     }
     
-    .challenge-description {
-        font-size: 1em;
-        padding: 18px 20px;
-        line-height: 1.6;
-        letter-spacing: 0.1px;
+    .faq-item p {
+        font-size: 0.85em;
+        line-height: 1.5;
+    }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1024px) {
+    .modal-container {
+        max-width: 700px;
+    }
+    
+    .faq-section {
+        padding: 30px;
+        gap: 25px;
+    }
+    
+    .faq-item {
+        padding: 25px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.4em;
+    }
+    
+    .faq-item p {
+        font-size: 1.05em;
     }
 }
 
@@ -1738,6 +2521,7 @@ body::before { z-index: -1; }
 }
 
 .result-overlay-content {
+    max-width: 90%;
     max-height: 90%;
     overflow-y: auto;
 }
@@ -1839,7 +2623,7 @@ body::before { z-index: -1; }
         padding: 20px;
         margin: 10px;
         max-width: 90%;
-        max-height: none; /* Corrected: Removed fixed height limit */
+        max-height: none; /* Corrected: Allows the box to grow */
         overflow: visible; /* Corrected: Prevents scrollbar on mobile */
     }
 
@@ -1935,7 +2719,6 @@ body::before { z-index: -1; }
     display: none;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(15px);
     overflow-y: auto;
     padding: 20px;
     box-sizing: border-box;
@@ -1962,7 +2745,6 @@ body::before { z-index: -1; }
     box-shadow: 
         0 20px 60px rgba(0, 0, 0, 0.8),
         0 0 40px rgba(0, 245, 255, 0.3);
-    backdrop-filter: blur(20px);
     z-index: 50001;
     animation: modalSlideIn 0.3s ease-out;
 }
