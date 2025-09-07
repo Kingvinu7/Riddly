@@ -27,6 +27,7 @@ const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const startGameBtn = document.getElementById('start-game-btn');
 const submitRiddleBtn = document.getElementById('submit-riddle');
+const howToPlayBtn = document.getElementById('how-to-play-btn'); // New element variable
 
 const roomCodeDisplay = document.getElementById('room-code-display');
 const playersListEl = document.getElementById('players-list');
@@ -57,6 +58,14 @@ document.getElementById('challenge-response').addEventListener('keypress', (e) =
 // Fast tapper event listener
 document.getElementById('tap-button').addEventListener('click', onTap);
 
+// NEW: Event listener for the "How to Play" button
+if (howToPlayBtn) {
+    howToPlayBtn.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevents the click from bubbling up to the document
+        toggleHowToPlay();
+    });
+}
+
 // Utility functions
 function showPage(pageName) {
     Object.values(pages).forEach(page => page.classList.remove('active'));
@@ -79,30 +88,27 @@ function createRoom() {
     socket.emit('create-room', { playerName: name });
 }
 
-// Add this function to your script.js file
-
 function toggleHowToPlay() {
     const modal = document.getElementById('how-to-play-modal');
     if (!modal) return;
     
     if (modal.style.display === 'none' || !modal.style.display) {
         modal.style.display = 'flex';
-        // Prevent background scrolling when modal is open
         document.body.style.overflow = 'hidden';
     } else {
         modal.style.display = 'none';
-        // Restore background scrolling when modal is closed
         document.body.style.overflow = 'auto';
     }
 }
 
-// Close modal when clicking outside of it
+// UPDATED: Close modal when clicking outside of it
 document.addEventListener('click', function(event) {
     const modal = document.getElementById('how-to-play-modal');
     const modalContainer = document.querySelector('.modal-container');
     
+    // Now, we don't need to check for the button, as stopPropagation handles it
     if (modal && modal.style.display === 'flex') {
-        if (!modalContainer.contains(event.target) && event.target !== document.getElementById('how-to-play-btn')) {
+        if (!modalContainer.contains(event.target)) {
             toggleHowToPlay();
         }
     }
