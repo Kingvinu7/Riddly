@@ -58,7 +58,7 @@ document.getElementById('challenge-response').addEventListener('keypress', (e) =
 // Fast tapper event listener
 document.getElementById('tap-button').addEventListener('click', onTap);
 
-// NEW: Event listener for the "How to Play" button
+// NEW: Event listener for the "How to Play" button to handle opening and stop propagation
 if (howToPlayBtn) {
     howToPlayBtn.addEventListener('click', (event) => {
         event.stopPropagation(); // Prevents the click from bubbling up to the document
@@ -106,7 +106,6 @@ document.addEventListener('click', function(event) {
     const modal = document.getElementById('how-to-play-modal');
     const modalContainer = document.querySelector('.modal-container');
     
-    // Now, we don't need to check for the button, as stopPropagation handles it
     if (modal && modal.style.display === 'flex') {
         if (!modalContainer.contains(event.target)) {
             toggleHowToPlay();
