@@ -2010,3 +2010,49 @@ body::before { z-index: -1; }
     color: var(--accent-red);
     font-weight: 600;
 }
+
+/* Make the main page content narrow like mobile on all screens */
+.page-content {
+  max-width: 420px; /* Matches typical mobile widths, e.g., iPhone portrait */
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+/* Adjust modal for consistency: full-width on small screens, capped on large */
+.modal-content {
+  width: 90vw; /* Fills most of the screen on mobile */
+  max-width: 420px; /* Prevents it from getting too wide on desktop */
+  margin: 20px auto; /* Centers it */
+}
+
+/* Media query for larger screens (desktop) */
+@media (min-width: 768px) {
+  .modal {
+    align-items: flex-start; /* Align to top if needed for taller content */
+    padding-top: 10vh; /* Adds some top space for a more centered feel */
+  }
+
+  .modal-content {
+    max-height: 70vh; /* Slightly reduce height cap on desktop for better fit */
+  }
+
+  .action-section {
+    max-width: 420px; /* Keep buttons and inputs compact */
+    margin: 0 auto;
+  }
+}
+
+/* Ensure close button and headers match the neon glow in screenshots */
+.close-btn:hover {
+  color: var(--accent-cyan);
+  text-shadow: 0 0 10px var(--accent-cyan);
+}
+
+.faq-item {
+  transition: box-shadow 0.3s ease;
+}
+
+.faq-item:hover {
+  box-shadow: 0 0 15px var(--accent-red);
+}
