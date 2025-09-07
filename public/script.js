@@ -123,7 +123,7 @@ function toggleHowToPlay() {
             backdrop.style.setProperty('visibility', 'visible', 'important');
         }
 
-        // Force container styles
+        // Force container styles (removed conflicting background-color assumption)
         const container = modal.querySelector('.modal-container');
         if (container) {
             container.style.setProperty('display', 'block', 'important');
@@ -133,7 +133,6 @@ function toggleHowToPlay() {
             container.style.setProperty('width', 'auto', 'important');
             container.style.setProperty('margin', 'auto', 'important');
             container.style.setProperty('padding', '20px', 'important');
-            container.style.setProperty('background-color', '#fff', 'important'); // Assume white background
             container.style.setProperty('border-radius', '8px', 'important');
             container.style.setProperty('opacity', '1', 'important');
             container.style.setProperty('visibility', 'visible', 'important');
