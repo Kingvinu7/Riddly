@@ -1919,38 +1919,83 @@ body::before { z-index: -1; }
 }
 
 /* HOME SCREEN LAYOUT - SIMPLER APPROACH */
-/* MODAL FAQ - SIMPLER SOLUTION */
-.modal {
+    /* Add this CSS to the END of your existing style.css file */
+
+/* HOW TO PLAY MODAL - BULLETPROOF STYLING */
+.how-to-play-modal {
     position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 50000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(15px);
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-backdrop {
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 10001;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(10px);
+    cursor: pointer;
 }
 
-.modal-content {
+.modal-container {
+    position: relative;
     background: var(--bg-secondary);
     border: 2px solid var(--accent-cyan);
     border-radius: 16px;
+    width: 100%;
     max-width: 600px;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: var(--shadow-glow);
-    margin: 20px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 40px rgba(0, 245, 255, 0.3);
+    backdrop-filter: blur(20px);
+    z-index: 50001;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
     border-bottom: 2px solid var(--accent-red);
+    position: relative;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
 }
 
 .modal-header h3 {
@@ -1959,100 +2004,218 @@ body::before { z-index: -1; }
     color: var(--accent-cyan);
     margin: 0;
     text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
 }
 
 .close-btn {
     background: none;
-    border: none;
+    border: 2px solid var(--accent-red);
     color: var(--accent-red);
-    font-size: 2em;
+    font-size: 1.5em;
     cursor: pointer;
-    padding: 0;
+    padding: 8px;
     width: 40px;
     height: 40px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    background: var(--accent-red);
+    color: var(--bg-primary);
+    transform: rotate(90deg);
 }
 
 .modal-body {
-    padding: 20px;
+    padding: 0;
+    overflow-y: auto;
+    max-height: calc(90vh - 100px);
+}
+
+.faq-section {
+    padding: 25px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
 }
 
 .faq-item {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-secondary);
-    border-left: 3px solid var(--accent-red);
-    border-radius: 8px;
-    padding: 15px;
+    border-left: 4px solid var(--accent-red);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.faq-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.05), transparent);
+    transition: left 0.6s;
+}
+
+.faq-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-left-color: var(--accent-cyan);
+    transform: translateX(3px);
+    box-shadow: 0 5px 20px rgba(0, 245, 255, 0.1);
+}
+
+.faq-item:hover::before {
+    left: 100%;
 }
 
 .faq-item h4 {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 1.1em;
+    font-size: 1.3em;
     color: var(--accent-yellow);
-    margin: 0 0 8px 0;
-    font-weight: 600;
+    margin: 0 0 12px 0;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 .faq-item p {
-    font-size: 0.9em;
-    line-height: 1.4;
-    margin: 0 0 5px 0;
+    font-size: 1em;
+    line-height: 1.6;
+    margin: 0 0 8px 0;
     color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.faq-item p:last-child {
+    margin-bottom: 0;
 }
 
 .faq-item p strong {
     color: var(--accent-red);
-    font-weight: 600;
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(255, 8, 68, 0.3);
 }
 
-/* Make the main page content narrow like mobile on all screens */
-.page-content {
-  max-width: 420px; /* Matches typical mobile widths, e.g., iPhone portrait */
-  margin: 0 auto;
-  padding: 0 20px;
-  box-sizing: border-box;
+/* Mobile Responsiveness for Modal */
+@media (max-width: 768px) {
+    .how-to-play-modal {
+        padding: 10px;
+    }
+    
+    .modal-container {
+        max-width: 95%;
+        max-height: 95vh;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.5em;
+    }
+    
+    .close-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1.3em;
+    }
+    
+    .faq-section {
+        padding: 20px;
+        gap: 15px;
+    }
+    
+    .faq-item {
+        padding: 15px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.2em;
+    }
+    
+    .faq-item p {
+        font-size: 0.9em;
+    }
 }
 
-/* Adjust modal for consistency: full-width on small screens, capped on large */
-.modal-content {
-  width: 90vw; /* Fills most of the screen on mobile */
-  max-width: 420px; /* Prevents it from getting too wide on desktop */
-  margin: 20px auto; /* Centers it */
+@media (max-width: 480px) {
+    .how-to-play-modal {
+        padding: 5px;
+    }
+    
+    .modal-container {
+        max-width: 98%;
+        border-radius: 12px;
+    }
+    
+    .modal-header {
+        padding: 12px 15px;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.3em;
+        letter-spacing: 1px;
+    }
+    
+    .close-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.2em;
+    }
+    
+    .faq-section {
+        padding: 15px;
+        gap: 12px;
+    }
+    
+    .faq-item {
+        padding: 12px;
+        border-radius: 8px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.1em;
+        margin-bottom: 8px;
+    }
+    
+    .faq-item p {
+        font-size: 0.85em;
+        line-height: 1.5;
+    }
 }
 
-/* Media query for larger screens (desktop) */
-@media (min-width: 768px) {
-  .modal {
-    align-items: flex-start; /* Align to top if needed for taller content */
-    padding-top: 10vh; /* Adds some top space for a more centered feel */
-  }
-
-  .modal-content {
-    max-height: 70vh; /* Slightly reduce height cap on desktop for better fit */
-  }
-
-  .action-section {
-    max-width: 420px; /* Keep buttons and inputs compact */
-    margin: 0 auto;
-  }
-}
-
-/* Ensure close button and headers match the neon glow in screenshots */
-.close-btn:hover {
-  color: var(--accent-cyan);
-  text-shadow: 0 0 10px var(--accent-cyan);
-}
-
-.faq-item {
-  transition: box-shadow 0.3s ease;
-}
-
-.faq-item:hover {
-  box-shadow: 0 0 15px var(--accent-red);
+/* Desktop enhancements */
+@media (min-width: 1024px) {
+    .modal-container {
+        max-width: 700px;
+    }
+    
+    .faq-section {
+        padding: 30px;
+        gap: 25px;
+    }
+    
+    .faq-item {
+        padding: 25px;
+    }
+    
+    .faq-item h4 {
+        font-size: 1.4em;
+    }
+    
+    .faq-item p {
+        font-size: 1.05em;
+    }
 }
