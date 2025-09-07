@@ -79,6 +79,15 @@ function createRoom() {
     socket.emit('create-room', { playerName: name });
 }
 
+function toggleHowToPlay() {
+    const modal = document.getElementById('how-to-play-modal');
+    if (modal.style.display === 'none' || !modal.style.display) {
+        modal.style.display = 'flex';
+    } else {
+        modal.style.display = 'none';
+    }
+}
+
 function joinRoom() {
     const name = playerNameInput.value.trim();
     const roomCode = roomCodeInput.value.trim().toUpperCase();
