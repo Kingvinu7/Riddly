@@ -8,7 +8,6 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <!-- Home Screen -->
     <div id="home-screen" class="page active">
         <div class="page-content">
             <div class="logo">
@@ -22,12 +21,11 @@
                     <input type="text" id="room-code" placeholder="Room Code" maxlength="6">
                     <button id="join-room-btn" class="btn secondary">Join Room</button>
                 </div>
-                <button id="how-to-play-btn" class="btn secondary" onclick="toggleHowToPlay()">How to Play</button>
+                <button id="how-to-play-btn" class="btn secondary">How to Play</button> 
             </div>
         </div>
     </div>
 
-    <!-- Lobby Screen -->
     <div id="lobby-screen" class="page">
         <div class="page-content">
             <div class="lobby-header">
@@ -47,7 +45,6 @@
         </div>
     </div>
 
-    <!-- Oracle Introduction Screen -->
     <div id="oracle-intro-screen" class="page">
         <div class="page-content">
             <div class="oracle-avatar large">🤖</div>
@@ -62,7 +59,6 @@
         </div>
     </div>
 
-    <!-- Riddle Screen -->
     <div id="riddle-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
@@ -83,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Riddle Results Screen -->
     <div id="riddle-results-screen" class="page">
         <div class="page-content">
             <div class="results-header">
@@ -97,7 +92,6 @@
         </div>
     </div>
 
-    <!-- Text Challenge Screen -->
     <div id="text-challenge-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
@@ -118,7 +112,6 @@
         </div>
     </div>
 
-    <!-- Fast Tapper Screen -->
     <div id="fast-tapper-screen" class="page">
         <div class="page-content">
             <div class="timer-section">
@@ -137,7 +130,6 @@
         </div>
     </div>
 
-    <!-- Challenge Results Screen -->
     <div id="challenge-results-screen" class="page">
         <div class="page-content">
             <div class="results-header">
@@ -151,7 +143,6 @@
         </div>
     </div>
 
-    <!-- Waiting Screen -->
     <div id="waiting-screen" class="page">
         <div class="page-content">
             <div class="waiting-section">
@@ -166,7 +157,6 @@
         </div>
     </div>
 
-    <!-- Round Summary Screen -->
     <div id="round-summary-screen" class="page">
         <div class="page-content">
             <div class="round-summary-section">
@@ -185,7 +175,6 @@
         </div>
     </div>
 
-    <!-- Game Over Screen -->
     <div id="game-over-screen" class="page">
         <div class="page-content">
             <div class="game-over-section">
@@ -210,14 +199,12 @@
         </div>
     </div>
 
-    <!-- Individual Result Overlay -->
     <div id="result-overlay" class="result-overlay" style="display: none;">
         <div class="result-overlay-content">
             <div id="individual-result-content"></div>
         </div>
     </div>
 
-    <!-- How to Play Modal -->
     <div id="how-to-play-modal" class="how-to-play-modal" style="display: none;">
         <div class="modal-backdrop" onclick="toggleHowToPlay()"></div>
         <div class="modal-container">
