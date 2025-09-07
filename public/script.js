@@ -79,14 +79,44 @@ function createRoom() {
     socket.emit('create-room', { playerName: name });
 }
 
+// Add this function to your script.js file
+
 function toggleHowToPlay() {
     const modal = document.getElementById('how-to-play-modal');
+    if (!modal) return;
+    
     if (modal.style.display === 'none' || !modal.style.display) {
         modal.style.display = 'flex';
+        // Prevent background scrolling when modal is open
+        document.body.style.overflow = 'hidden';
     } else {
         modal.style.display = 'none';
+        // Restore background scrolling when modal is closed
+        document.body.style.overflow = 'auto';
     }
 }
+
+// Close modal when clicking outside of it
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('how-to-play-modal');
+    const modalContainer = document.querySelector('.modal-container');
+    
+    if (modal && modal.style.display === 'flex') {
+        if (!modalContainer.contains(event.target) && event.target !== document.getElementById('how-to-play-btn')) {
+            toggleHowToPlay();
+        }
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('how-to-play-modal');
+        if (modal && modal.style.display === 'flex') {
+            toggleHowToPlay();
+        }
+    }
+});
 
 function joinRoom() {
     const name = playerNameInput.value.trim();
