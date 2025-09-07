@@ -2268,3 +2268,8 @@ body::before { z-index: -1; }
         text-shadow: 0 0 8px rgba(255, 8, 68, 0.4);
     }
 }
+
+.how-to-play-modal.show {
+    display: flex;
+    animation: modalFadeIn 0.3s ease-out;
+}
