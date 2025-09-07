@@ -8,58 +8,24 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-
     <!-- Home Screen -->
-<div id="home-screen" class="page active">
-    <div class="page-content">
-        <div class="logo">
-            <h1 data-text="THREATENED BY AI">THREATENED BY AI</h1>
-            <p>Face the Oracle's evolving challenges. Survive. Outsmart. Conquer.</p>
-        </div>
-        <div class="action-section">
-            <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
-            <button id="create-room-btn" class="btn primary large">Create Room</button>
-            <div class="join-section">
-                <input type="text" id="room-code" placeholder="Room Code" maxlength="6">
-                <button id="join-room-btn" class="btn secondary">Join Room</button>
+    <div id="home-screen" class="page active">
+        <div class="page-content">
+            <div class="logo">
+                <h1 data-text="THREATENED BY AI">THREATENED BY AI</h1>
+                <p>Face the Oracle's evolving challenges. Survive. Outsmart. Conquer.</p>
             </div>
-            <button id="how-to-play-btn" class="btn secondary" onclick="toggleHowToPlay()">How to Play</button>
-        </div>
-        
-        <!-- FAQ Modal -->
-        <div id="how-to-play-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>How to Play</h3>
-                    <button class="close-btn" onclick="toggleHowToPlay()">×</button>
+            <div class="action-section">
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
+                <button id="create-room-btn" class="btn primary large">Create Room</button>
+                <div class="join-section">
+                    <input type="text" id="room-code" placeholder="Room Code" maxlength="6">
+                    <button id="join-room-btn" class="btn secondary">Join Room</button>
                 </div>
-                <div class="modal-body">
-                    <div class="faq-item">
-                        <h4>Game Overview</h4>
-                        <p>Survive 5 rounds of riddles and AI challenges. Score points by solving riddles or completing challenges.</p>
-                    </div>
-                    <div class="faq-item">
-                        <h4>Round Structure</h4>
-                        <p><strong>Riddle Phase:</strong> Everyone answers a riddle. First correct answer wins a point.</p>
-                        <p><strong>Challenge Phase:</strong> Non-winners face AI challenges to earn points.</p>
-                    </div>
-                    <div class="faq-item">
-                        <h4>Challenge Types</h4>
-                        <p><strong>Negotiator:</strong> Persuade and compromise</p>
-                        <p><strong>Detective:</strong> Solve mysteries with clues</p>
-                        <p><strong>Trivia:</strong> Answer difficult questions</p>
-                        <p><strong>Fast Tapper:</strong> Tap as fast as possible</p>
-                        <p><strong>Danger:</strong> Survive emergency scenarios</p>
-                    </div>
-                    <div class="faq-item">
-                        <h4>Winning</h4>
-                        <p>Player with the most points after 5 rounds wins. The Oracle judges your performance!</p>
-                    </div>
-                </div>
+                <button id="how-to-play-btn" class="btn secondary" onclick="toggleHowToPlay()">How to Play</button>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Lobby Screen -->
     <div id="lobby-screen" class="page">
@@ -71,7 +37,7 @@
                 </div>
             </div>
             <div class="players-section">
-                <h3>👥 Players</h3>
+                <h3>Players</h3>
                 <div id="players-list"></div>
             </div>
             <div class="lobby-actions">
@@ -121,7 +87,7 @@
     <div id="riddle-results-screen" class="page">
         <div class="page-content">
             <div class="results-header">
-                <h2>🎯 Riddle Results</h2>
+                <h2>Riddle Results</h2>
                 <p id="riddle-results-message">Calculating results...</p>
             </div>
             <div class="all-answers-section">
@@ -139,7 +105,7 @@
                 <p>seconds to respond</p>
             </div>
             <div class="challenge-section">
-                <h2 id="text-challenge-title">🧠 AI Challenge</h2>
+                <h2 id="text-challenge-title">AI Challenge</h2>
                 <p id="text-challenge-content" class="challenge-description"></p>
             </div>
             <div class="response-section">
@@ -160,7 +126,7 @@
                 <p>seconds remaining</p>
             </div>
             <div class="tapper-section">
-                <h2>⚡ FAST TAPPER CHALLENGE</h2>
+                <h2>FAST TAPPER CHALLENGE</h2>
                 <p class="challenge-description">Tap the button as fast as you can!</p>
                 <div class="tap-counter">
                     <span id="tap-count" class="tap-count-display">0</span>
@@ -175,7 +141,7 @@
     <div id="challenge-results-screen" class="page">
         <div class="page-content">
             <div class="results-header">
-                <h2 id="challenge-results-title">⚖️ CHALLENGE RESULTS</h2>
+                <h2 id="challenge-results-title">CHALLENGE RESULTS</h2>
                 <div class="oracle-response">
                     <div class="oracle-avatar">🤖</div>
                     <p id="challenge-results-message" class="oracle-message"></p>
@@ -189,7 +155,7 @@
     <div id="waiting-screen" class="page">
         <div class="page-content">
             <div class="waiting-section">
-                <h2 id="waiting-title">⏳ Please Wait</h2>
+                <h2 id="waiting-title">Please Wait</h2>
                 <p id="waiting-message" class="waiting-text">Others are completing their challenges...</p>
                 <div class="loading-dots">
                     <span></span>
@@ -206,7 +172,7 @@
             <div class="round-summary-section">
                 <h2 id="round-summary-title">Round Complete!</h2>
                 <div class="points-table-container">
-                    <h3>📊 Current Standings</h3>
+                    <h3>Current Standings</h3>
                     <div id="points-table"></div>
                 </div>
                 <p id="next-round-text" class="waiting-text">Next round starting soon...</p>
@@ -223,20 +189,20 @@
     <div id="game-over-screen" class="page">
         <div class="page-content">
             <div class="game-over-section">
-                <h1>🏁 GAME OVER</h1>
+                <h1>GAME OVER</h1>
                 <div id="big-winner-announcement" class="big-winner-announcement">
-                    🏆 CHAMPION: UNKNOWN 🏆
+                    CHAMPION: UNKNOWN
                 </div>
                 <div class="oracle-response">
                     <div id="final-oracle" class="oracle-avatar large">🤖</div>
                     <p id="final-oracle-message" class="oracle-message">"Your feeble minds were no match!"</p>
                 </div>
                 <div class="final-scores-section">
-                    <h3>🏆 Final Standings</h3>
+                    <h3>Final Standings</h3>
                     <div id="final-scores"></div>
                 </div>
                 <div class="final-points-table-container">
-                    <h3>📊 Final Points Table</h3>
+                    <h3>Final Points Table</h3>
                     <div id="final-points-table"></div>
                 </div>
                 <button onclick="location.reload()" class="btn primary large">Play Again</button>
@@ -248,6 +214,42 @@
     <div id="result-overlay" class="result-overlay" style="display: none;">
         <div class="result-overlay-content">
             <div id="individual-result-content"></div>
+        </div>
+    </div>
+
+    <!-- How to Play Modal -->
+    <div id="how-to-play-modal" class="how-to-play-modal" style="display: none;">
+        <div class="modal-backdrop" onclick="toggleHowToPlay()"></div>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>How to Play</h3>
+                <button class="close-btn" onclick="toggleHowToPlay()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="faq-section">
+                    <div class="faq-item">
+                        <h4>Game Overview</h4>
+                        <p>Survive 5 rounds of riddles and AI challenges. Score points by solving riddles or completing challenges.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Round Structure</h4>
+                        <p><strong>Riddle Phase:</strong> Everyone answers a riddle. First correct answer wins a point.</p>
+                        <p><strong>Challenge Phase:</strong> Non-winners face AI challenges to earn points.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Challenge Types</h4>
+                        <p><strong>Negotiator:</strong> Persuade and compromise (70 seconds)</p>
+                        <p><strong>Detective:</strong> Solve mysteries with clues (40 seconds)</p>
+                        <p><strong>Trivia:</strong> Answer difficult questions (40 seconds)</p>
+                        <p><strong>Fast Tapper:</strong> Tap as fast as possible (10 seconds)</p>
+                        <p><strong>Danger:</strong> Survive emergency scenarios (40 seconds)</p>
+                    </div>
+                    <div class="faq-item">
+                        <h4>Winning</h4>
+                        <p>Player with the most points after 5 rounds wins. The Oracle judges your performance!</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
