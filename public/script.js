@@ -62,6 +62,7 @@ document.getElementById('tap-button').addEventListener('click', onTap);
 if (howToPlayBtn) {
     howToPlayBtn.addEventListener('click', (event) => {
         event.stopPropagation(); // Prevents the click from bubbling up to the document
+        console.log('How to Play button clicked'); // Debug: Check if this logs on desktop
         toggleHowToPlay();
     });
 }
@@ -93,9 +94,25 @@ function toggleHowToPlay() {
     if (!modal) return;
     
     if (modal.style.display === 'none' || !modal.style.display) {
-        modal.style.display = 'flex';
+        console.log('Showing modal'); // Debug: Check if this logs on desktop
+        modal.style.setProperty('display', 'flex', 'important'); // Force override any CSS !important rules
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
         document.body.style.overflow = 'hidden';
+
+        // Optional: Force visibility on backdrop and container if needed
+        const backdrop = modal.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.style.opacity = '1';
+            backdrop.style.visibility = 'visible';
+        }
+        const container = modal.querySelector('.modal-container');
+        if (container) {
+            container.style.opacity = '1';
+            container.style.visibility = 'visible';
+        }
     } else {
+        console.log('Hiding modal'); // Debug
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
